@@ -2,10 +2,7 @@ import Constants from 'expo-constants';
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, string>;
 
-const ENDPOINT =
-  extra.appsyncEndpoint || process.env.EXPO_PUBLIC_APPSYNC_ENDPOINT || '';
-const API_KEY =
-  extra.appsyncApiKey || process.env.EXPO_PUBLIC_APPSYNC_API_KEY || '';
+const ENDPOINT = extra.appsyncEndpoint || '';
 
 let _tokenGetter: (() => string | null) | null = null;
 
@@ -17,16 +14,24 @@ export async function gqlQuery<T = unknown>(
   query: string,
   variables?: Record<string, unknown>
 ): Promise<T> {
+  if (!ENDPOINT) {
+    throw new Error(
+      'AppSync endpoint is not configured (expo config "extra.appsyncEndpoint" is empty).'
+    );
+  }
+
+  // AppSync uses Cognito User Pool auth (defaultAuthMode: userPool): the raw
+  // idToken must be sent in the Authorization header. There is no API-key
+  // fallback — surface a clear "not authenticated" error instead.
   const token = _tokenGetter?.();
+  if (!token) {
+    throw new Error('Not authenticated: no Cognito token available for AppSync.');
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    Authorization: token,
   };
-
-  if (token) {
-    headers['Authorization'] = token;
-  } else {
-    headers['x-api-key'] = API_KEY;
-  }
 
   const response = await fetch(ENDPOINT, {
     method: 'POST',

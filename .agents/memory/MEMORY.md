@@ -1,1 +1,2 @@
 - [Expo secrets on Replit](expo-replit-secrets.md) — `EXPO_PUBLIC_X=$SECRET` shell forwarding silently yields empty strings; use `app.config.js` reading base env vars into `extra` instead.
+- [AppSync auth & config](appsync-auth-config.md) — userPool auth needs the Cognito idToken (not accessToken); public AWS client config belongs in committed config, not secrets.

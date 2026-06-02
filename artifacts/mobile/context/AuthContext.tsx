@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTokens(t);
     const u = extractUserFromIdToken(t.idToken);
     setUser(u);
-    setAppsyncTokenGetter(() => t.accessToken);
+    setAppsyncTokenGetter(() => t.idToken);
   }, []);
 
   useEffect(() => {

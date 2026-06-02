@@ -1,5 +1,15 @@
-const env = (key) =>
-  process.env[`EXPO_PUBLIC_${key}`] || process.env[key] || '';
+// Canonical AWS backend config (dev-SoftwareBackendStack), provided as the
+// source of truth. These are public client identifiers (the same kind Amplify
+// commits to a repo), so they are kept here rather than in secrets. AppSync uses
+// Cognito User Pool auth (idToken), so no AppSync API key is needed.
+const AWS_CONFIG = {
+  cognitoUserPoolId: 'ap-south-1_8Eomi3ymZ',
+  cognitoClientId: '52qfclofiusha1pumph6r8a8ee',
+  identityPoolId: 'ap-south-1:82ed9f8c-f1c6-4e6d-b58c-4c4df93f1702',
+  awsRegion: 'ap-south-1',
+  appsyncEndpoint:
+    'https://md3jfqmlmbgspdqfgmxffhcwai.appsync-api.ap-south-1.amazonaws.com/graphql',
+};
 
 module.exports = {
   expo: {
@@ -40,11 +50,7 @@ module.exports = {
       reactCompiler: true,
     },
     extra: {
-      cognitoUserPoolId: env('COGNITO_USER_POOL_ID'),
-      cognitoClientId: env('COGNITO_CLIENT_ID'),
-      awsRegion: env('AWS_REGION'),
-      appsyncEndpoint: env('APPSYNC_ENDPOINT'),
-      appsyncApiKey: env('APPSYNC_API_KEY'),
+      ...AWS_CONFIG,
     },
   },
 };
