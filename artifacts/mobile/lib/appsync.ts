@@ -1,5 +1,11 @@
-const ENDPOINT = process.env.EXPO_PUBLIC_APPSYNC_ENDPOINT || '';
-const API_KEY = process.env.EXPO_PUBLIC_APPSYNC_API_KEY || '';
+import Constants from 'expo-constants';
+
+const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, string>;
+
+const ENDPOINT =
+  extra.appsyncEndpoint || process.env.EXPO_PUBLIC_APPSYNC_ENDPOINT || '';
+const API_KEY =
+  extra.appsyncApiKey || process.env.EXPO_PUBLIC_APPSYNC_API_KEY || '';
 
 let _tokenGetter: (() => string | null) | null = null;
 

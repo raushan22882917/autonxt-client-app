@@ -1,0 +1,1 @@
+- [Expo secrets on Replit](expo-replit-secrets.md) — `EXPO_PUBLIC_X=$SECRET` shell forwarding silently yields empty strings; use `app.config.js` reading base env vars into `extra` instead.

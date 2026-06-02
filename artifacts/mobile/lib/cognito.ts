@@ -1,9 +1,15 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-const USER_POOL_ID = process.env.EXPO_PUBLIC_COGNITO_USER_POOL_ID || '';
-const CLIENT_ID = process.env.EXPO_PUBLIC_COGNITO_CLIENT_ID || '';
-const REGION = process.env.EXPO_PUBLIC_AWS_REGION || 'us-east-1';
+const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, string>;
+
+const USER_POOL_ID =
+  extra.cognitoUserPoolId || process.env.EXPO_PUBLIC_COGNITO_USER_POOL_ID || '';
+const CLIENT_ID =
+  extra.cognitoClientId || process.env.EXPO_PUBLIC_COGNITO_CLIENT_ID || '';
+const REGION =
+  extra.awsRegion || process.env.EXPO_PUBLIC_AWS_REGION || 'us-east-1';
 
 const AUTH_URL = `https://cognito-idp.${REGION}.amazonaws.com/`;
 
@@ -47,6 +53,12 @@ export interface CognitoUser {
 }
 
 export async function cognitoSignIn(username: string, password: string): Promise<CognitoTokens> {
+  if (!CLIENT_ID || !USER_POOL_ID) {
+    throw new Error(
+      'App is not configured: missing Cognito credentials. Please contact your administrator.'
+    );
+  }
+
   const body = {
     AuthFlow: 'USER_PASSWORD_AUTH',
     ClientId: CLIENT_ID,
