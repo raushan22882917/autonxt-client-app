@@ -3,19 +3,19 @@ import { StyleSheet, Text, View } from 'react-native';
 
 type Status = 'ACTIVE' | 'IDLE' | 'MAINTENANCE' | 'OFFLINE' | 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
-const STATUS_CONFIG: Record<Status, { label: string; bg: string; text: string }> = {
-  ACTIVE: { label: 'Active', bg: '#D1FAE5', text: '#065F46' },
-  IDLE: { label: 'Idle', bg: '#FEF3C7', text: '#92400E' },
-  MAINTENANCE: { label: 'Maintenance', bg: '#DBEAFE', text: '#1E40AF' },
-  OFFLINE: { label: 'Offline', bg: '#F3F4F6', text: '#6B7280' },
-  OPEN: { label: 'Open', bg: '#FEE2E2', text: '#991B1B' },
-  IN_PROGRESS: { label: 'In Progress', bg: '#DBEAFE', text: '#1E40AF' },
-  RESOLVED: { label: 'Resolved', bg: '#D1FAE5', text: '#065F46' },
-  CLOSED: { label: 'Closed', bg: '#F3F4F6', text: '#6B7280' },
-  LOW: { label: 'Low', bg: '#D1FAE5', text: '#065F46' },
-  MEDIUM: { label: 'Medium', bg: '#FEF3C7', text: '#92400E' },
-  HIGH: { label: 'High', bg: '#FED7AA', text: '#9A3412' },
-  CRITICAL: { label: 'Critical', bg: '#FEE2E2', text: '#991B1B' },
+const STATUS_CONFIG: Record<Status, { label: string; bg: string; text: string; dot: string }> = {
+  ACTIVE: { label: 'Active', bg: '#E7F6EC', text: '#127A38', dot: '#16A34A' },
+  IDLE: { label: 'Idle', bg: '#FCF1E2', text: '#9A6206', dot: '#D97706' },
+  MAINTENANCE: { label: 'Maintenance', bg: '#E8EFFD', text: '#1444B8', dot: '#1456E0' },
+  OFFLINE: { label: 'Offline', bg: '#EEF1F5', text: '#64748B', dot: '#94A3B8' },
+  OPEN: { label: 'Open', bg: '#FDECEC', text: '#A30E18', dot: '#C1121F' },
+  IN_PROGRESS: { label: 'In Progress', bg: '#E8EFFD', text: '#1444B8', dot: '#1456E0' },
+  RESOLVED: { label: 'Resolved', bg: '#E7F6EC', text: '#127A38', dot: '#16A34A' },
+  CLOSED: { label: 'Closed', bg: '#EEF1F5', text: '#64748B', dot: '#94A3B8' },
+  LOW: { label: 'Low', bg: '#E7F6EC', text: '#127A38', dot: '#16A34A' },
+  MEDIUM: { label: 'Medium', bg: '#FCF1E2', text: '#9A6206', dot: '#CA8A04' },
+  HIGH: { label: 'High', bg: '#FCEEE0', text: '#9A4406', dot: '#D97706' },
+  CRITICAL: { label: 'Critical', bg: '#FDECEC', text: '#A30E18', dot: '#C1121F' },
 };
 
 interface Props {
@@ -24,9 +24,10 @@ interface Props {
 }
 
 export function StatusBadge({ status, small }: Props) {
-  const config = STATUS_CONFIG[status] || { label: status, bg: '#F3F4F6', text: '#6B7280' };
+  const config = STATUS_CONFIG[status] || { label: status, bg: '#EEF1F5', text: '#64748B', dot: '#94A3B8' };
   return (
     <View style={[styles.badge, { backgroundColor: config.bg }, small && styles.small]}>
+      <View style={[styles.dot, { backgroundColor: config.dot }, small && styles.dotSmall]} />
       <Text style={[styles.text, { color: config.text }, small && styles.smallText]}>
         {config.label}
       </Text>
@@ -36,18 +37,31 @@ export function StatusBadge({ status, small }: Props) {
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 20,
     alignSelf: 'flex-start',
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dotSmall: {
+    width: 5,
+    height: 5,
   },
   text: {
     fontSize: 12,
     fontFamily: 'Inter_600SemiBold',
   },
   small: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    gap: 4,
   },
   smallText: {
     fontSize: 10,

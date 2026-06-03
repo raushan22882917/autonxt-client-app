@@ -12,15 +12,19 @@ interface Props {
 }
 
 export function StatCard({ title, value, icon, iconColor, subtitle }: Props) {
-  const colors = useColors();
+  const c = useColors();
+  const tint = iconColor || c.primary;
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={[styles.iconWrap, { backgroundColor: (iconColor || colors.primary) + '18' }]}>
-        <Feather name={icon as keyof typeof Feather.glyphMap} size={20} color={iconColor || colors.primary} />
+    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
+      <View style={styles.topRow}>
+        <View style={[styles.iconWrap, { backgroundColor: tint + '18' }]}>
+          <Feather name={icon as keyof typeof Feather.glyphMap} size={18} color={tint} />
+        </View>
+        <View style={[styles.accentDot, { backgroundColor: tint }]} />
       </View>
-      <Text style={[styles.value, { color: colors.foreground }]}>{value}</Text>
-      <Text style={[styles.title, { color: colors.mutedForeground }]}>{title}</Text>
-      {subtitle ? <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{subtitle}</Text> : null}
+      <Text style={[styles.value, { color: c.foreground }]}>{value}</Text>
+      <Text style={[styles.title, { color: c.mutedForeground }]} numberOfLines={1}>{title}</Text>
+      {subtitle ? <Text style={[styles.subtitle, { color: c.mutedForeground }]}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -28,26 +32,41 @@ export function StatCard({ title, value, icon, iconColor, subtitle }: Props) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     padding: 14,
-    gap: 4,
+    gap: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 1,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+  },
+  accentDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    opacity: 0.5,
   },
   value: {
-    fontSize: 24,
+    fontSize: 26,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   title: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontFamily: 'Inter_500Medium',
   },
   subtitle: {

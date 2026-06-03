@@ -19,6 +19,18 @@ import { PlantFilter } from '@/components/PlantFilter';
 import { StatCard } from '@/components/StatCard';
 import { StatusBadge } from '@/components/StatusBadge';
 
+function HeroStat({ label, value, dot }: { label: string; value: number; dot: string }) {
+  return (
+    <View style={styles.heroStat}>
+      <View style={styles.heroStatTop}>
+        <View style={[styles.heroStatDot, { backgroundColor: dot }]} />
+        <Text style={styles.heroStatValue}>{value}</Text>
+      </View>
+      <Text style={styles.heroStatLabel}>{label}</Text>
+    </View>
+  );
+}
+
 export default function DashboardScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
@@ -39,8 +51,13 @@ export default function DashboardScreen() {
   const activeCount = filteredTractors.filter(t => t.status === 'ACTIVE').length;
   const idleCount = filteredTractors.filter(t => t.status === 'IDLE').length;
   const maintenanceCount = filteredTractors.filter(t => t.status === 'MAINTENANCE').length;
+  const offlineCount = filteredTractors.filter(t => t.status === 'OFFLINE').length;
   const openComplaints = filteredComplaints.filter(c => c.status === 'OPEN' || c.status === 'IN_PROGRESS').length;
   const criticalComplaints = filteredComplaints.filter(c => c.severity === 'CRITICAL').length;
+
+  const utilization = filteredTractors.length
+    ? Math.round((activeCount / filteredTractors.length) * 100)
+    : 0;
 
   const recentTractors = filteredTractors.slice(0, 5);
 
@@ -115,6 +132,36 @@ export default function DashboardScreen() {
         <Text style={[styles.userTagText, { color: c.mutedForeground }, isAdmin && { color: c.primary }]}>
           {user?.name || user?.email} {isAdmin ? '· Admin' : ''}
         </Text>
+      </View>
+
+      {/* Fleet Health hero */}
+      <View style={[styles.hero, { backgroundColor: c.foreground, shadowColor: c.shadow }]}>
+        <View style={styles.heroTop}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroLabel}>Fleet Utilization</Text>
+            <View style={styles.heroValueRow}>
+              <Text style={styles.heroValue}>{utilization}</Text>
+              <Text style={styles.heroPct}>%</Text>
+            </View>
+            <Text style={styles.heroSub}>
+              {activeCount} of {filteredTractors.length} tractors active
+            </Text>
+          </View>
+          <View style={styles.heroIcon}>
+            <Feather name="activity" size={22} color="#fff" />
+          </View>
+        </View>
+
+        <View style={styles.heroTrack}>
+          <View style={[styles.heroFill, { width: `${utilization}%`, backgroundColor: c.success }]} />
+        </View>
+
+        <View style={styles.heroStatsRow}>
+          <HeroStat label="Active" value={activeCount} dot={c.success} />
+          <HeroStat label="Idle" value={idleCount} dot={c.warning} />
+          <HeroStat label="Service" value={maintenanceCount} dot={c.blue} />
+          <HeroStat label="Offline" value={offlineCount} dot="#94A3B8" />
+        </View>
       </View>
 
       {/* Plant Filter */}
@@ -261,6 +308,99 @@ const styles = StyleSheet.create({
   userTagText: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
+  },
+  hero: {
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 18,
+    gap: 14,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  heroLabel: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  heroValueRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginTop: 2,
+  },
+  heroValue: {
+    color: '#fff',
+    fontSize: 40,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -1.5,
+    lineHeight: 44,
+  },
+  heroPct: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    marginBottom: 5,
+    marginLeft: 2,
+  },
+  heroSub: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    marginTop: 2,
+  },
+  heroIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    overflow: 'hidden',
+  },
+  heroFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  heroStat: {
+    flex: 1,
+    gap: 3,
+  },
+  heroStatTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroStatDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  heroStatValue: {
+    color: '#fff',
+    fontSize: 17,
+    fontFamily: 'Inter_700Bold',
+  },
+  heroStatLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    marginLeft: 13,
   },
   filterWrap: {
     marginHorizontal: -16,

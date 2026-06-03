@@ -1,2 +1,1 @@
-- [Expo secrets on Replit](expo-replit-secrets.md) — `EXPO_PUBLIC_X=$SECRET` shell forwarding silently yields empty strings; use `app.config.js` reading base env vars into `extra` instead.
-- [AppSync auth + config](appsync-auth-config.md) — userPool auth needs Cognito idToken (not accessToken); public AWS config goes in committed config not secrets; IAM SigV4 can introspect schema but data resolvers are userPool-only (Unauthorized).
+- [AppSync & Cognito auth quirks](appsync-auth.md) — userPool-only auth, $APPSYNC_ENDPOINT secret has typo (use app.config.js), auth gate blocks screenshots without creds.
