@@ -228,8 +228,8 @@ interface RawComplaint {
   orgID?: string | null;
   plantID?: string | null;
   tractorVIN?: string | null;
-  problemType?: string | null;
   problemSubType?: string | null;
+  breakdownType?: string | null;
   description?: string | null;
   priority?: string | null;
   state?: string | null;
@@ -261,7 +261,7 @@ const LIST_COMPLAINTS_BY_ORG = `
   query ListComplaintsByOrg($orgID: ID!, $nextToken: String) {
     listComplaintsByOrg(orgID: $orgID, nextToken: $nextToken) {
       items {
-        complaintID orgID plantID tractorVIN problemType problemSubType
+        complaintID orgID plantID tractorVIN problemSubType breakdownType
         description priority state createdAt closedAt driverName raisedByUserID
       }
       nextToken
@@ -290,17 +290,19 @@ function mapServiceStatus(raw?: string | null): Tractor['status'] {
   return 'ACTIVE';
 }
 
-function humanizeProblemType(raw?: string | null): string {
-  if (!raw) return 'Issue';
+function humanize(raw?: string | null): string {
+  if (!raw) return '';
   return raw
-    .split('_')
-    .map(w => w.charAt(0) + w.slice(1).toLowerCase())
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
 }
 
-function mapSeverity(priority?: string | null, problemType?: string | null): Complaint['severity'] {
-  const pt = (problemType || '').toUpperCase();
-  if (pt === 'MAJOR_BREAKDOWN' || pt === 'ACCIDENT') return 'CRITICAL';
+function mapSeverity(priority?: string | null, hint?: string | null): Complaint['severity'] {
+  // problemType is intentionally not requested (dirty enum data breaks AppSync
+  // serialization), so critical detection uses the free-text breakdownType hint.
+  if (/major|accident|breakdown/i.test(hint || '')) return 'CRITICAL';
   switch ((priority || '').toUpperCase()) {
     case 'HIGH': return 'HIGH';
     case 'LOW': return 'LOW';
@@ -417,7 +419,11 @@ export async function fetchFleetData(
   const complaints: Complaint[] = rawComplaints.map(c => {
     const plant = c.plantID ? plantById.get(c.plantID) : undefined;
     const tractor = c.tractorVIN ? tractorByVin.get(c.tractorVIN) : undefined;
-    const title = c.problemSubType?.trim() || humanizeProblemType(c.problemType);
+    const title =
+      c.problemSubType?.trim() ||
+      humanize(c.breakdownType) ||
+      c.description?.trim().split('\n')[0] ||
+      'Maintenance issue';
     return {
       complaintID: c.complaintID,
       tractorID: c.tractorVIN || '',
@@ -425,7 +431,7 @@ export async function fetchFleetData(
       plantID: c.plantID || '',
       title,
       description: c.description || title,
-      severity: mapSeverity(c.priority, c.problemType),
+      severity: mapSeverity(c.priority, c.breakdownType),
       status: mapComplaintStatus(c.state),
       reportedBy: c.driverName || c.raisedByUserID || 'Unknown',
       createdAt: c.createdAt || new Date().toISOString(),
