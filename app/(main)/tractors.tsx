@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   FlatList,
   Platform,
@@ -14,7 +15,6 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
-import { PlantFilter } from '@/components/PlantFilter';
 import { TractorCard } from '@/components/TractorCard';
 import { Tractor } from '@/lib/appsync';
 
@@ -22,33 +22,52 @@ export default function TractorsScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { filteredTractors, isLoading, refresh } = useApp();
+  const { filteredTractors, isLoading, isLoadingMorePlants, refreshLiveTelemetry } = useApp();
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshLiveTelemetry();
+      const timer = setInterval(() => refreshLiveTelemetry(), 120_000);
+      return () => clearInterval(timer);
+    }, [refreshLiveTelemetry])
+  );
+
+  const onPullRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshLiveTelemetry();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const topPad = Platform.OS === 'web' ? 67 : 0;
 
-  // Only show commissioned tractors (those with a commissioning date set).
-  const commissioned = filteredTractors.filter(t => !!t.commissionDate);
-
-  const displayed = search.trim()
-    ? commissioned.filter(
+  const q = search.trim().toLowerCase();
+  const displayed = q
+    ? filteredTractors.filter(
         t =>
-          t.model.toLowerCase().includes(search.toLowerCase()) ||
-          t.serialNumber.toLowerCase().includes(search.toLowerCase()) ||
-          (t.plantName || '').toLowerCase().includes(search.toLowerCase())
+          t.displayName.toLowerCase().includes(q) ||
+          t.model.toLowerCase().includes(q) ||
+          t.tractorID.toLowerCase().includes(q) ||
+          t.serialNumber.toLowerCase().includes(q) ||
+          (t.registerNumber || '').toLowerCase().includes(q) ||
+          (t.plantName || '').toLowerCase().includes(q) ||
+          (t.liveLocation || '').toLowerCase().includes(q)
       )
-    : commissioned;
+    : filteredTractors;
+
+  const openDetail = (tractorID: string) =>
+    router.push(`/tractor/${encodeURIComponent(tractorID)}`);
 
   const renderTractor = ({ item }: { item: Tractor }) => (
-    <TractorCard
-      tractor={item}
-      onPress={() => router.push(`/tractor/${encodeURIComponent(item.tractorID)}`)}
-    />
+    <TractorCard tractor={item} onOpenDetail={() => openDetail(item.tractorID)} />
   );
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
-      {/* Search bar */}
       <View style={[styles.searchWrap, { paddingTop: topPad + 12 }]}>
         <View style={[styles.searchBox, { backgroundColor: c.card, borderColor: c.border }]}>
           <Feather name="search" size={16} color={c.mutedForeground} style={{ marginRight: 8 }} />
@@ -67,8 +86,6 @@ export default function TractorsScreen() {
         </View>
       </View>
 
-      <PlantFilter />
-
       <FlatList
         data={displayed}
         keyExtractor={t => t.tractorID}
@@ -76,7 +93,11 @@ export default function TractorsScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
+          <RefreshControl
+            refreshing={refreshing || isLoadingMorePlants}
+            onRefresh={onPullRefresh}
+            tintColor={c.primary}
+          />
         }
         ListEmptyComponent={
           <View style={styles.empty}>

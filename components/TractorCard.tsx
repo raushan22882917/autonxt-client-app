@@ -1,220 +1,286 @@
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { Tractor } from '@/lib/appsync';
-import { StatusBadge } from './StatusBadge';
-
-const tractorImg = require('../assets/images/tractor.png');
+import { getImplementFeetLabel } from '@/lib/tractorImages';
+import { fmtMetric } from '@/lib/tractorMetrics';
+import { isTelemetryDisconnected } from '@/lib/telemetry';
+import { TractorImage } from './TractorImage';
 
 interface Props {
   tractor: Tractor;
-  onPress?: () => void;
+  onOpenDetail?: () => void;
 }
 
-function fmt(v: number | undefined, digits = 0): string {
-  if (v === undefined || v === null || Number.isNaN(v)) return '—';
-  return digits > 0 ? v.toFixed(digits) : String(Math.round(v));
+function SignalIcon({ live, onColor, offColor }: { live: boolean; onColor: string; offColor: string }) {
+  if (live) {
+    return (
+      <View style={styles.signalWrap}>
+        <Text style={[styles.signalTri, { color: onColor }]}>▲</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={[styles.signalWrap, { borderWidth: 1.5, borderColor: offColor, borderRadius: 4 }]}>
+      <Text style={[styles.signalTri, { color: offColor }]}>▲</Text>
+    </View>
+  );
 }
 
-export function TractorCard({ tractor: t, onPress }: Props) {
+export function TractorCard({ tractor: t, onOpenDetail }: Props) {
   const c = useColors();
+  const live = !isTelemetryDisconnected(t.telemetryAt);
+  const headlineId = t.registerNumber || t.serialNumber;
+  const systemId = t.loggerID || t.registerNumber || t.serialNumber;
+  const location = t.liveLocation || t.plantName || '—';
+  const implementLabel = t.currentImplement
+    ? getImplementFeetLabel(t.currentImplement) || t.currentImplement
+    : 'No implement';
 
-  const soc = t.soc;
-  const socColor =
-    soc === undefined
-      ? c.mutedForeground
-      : soc <= 20
-        ? c.red
-        : soc <= 50
-          ? c.warning
-          : c.success;
+  const iconColor = c.foreground;
 
-  const metrics: {
-    icon: keyof typeof Feather.glyphMap;
-    label: string;
-    value: string;
-    tint: string;
-  }[] = [
-    { icon: 'battery-charging', label: 'Battery', value: soc === undefined ? '—' : `${fmt(soc)}%`, tint: socColor },
-    { icon: 'thermometer', label: 'Temp', value: t.temp === undefined ? '—' : `${fmt(t.temp, 1)}°C`, tint: c.red },
-    { icon: 'rotate-cw', label: 'RPM', value: fmt(t.rpm), tint: c.blue },
-    { icon: 'zap', label: 'Voltage', value: t.voltage === undefined ? '—' : `${fmt(t.voltage, 1)}V`, tint: c.black },
-    { icon: 'activity', label: 'Current', value: t.current === undefined ? '—' : `${fmt(t.current, 1)}A`, tint: c.blue },
+  const chips: { key: string; icon: React.ReactNode; label: string }[] = [
+    {
+      key: 'soc',
+      icon: <Feather name="battery" size={13} color={iconColor} />,
+      label: `${fmtMetric(t.soc)}%`,
+    },
+    {
+      key: 'temp',
+      icon: <Feather name="thermometer" size={13} color={iconColor} />,
+      label: `${fmtMetric(t.temp, 1)}°C`,
+    },
+    {
+      key: 'rpm',
+      icon: <MaterialCommunityIcons name="speedometer" size={14} color={iconColor} />,
+      label: `${fmtMetric(t.rpm)} RPM`,
+    },
+    {
+      key: 'volt',
+      icon: <MaterialCommunityIcons name="battery-outline" size={14} color={iconColor} />,
+      label: `${fmtMetric(t.voltage, 1)} V`,
+    },
+    {
+      key: 'amp',
+      icon: <Feather name="activity" size={13} color={iconColor} />,
+      label: `${fmtMetric(t.current, 1)} A`,
+    },
+    {
+      key: 'id',
+      icon: <MaterialCommunityIcons name="cog-outline" size={14} color={iconColor} />,
+      label: systemId,
+    },
+    {
+      key: 'loc',
+      icon: <MaterialCommunityIcons name="office-building" size={14} color={iconColor} />,
+      label: location,
+    },
   ];
 
+  const chipStyle = {
+    backgroundColor: c.surfaceAlt,
+    borderColor: c.border,
+  };
+
   return (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}
-      onPress={onPress}
-      disabled={!onPress}
-      activeOpacity={0.85}
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: c.card,
+          borderColor: c.border,
+          shadowColor: c.shadow,
+        },
+      ]}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={[styles.imageWrap, { backgroundColor: c.surfaceAlt }]}>
-          <Image source={tractorImg} style={styles.image} resizeMode="contain" />
+      {/* Left: image + status */}
+      <View style={styles.left}>
+        <TouchableOpacity
+          style={[styles.infoBtn, { backgroundColor: c.red }]}
+          onPress={onOpenDetail}
+          activeOpacity={0.8}
+          disabled={!onOpenDetail}
+          accessibilityLabel="Tractor info"
+        >
+          <Feather name="info" size={14} color={c.primaryForeground} />
+        </TouchableOpacity>
+
+        <View style={styles.imageBox}>
+          <TractorImage tractor={t} style={styles.image} resizeMode="contain" />
         </View>
 
-        <View style={styles.headerInfo}>
-          <View style={styles.modelRow}>
-            <Text style={[styles.model, { color: c.foreground }]} numberOfLines={1}>
+        <View style={styles.leftFooter}>
+          <SignalIcon live={live} onColor={c.success} offColor={c.red} />
+          <MaterialCommunityIcons
+            name={t.isCharging ? 'power-plug' : 'power-plug-off-outline'}
+            size={22}
+            color={t.isCharging ? c.success : c.mutedForeground}
+          />
+          <View style={[styles.modelPill, { backgroundColor: c.red }]}>
+            <Feather name="zap" size={12} color={c.primaryForeground} />
+            <Text style={[styles.modelPillText, { color: c.primaryForeground }]} numberOfLines={1}>
               {t.model}
             </Text>
-            <View style={[styles.modelBadge, { backgroundColor: c.red }]}>
-              <Feather name="zap" size={10} color="#fff" />
-              <Text style={styles.modelBadgeText} numberOfLines={1}>
-                {t.model}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.metaRow}>
-            <Feather name="hash" size={11} color={c.mutedForeground} />
-            <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
-              {t.serialNumber}
-            </Text>
-          </View>
-          {t.plantName ? (
-            <View style={styles.metaRow}>
-              <Feather name="map-pin" size={11} color={c.mutedForeground} />
-              <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
-                {t.plantName}
-              </Text>
-            </View>
-          ) : null}
-
-          <View style={styles.statusRow}>
-            <StatusBadge status={t.status} small />
-            <View style={styles.runtimeTag}>
-              <Feather name="clock" size={11} color={c.mutedForeground} />
-              <Text style={[styles.metaText, { color: c.mutedForeground }]}>
-                {t.totalRuntime}h
-              </Text>
-            </View>
           </View>
         </View>
       </View>
 
-      {/* Telemetry grid */}
-      <View style={[styles.divider, { backgroundColor: c.hairline }]} />
-      <View style={styles.grid}>
-        {metrics.map(m => (
-          <View key={m.label} style={[styles.metric, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
-            <Feather name={m.icon} size={14} color={m.tint} />
-            <Text style={[styles.metricValue, { color: c.foreground }]} numberOfLines={1}>
-              {m.value}
-            </Text>
-            <Text style={[styles.metricLabel, { color: c.mutedForeground }]} numberOfLines={1}>
-              {m.label}
-            </Text>
-          </View>
-        ))}
+      {/* Right: ID + chips + implement */}
+      <View style={styles.right}>
+        <Text style={[styles.headlineId, { color: c.foreground }]} numberOfLines={1}>
+          {headlineId}
+        </Text>
+
+        <View style={styles.chipGrid}>
+          {chips.map(chip => (
+            <View key={chip.key} style={[styles.chip, chipStyle]}>
+              {chip.icon}
+              <Text style={[styles.chipText, { color: c.foreground }]} numberOfLines={1}>
+                {chip.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={[styles.implementChip, chipStyle]}>
+          <Feather name="tool" size={13} color={c.foreground} />
+          <Text style={[styles.chipText, { color: c.foreground }]} numberOfLines={1}>
+            {implementLabel}
+          </Text>
+        </View>
       </View>
-    </TouchableOpacity>
+
+      {onOpenDetail ? (
+        <TouchableOpacity
+          style={styles.arrowHit}
+          onPress={onOpenDetail}
+          activeOpacity={0.7}
+          accessibilityLabel="Open tractor details"
+          accessibilityRole="button"
+        >
+          <Feather name="chevron-right" size={22} color={c.mutedForeground} />
+        </TouchableOpacity>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 18,
+    flexDirection: 'row',
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 14,
-    gap: 12,
-    shadowOffset: { width: 0, height: 6 },
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    alignItems: 'stretch',
+    minHeight: 168,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
-    shadowRadius: 14,
+    shadowRadius: 10,
     elevation: 2,
   },
-  header: {
-    flexDirection: 'row',
-    gap: 12,
+  left: {
+    width: '38%',
+    maxWidth: 148,
+    minWidth: 120,
+    paddingRight: 6,
   },
-  imageWrap: {
-    width: 104,
-    height: 84,
-    borderRadius: 14,
+  infoBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    marginBottom: 4,
   },
-  image: { width: 100, height: 80 },
-  headerInfo: { flex: 1, gap: 3 },
-  modelRow: {
+  imageBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 72,
+  },
+  image: {
+    width: 118,
+    height: 88,
+  },
+  leftFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  model: {
-    fontSize: 17,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.3,
-    flexShrink: 1,
-  },
-  modelBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 7,
-    maxWidth: 90,
-  },
-  modelBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 0.2,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  metaText: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    flexShrink: 1,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    gap: 6,
     marginTop: 4,
+    flexWrap: 'wrap',
   },
-  runtimeTag: {
+  signalWrap: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signalTri: {
+    fontSize: 14,
+    lineHeight: 16,
+    fontWeight: '700',
+  },
+  modelPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    maxWidth: 88,
   },
-  divider: {
-    height: 1,
-    marginHorizontal: -2,
+  modelPillText: {
+    fontSize: 12,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.2,
   },
-  grid: {
+  right: {
+    flex: 1,
+    paddingLeft: 4,
+    paddingRight: 4,
+    gap: 8,
+    minWidth: 0,
+  },
+  headlineId: {
+    fontSize: 22,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.5,
+  },
+  chipGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
-  metric: {
-    flexBasis: '18%',
-    flexGrow: 1,
-    minWidth: 58,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 9,
-    paddingHorizontal: 4,
+  chip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
-  metricValue: {
-    fontSize: 13,
-    fontFamily: 'Inter_700Bold',
-  },
-  metricLabel: {
-    fontSize: 9,
+  chipText: {
+    fontSize: 12,
     fontFamily: 'Inter_500Medium',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    maxWidth: 120,
+  },
+  implementChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    maxWidth: '100%',
+  },
+  arrowHit: {
+    justifyContent: 'center',
+    paddingLeft: 2,
+    paddingRight: 2,
   },
 });

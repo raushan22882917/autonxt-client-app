@@ -7,7 +7,9 @@ import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
-import { useAuth } from '@/context/AuthContext';
+import { FleetHeader } from '@/components/FleetHeader';
+import { FleetLoader, FleetLoadingBar } from '@/components/FleetLoader';
+import { useApp } from '@/context/AppContext';
 
 function NativeTabsLayout() {
   return (
@@ -28,9 +30,9 @@ function NativeTabsLayout() {
         <Icon sf={{ default: 'clock', selected: 'clock.fill' }} />
         <Label>Runtime</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="ai">
-        <Icon sf={{ default: 'sparkles', selected: 'sparkles' }} />
-        <Label>AI</Label>
+      <NativeTabs.Trigger name="reports">
+        <Icon sf={{ default: 'doc.text', selected: 'doc.text.fill' }} />
+        <Label>Reports</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -44,9 +46,9 @@ function ClassicTabsLayout() {
   return (
     <Tabs
         screenOptions={{
+          headerShown: false,
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.mutedForeground,
-          headerStyle: { backgroundColor: colors.card },
           headerTintColor: colors.foreground,
           headerTitleStyle: { fontFamily: 'Inter_600SemiBold', fontSize: 17 },
           tabBarStyle: {
@@ -124,15 +126,14 @@ function ClassicTabsLayout() {
           }}
         />
         <Tabs.Screen
-          name="ai"
+          name="reports"
           options={{
-            title: 'AI Insights',
-            tabBarLabel: 'AI',
+            title: 'Reports',
             tabBarIcon: ({ color }) =>
               isIOS ? (
-                <SymbolView name="sparkles" tintColor={color} size={22} />
+                <SymbolView name="doc.text" tintColor={color} size={22} />
               ) : (
-                <Feather name="cpu" size={20} color={color} />
+                <Feather name="file-text" size={20} color={color} />
               ),
           }}
         />
@@ -147,7 +148,45 @@ function ClassicTabsLayout() {
   );
 }
 
+function MainShell({ children }: { children: React.ReactNode }) {
+  const colors = useColors();
+  const {
+    isLoading,
+    isLoadingMorePlants,
+    loadingMessage,
+    plants,
+    loadedPlantIDs,
+    organization,
+  } = useApp();
+
+  const plantProgress =
+    plants.length > 0 ? loadedPlantIDs.length / plants.length : undefined;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <FleetHeader />
+      <FleetLoadingBar
+        visible={isLoadingMorePlants && !isLoading}
+        loaded={loadedPlantIDs.length}
+        total={plants.length}
+      />
+      <View style={{ flex: 1 }}>{children}</View>
+      <FleetLoader
+        visible={isLoading}
+        title={organization?.name ? `Loading ${organization.name}` : 'Loading fleet'}
+        message={loadingMessage}
+        progress={plantProgress}
+        progressLabel={
+          plants.length > 0
+            ? `${loadedPlantIDs.length} of ${plants.length} plants ready`
+            : undefined
+        }
+      />
+    </View>
+  );
+}
+
 export default function MainLayout() {
-  if (isLiquidGlassAvailable()) return <NativeTabsLayout />;
-  return <ClassicTabsLayout />;
+  const tabs = isLiquidGlassAvailable() ? <NativeTabsLayout /> : <ClassicTabsLayout />;
+  return <MainShell>{tabs}</MainShell>;
 }

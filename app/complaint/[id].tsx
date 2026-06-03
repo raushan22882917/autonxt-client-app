@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { severityColor, formatDateTime } from '@/lib/complaint';
+import { FleetLoader } from '@/components/FleetLoader';
 import { ComplaintDetail, fetchComplaintById } from '@/lib/appsync';
 
 export default function ComplaintDetailScreen() {
@@ -75,7 +75,12 @@ export default function ComplaintDetailScreen() {
       <View style={[styles.root, { backgroundColor: c.background }]}>
         {Header}
         <View style={styles.empty}>
-          <ActivityIndicator size="large" color={c.primary} />
+          <FleetLoader
+            visible
+            inline
+            title="Complaint details"
+            message="Loading issue information…"
+          />
         </View>
       </View>
     );

@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,14 +12,33 @@ import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TractorImage } from '@/components/TractorImage';
+import { getImplementFeetLabel } from '@/lib/tractorImages';
+import { formatTelemetryAge } from '@/lib/tractorFormat';
+import { FleetLoader } from '@/components/FleetLoader';
+import { ManualRuntimeEntryCard } from '@/components/ManualRuntimeEntryCard';
 import { severityColor, formatDate, formatDateTime } from '@/lib/complaint';
+import { SegmentType } from '@/graphql/API';
 import {
   fetchTractorAnalytics,
   fetchTractorById,
+  fetchTractorManualRuntime,
+  fetchUsageSegments,
+  fetchUsageSegmentsByType,
   type AnalyticsBucket,
+  type RuntimeRecord,
   type Tractor,
   type TractorAnalytics,
+  type UsageSegment,
 } from '@/lib/appsync';
+import { manualRuntimeDayHours, segmentTypeLabel } from '@/lib/tractorRuntime';
+import {
+  faultDetailLines,
+  faultTitle,
+  flattenFaultMetrics,
+  fmtMetric,
+  resolveTractorMetrics,
+} from '@/lib/tractorMetrics';
 
 function fmtNum(v: number | null | undefined, digits = 0): string {
   if (v === null || v === undefined || Number.isNaN(v)) return '—';
@@ -43,8 +60,6 @@ function fmtDuration(seconds: number | null | undefined): string {
   return `${m}m`;
 }
 
-const tractorImg = require('../../assets/images/tractor.png');
-
 type TabKey = 'trips' | 'charge' | 'runtime' | 'breakdown';
 
 const TABS: { key: TabKey; label: string; icon: keyof typeof Feather.glyphMap }[] = [
@@ -65,6 +80,13 @@ export default function TractorDetailScreen() {
   const [analytics, setAnalytics] = useState<TractorAnalytics | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [usageSegments, setUsageSegments] = useState<UsageSegment[]>([]);
+  const [tripSegments, setTripSegments] = useState<UsageSegment[]>([]);
+  const [chargeSegments, setChargeSegments] = useState<UsageSegment[]>([]);
+  const [segmentsLoading, setSegmentsLoading] = useState(true);
+  const [segmentsError, setSegmentsError] = useState<string | null>(null);
+  const [manualRuntime, setManualRuntime] = useState<RuntimeRecord[]>([]);
+  const [manualRuntimeLoading, setManualRuntimeLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -105,6 +127,61 @@ export default function TractorDetailScreen() {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setSegmentsLoading(true);
+    setSegmentsError(null);
+    Promise.all([
+      fetchUsageSegments(id, { limit: 25 }),
+      fetchUsageSegmentsByType(id, SegmentType.TRIP, { limit: 15 }),
+      fetchUsageSegmentsByType(id, SegmentType.CHARGE, { limit: 15 }),
+    ])
+      .then(([all, trips, charges]) => {
+        if (!cancelled) {
+          setUsageSegments(all);
+          setTripSegments(trips);
+          setChargeSegments(charges);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setUsageSegments([]);
+          setTripSegments([]);
+          setChargeSegments([]);
+          setSegmentsError(err instanceof Error ? err.message : 'Failed to load trip and charge segments');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSegmentsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    if (!tractor?.loggerID) {
+      setManualRuntime([]);
+      return;
+    }
+    let cancelled = false;
+    setManualRuntimeLoading(true);
+    fetchTractorManualRuntime(tractor, plants)
+      .then(rows => {
+        if (!cancelled) setManualRuntime(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setManualRuntime([]);
+      })
+      .finally(() => {
+        if (!cancelled) setManualRuntimeLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tractor?.loggerID, tractor?.tractorID, tractor?.orgID, plants]);
+
   const goBack = () => {
     if (router.canGoBack()) router.back();
     else router.replace('/(main)/tractors');
@@ -132,20 +209,31 @@ export default function TractorDetailScreen() {
     );
   }
 
-  const tractorRuntime = runtimeRecords
+  const contextRuntime = runtimeRecords
     .filter(r => r.tractorID === tractor.tractorID)
     .sort((a, b) => b.date.localeCompare(a.date));
+  const tractorRuntime =
+    manualRuntime.length > 0
+      ? manualRuntime
+      : contextRuntime;
   const tractorBreakdowns = complaints
     .filter(x => x.tractorID === tractor.tractorID)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+  const metrics = resolveTractorMetrics(tractor, analytics?.parameterMetrics);
   const telemetry: { icon: keyof typeof Feather.glyphMap; label: string; value: string }[] = [
-    { icon: 'battery-charging', label: 'Battery', value: tractor.soc === undefined ? '—' : `${Math.round(tractor.soc)}%` },
-    { icon: 'thermometer', label: 'Temp', value: tractor.temp === undefined ? '—' : `${tractor.temp.toFixed(1)}°C` },
-    { icon: 'rotate-cw', label: 'RPM', value: tractor.rpm === undefined ? '—' : String(Math.round(tractor.rpm)) },
-    { icon: 'zap', label: 'Voltage', value: tractor.voltage === undefined ? '—' : `${tractor.voltage.toFixed(1)}V` },
-    { icon: 'activity', label: 'Current', value: tractor.current === undefined ? '—' : `${tractor.current.toFixed(1)}A` },
+    { icon: 'battery-charging', label: 'SOC', value: `${fmtMetric(metrics.soc)}%` },
+    { icon: 'heart', label: 'SOH', value: `${fmtMetric(metrics.soh)}%` },
+    { icon: 'thermometer', label: 'Batt °C', value: `${fmtMetric(metrics.temp, 1)}°` },
+    { icon: 'rotate-cw', label: 'RPM', value: fmtMetric(metrics.rpm) },
+    { icon: 'zap', label: 'Voltage', value: `${fmtMetric(metrics.voltage, 1)}V` },
+    { icon: 'activity', label: 'Current', value: `${fmtMetric(metrics.current, 1)}A` },
+    { icon: 'cpu', label: 'Motor °C', value: `${fmtMetric(metrics.motorTemp, 1)}°` },
   ];
+
+  const faults = flattenFaultMetrics(analytics?.faultMetrics);
+
+  const telemetryAge = formatTelemetryAge(tractor.telemetryAt);
 
   const totalHours = tractorRuntime.reduce((sum, r) => sum + (r.hoursRun || 0), 0);
 
@@ -160,28 +248,84 @@ export default function TractorDetailScreen() {
         <View style={[styles.hero, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
           <View style={styles.heroTop}>
             <View style={[styles.imageWrap, { backgroundColor: c.surfaceAlt }]}>
-              <Image source={tractorImg} style={styles.image} resizeMode="contain" />
+              <TractorImage tractor={tractor} style={styles.image} resizeMode="contain" />
             </View>
             <View style={styles.heroInfo}>
               <Text style={[styles.heroModel, { color: c.foreground }]} numberOfLines={1}>
-                {tractor.model}
+                {tractor.displayName}
               </Text>
-              <View style={styles.metaRow}>
-                <Feather name="hash" size={12} color={c.mutedForeground} />
+              {tractor.alias && tractor.model ? (
                 <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
-                  {tractor.serialNumber}
+                  {tractor.model}
+                  {tractor.colorLabel ? ` · ${tractor.colorLabel}` : ''}
                 </Text>
-              </View>
-              {tractor.plantName ? (
+              ) : tractor.colorLabel ? (
+                <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
+                  {tractor.colorLabel}
+                </Text>
+              ) : null}
+              {tractor.currentImplement ? (
                 <View style={styles.metaRow}>
-                  <Feather name="map-pin" size={12} color={c.mutedForeground} />
+                  <Feather name="tool" size={12} color={c.mutedForeground} />
                   <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
-                    {tractor.plantName}
+                    {tractor.currentImplement}
+                    {getImplementFeetLabel(tractor.currentImplement)
+                      ? ` · ${getImplementFeetLabel(tractor.currentImplement)}`
+                      : ''}
                   </Text>
                 </View>
               ) : null}
-              <View style={{ marginTop: 6 }}>
+              <View style={styles.metaRow}>
+                <Feather name="hash" size={12} color={c.mutedForeground} />
+                <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
+                  {tractor.registerNumber ? `Reg ${tractor.registerNumber}` : tractor.serialNumber}
+                </Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Feather name="tag" size={12} color={c.mutedForeground} />
+                <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
+                  VIN {tractor.tractorID}
+                </Text>
+              </View>
+              {(tractor.liveLocation || tractor.plantName) ? (
+                <View style={styles.metaRow}>
+                  <Feather name="map-pin" size={12} color={c.mutedForeground} />
+                  <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
+                    {tractor.liveLocation || tractor.plantName}
+                  </Text>
+                </View>
+              ) : null}
+              {tractor.assignedUser ? (
+                <View style={styles.metaRow}>
+                  <Feather name="user" size={12} color={c.mutedForeground} />
+                  <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
+                    {tractor.assignedUser}
+                  </Text>
+                </View>
+              ) : null}
+              {tractor.commissionDate ? (
+                <View style={styles.metaRow}>
+                  <Feather name="check-circle" size={12} color={c.mutedForeground} />
+                  <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
+                    Commissioned {formatDate(tractor.commissionDate)}
+                  </Text>
+                </View>
+              ) : null}
+              {telemetryAge ? (
+                <View style={styles.metaRow}>
+                  <Feather name="radio" size={12} color={c.mutedForeground} />
+                  <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
+                    Live {telemetryAge}
+                  </Text>
+                </View>
+              ) : null}
+              <View style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <StatusBadge status={tractor.status} small />
+                {tractor.serviceStatusLabel ? (
+                  <Text style={[styles.metaText, { color: c.mutedForeground }]} numberOfLines={1}>
+                    {tractor.serviceStatusLabel}
+                  </Text>
+                ) : null}
               </View>
             </View>
           </View>
@@ -230,7 +374,7 @@ export default function TractorDetailScreen() {
                 <View style={[styles.summaryDivider, { backgroundColor: c.hairline }]} />
                 <View style={styles.summaryItem}>
                   <Text style={[styles.summaryValue, { color: c.foreground }]}>{tractorRuntime.length}</Text>
-                  <Text style={[styles.summaryLabel, { color: c.mutedForeground }]}>Records</Text>
+                  <Text style={[styles.summaryLabel, { color: c.mutedForeground }]}>Log Entries</Text>
                 </View>
                 <View style={[styles.summaryDivider, { backgroundColor: c.hairline }]} />
                 <View style={styles.summaryItem}>
@@ -241,31 +385,76 @@ export default function TractorDetailScreen() {
                 </View>
               </View>
             )}
-            {tractorRuntime.length === 0 ? (
-              <EmptyState icon="clock" title="No runtime records" sub="No runtime entries have been logged for this tractor yet." c={c} />
+            {manualRuntimeLoading ? (
+              <FleetLoader visible inline title="Manual runtime" message="Loading logged runtime entries…" />
+            ) : tractorRuntime.length === 0 ? (
+              <EmptyState
+                icon="clock"
+                title="No manual runtime entries"
+                sub={
+                  tractor.loggerID
+                    ? 'No manual log entries (start/end cumulative runtime) for this tractor yet.'
+                    : 'This tractor has no logger ID — manual runtime cannot be loaded.'
+                }
+                c={c}
+              />
             ) : (
-              tractorRuntime.map(r => (
-                <View key={r.recordID} style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}>
-                  <View style={[styles.rowIcon, { backgroundColor: c.primary + '14' }]}>
-                    <Feather name="clock" size={16} color={c.primary} />
-                  </View>
-                  <View style={styles.rowMain}>
-                    <Text style={[styles.rowTitle, { color: c.foreground }]}>{formatDate(r.date)}</Text>
-                    {r.plantName ? (
-                      <Text style={[styles.rowSub, { color: c.mutedForeground }]} numberOfLines={1}>{r.plantName}</Text>
-                    ) : null}
-                  </View>
-                  <Text style={[styles.rowValue, { color: c.primary }]}>{r.hoursRun}h</Text>
-                </View>
-              ))
+              <>
+                <Text style={[styles.sectionTitle, { color: c.foreground }]}>Manual runtime log</Text>
+                <Text style={[styles.runtimeHint, { color: c.mutedForeground }]}>
+                  Fields match CreateManualRuntimeEntryInput: logger, plant, org, date, start/end cumulative runtime.
+                </Text>
+                {tractorRuntime.map(r => (
+                  <ManualRuntimeEntryCard
+                    key={r.recordID}
+                    record={r}
+                    plantLabel={r.plantName || plants.find(p => p.plantID === r.plantID)?.name}
+                  />
+                ))}
+              </>
             )}
           </View>
         )}
 
         {tab === 'breakdown' && (
           <View style={styles.tabContent}>
+            {faults.length > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, { color: c.foreground }]}>Controller faults</Text>
+                {faults.map((f, idx) => {
+                  const details = faultDetailLines(f);
+                  return (
+                    <View
+                      key={`${f.startTime}-${idx}`}
+                      style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}
+                    >
+                      <View style={[styles.rowIcon, { backgroundColor: c.red + '18' }]}>
+                        <Feather name="alert-octagon" size={16} color={c.red} />
+                      </View>
+                      <View style={styles.rowMain}>
+                        <Text style={[styles.rowTitle, { color: c.foreground }]}>{faultTitle(f)}</Text>
+                        {f.startTime ? (
+                          <Text style={[styles.rowSub, { color: c.mutedForeground }]}>
+                            {formatDateTime(f.startTime)}
+                            {f.endTime ? ` → ${formatDateTime(f.endTime)}` : ''}
+                          </Text>
+                        ) : null}
+                        {details.length > 0 ? (
+                          <Text style={[styles.rowSub, { color: c.mutedForeground }]} numberOfLines={2}>
+                            {details.join(' · ')}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                })}
+              </>
+            )}
+            <Text style={[styles.sectionTitle, { color: c.foreground, marginTop: faults.length ? 12 : 0 }]}>
+              Complaints
+            </Text>
             {tractorBreakdowns.length === 0 ? (
-              <EmptyState icon="check-circle" title="No breakdowns" sub="This tractor has no recorded breakdown or complaint history." c={c} />
+              <EmptyState icon="check-circle" title="No complaints" sub="No complaint records for this tractor." c={c} />
             ) : (
               tractorBreakdowns.map(b => {
                 const sev = severityColor(b.severity, c);
@@ -306,6 +495,17 @@ export default function TractorDetailScreen() {
               kind="trips"
               c={c}
             />
+            <UsageSegmentsList
+              loading={segmentsLoading}
+              error={segmentsError}
+              segments={
+                tripSegments.length
+                  ? tripSegments
+                  : usageSegments.filter(s => s?.type === SegmentType.TRIP)
+              }
+              emptyTitle="No trip segments recorded"
+              c={c}
+            />
           </View>
         )}
 
@@ -316,6 +516,17 @@ export default function TractorDetailScreen() {
               error={analyticsError}
               bucket={analytics?.charges}
               kind="charge"
+              c={c}
+            />
+            <UsageSegmentsList
+              loading={segmentsLoading}
+              error={segmentsError}
+              segments={
+                chargeSegments.length
+                  ? chargeSegments
+                  : usageSegments.filter(s => s?.type === SegmentType.CHARGE)
+              }
+              emptyTitle="No charge segments recorded"
               c={c}
             />
           </View>
@@ -341,10 +552,12 @@ function AnalyticsTab({
   if (loading) {
     return (
       <View style={[styles.emptyBlock, { backgroundColor: c.card, borderColor: c.border }]}>
-        <ActivityIndicator color={c.primary} />
-        <Text style={[styles.emptyBlockSub, { color: c.mutedForeground, marginTop: 8 }]}>
-          Loading usage data…
-        </Text>
+        <FleetLoader
+          visible
+          inline
+          title="Usage data"
+          message="Loading trips and charge analytics…"
+        />
       </View>
     );
   }
@@ -360,11 +573,7 @@ function AnalyticsTab({
   }
   const hasData = !!bucket && (bucket.totalCount ?? 0) > 0;
   if (!hasData) {
-    return kind === 'trips' ? (
-      <EmptyState icon="navigation" title="No trips recorded" sub="This tractor has no trip activity for the selected period." c={c} />
-    ) : (
-      <EmptyState icon="battery-charging" title="No charging sessions" sub="This tractor has no charging activity for the selected period." c={c} />
-    );
+    return null;
   }
 
   const metrics: { icon: keyof typeof Feather.glyphMap; label: string; value: string }[] =
@@ -400,6 +609,85 @@ function AnalyticsTab({
           </View>
           <Text style={[styles.metricValue, { color: c.foreground }]}>{m.value}</Text>
           <Text style={[styles.metricLabel, { color: c.mutedForeground }]}>{m.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function UsageSegmentsList({
+  loading,
+  error,
+  segments,
+  emptyTitle,
+  c,
+}: {
+  loading: boolean;
+  error?: string | null;
+  segments: UsageSegment[];
+  emptyTitle: string;
+  c: ReturnType<typeof useColors>;
+}) {
+  if (loading) {
+    return (
+      <Text style={[styles.segmentsHint, { color: c.mutedForeground }]}>Loading trip and charge segments…</Text>
+    );
+  }
+  if (error) {
+    return (
+      <EmptyState icon="alert-circle" title="Couldn't load segments" sub={error} c={c} />
+    );
+  }
+  const items = segments.filter((s): s is UsageSegment => s != null);
+  if (items.length === 0) {
+    return (
+      <Text style={[styles.segmentsHint, { color: c.mutedForeground }]}>{emptyTitle}</Text>
+    );
+  }
+  return (
+    <View style={styles.segmentsBlock}>
+      <Text style={[styles.sectionTitle, { color: c.foreground }]}>Recent segments</Text>
+      {items.map(seg => (
+        <View
+          key={`${seg.type}-${seg.startTime}`}
+          style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}
+        >
+          <View style={[styles.rowIcon, { backgroundColor: c.primary + '14' }]}>
+            <Feather
+              name={
+                seg.type === SegmentType.CHARGE
+                  ? 'battery-charging'
+                  : seg.type === SegmentType.TRIP
+                    ? 'navigation'
+                    : 'activity'
+              }
+              size={16}
+              color={c.primary}
+            />
+          </View>
+          <View style={styles.rowMain}>
+            <Text style={[styles.rowTitle, { color: c.foreground }]}>
+              {segmentTypeLabel(seg.type)}
+              {seg.durationFormatted ? ` · ${seg.durationFormatted}` : ''}
+            </Text>
+            <Text style={[styles.rowSub, { color: c.mutedForeground }]} numberOfLines={2}>
+              {formatDateTime(seg.startTime)}
+              {seg.endTime ? ` → ${formatDateTime(seg.endTime)}` : ''}
+            </Text>
+            <Text style={[styles.rowSub, { color: c.mutedForeground }]} numberOfLines={2}>
+              {[
+                seg.initialSOC != null && seg.finalSOC != null
+                  ? `SOC ${Math.round(seg.initialSOC)}→${Math.round(seg.finalSOC)}%`
+                  : null,
+                seg.distanceTravelled != null ? `${seg.distanceTravelled.toFixed(1)} km` : null,
+                seg.kwhConsumed != null ? `${seg.kwhConsumed.toFixed(1)} kWh used` : null,
+                seg.kwhCharged != null ? `${seg.kwhCharged.toFixed(1)} kWh charged` : null,
+                seg.costSavings != null ? `₹${Math.round(seg.costSavings)} saved` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+          </View>
         </View>
       ))}
     </View>
@@ -661,5 +949,26 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    marginBottom: 8,
+  },
+  segmentsBlock: {
+    marginTop: 16,
+    gap: 8,
+  },
+  segmentsHint: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  runtimeHint: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 17,
+    marginBottom: 4,
   },
 });

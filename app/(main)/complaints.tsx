@@ -13,7 +13,6 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
-import { PlantFilter } from '@/components/PlantFilter';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Complaint } from '@/lib/appsync';
 import { severityColor, formatDate } from '@/lib/complaint';
@@ -135,8 +134,6 @@ export default function ComplaintsScreen() {
           })}
         </View>
       </View>
-
-      <PlantFilter />
 
       <FlatList
         data={displayed}

@@ -9,6 +9,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { isCommissionedTractor } from '@/lib/appsync';
 
 export function PlantFilter() {
   const c = useColors();
@@ -16,7 +17,9 @@ export function PlantFilter() {
 
   if (plants.length === 0) return null;
 
-  const countFor = (plantID: string) => tractors.filter(t => t.plantID === plantID).length;
+  const commissioned = tractors.filter(isCommissionedTractor);
+  const countFor = (plantID: string) =>
+    commissioned.filter(t => t.plantID === plantID).length;
 
   return (
     <View style={styles.wrapper}>
@@ -32,7 +35,7 @@ export function PlantFilter() {
         <Chip
           active={!selectedPlantID}
           label="All Plants"
-          count={tractors.length}
+          count={commissioned.length}
           onPress={() => setSelectedPlantID(null)}
           c={c}
         />

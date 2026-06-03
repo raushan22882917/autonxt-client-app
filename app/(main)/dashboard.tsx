@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  ActivityIndicator,
   Platform,
   RefreshControl,
   ScrollView,
@@ -15,7 +14,6 @@ import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/context/AppContext';
-import { PlantFilter } from '@/components/PlantFilter';
 import { StatCard } from '@/components/StatCard';
 import { StatusBadge } from '@/components/StatusBadge';
 
@@ -61,16 +59,7 @@ export default function DashboardScreen() {
 
   const recentTractors = filteredTractors.slice(0, 5);
 
-  if (isLoading) {
-    return (
-      <View style={[styles.centered, { backgroundColor: c.background }]}>
-        <ActivityIndicator size="large" color={c.primary} />
-        <Text style={[styles.loadingText, { color: c.mutedForeground }]}>Loading fleet data...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
+  if (error && !isLoading) {
     return (
       <View style={[styles.centered, { backgroundColor: c.background }]}>
         <Feather name="wifi-off" size={40} color={c.mutedForeground} />
@@ -162,11 +151,6 @@ export default function DashboardScreen() {
           <HeroStat label="Service" value={maintenanceCount} dot={c.blue} />
           <HeroStat label="Offline" value={offlineCount} dot="#94A3B8" />
         </View>
-      </View>
-
-      {/* Plant Filter */}
-      <View style={styles.filterWrap}>
-        <PlantFilter />
       </View>
 
       {/* Stats Row 1 */}
@@ -401,10 +385,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Inter_500Medium',
     marginLeft: 13,
-  },
-  filterWrap: {
-    marginHorizontal: -16,
-    marginBottom: 16,
   },
   sectionLabel: {
     fontSize: 13,

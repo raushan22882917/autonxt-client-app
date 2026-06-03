@@ -1,5 +1,16 @@
 import { generateClient } from 'aws-amplify/api';
-import { PeriodType } from '@/graphql/API';
+import {
+  PeriodType,
+  SegmentType,
+  type GetAnalyticsQuery,
+  type ListUsageSegmentsQuery,
+  type Tractor as ApiTractor,
+} from '@/graphql/API';
+import {
+  formatServiceStatusLabel,
+  formatTractorColor,
+  getTractorDisplayName,
+} from '@/lib/tractorFormat';
 import {
   getAnalytics as getAnalyticsQuery,
   getOrganization as getOrganizationQuery,
@@ -10,10 +21,24 @@ import {
   listOrganizations as listOrganizationsQuery,
   listPlantsByOrganization as listPlantsByOrganizationQuery,
   listTractorsByOrg as listTractorsByOrgQuery,
+  listTractorsByPlant as listTractorsByPlantQuery,
+  getRuntimeHourByTractor as getRuntimeHourByTractorQuery,
+  listUsageSegments as listUsageSegmentsQuery,
+  listUsageSegmentsByType as listUsageSegmentsByTypeQuery,
   listUsersByOrg as listUsersByOrgQuery,
 } from '@/graphql/queries';
-import { getComplaintSafe, listComplaintsByOrgSafe } from '@/graphql/safe-queries';
+import {
+  getComplaintSafe,
+  listComplaintsByOrgSafe,
+  listComplaintsByPlantSafe,
+} from '@/graphql/safe-queries';
 import { configureAmplify } from '@/lib/amplify';
+import {
+  cumulativeRuntimeToHours,
+  isChargingFromTelemetry,
+  pickLatestTelemetry,
+  type TelemetryRow,
+} from '@/lib/telemetry';
 
 const client = generateClient();
 
@@ -71,20 +96,37 @@ export interface AppUser {
   createdAt: string;
 }
 
+/** Commissioned fleet unit — has a commissioning date from the backend. */
+export function isCommissionedTractor(t: Pick<Tractor, 'commissionDate'>): boolean {
+  return !!t.commissionDate?.trim();
+}
+
 export interface Tractor {
   tractorID: string;
   orgID: string;
   plantID: string;
+  /** API `model` (e.g. X45H2). */
   model: string;
+  /** API `alias` when set. */
+  alias?: string;
+  displayName: string;
   serialNumber: string;
+  registerNumber?: string;
   status: 'ACTIVE' | 'IDLE' | 'MAINTENANCE' | 'OFFLINE';
+  /** Raw API `serviceStatus` (e.g. VOR, operational). */
+  serviceStatus?: string;
+  serviceStatusLabel?: string;
   totalRuntime: number;
   lastActive?: string;
   location?: string;
+  liveLocation?: string;
   plantName?: string;
   loggerID?: string;
   color?: string;
+  colorLabel?: string;
+  assignedUser?: string;
   soc?: number;
+  soh?: number;
   voltage?: number;
   current?: number;
   temp?: number;
@@ -92,7 +134,16 @@ export interface Tractor {
   motorTemp?: number;
   telemetryStatus?: string;
   telemetryAt?: string;
+  isCharging?: boolean;
+  limpMode?: boolean;
+  latitude?: string;
+  longitude?: string;
+  telemetryEcode?: number;
+  telemetryFaultDiag?: number;
   commissionDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  currentImplement?: string;
 }
 
 export interface Complaint {
@@ -139,6 +190,10 @@ export interface RuntimeRecord {
   plantID: string;
   date: string;
   hoursRun: number;
+  loggerID?: string;
+  startCumulativeRuntime?: number;
+  endCumulativeRuntime?: number;
+  todaysRuntime?: number;
   fuelConsumed?: number;
   distanceCovered?: number;
   operatorID?: string;
@@ -161,32 +216,38 @@ export interface AnalyticsBucket {
   totalTreesSaved?: number | null;
 }
 
-export interface TractorAnalytics {
-  tractorID: string;
-  PeriodType: AnalyticsPeriod;
-  timeSegment: string;
-  startTime?: string | null;
-  endTime?: string | null;
-  cumulative?: AnalyticsBucket | null;
-  trips?: AnalyticsBucket | null;
-  charges?: AnalyticsBucket | null;
-  standby?: AnalyticsBucket | null;
-}
+/** Full `getAnalytics` payload from GraphQL (parameterMetrics, faultMetrics, etc.). */
+export type TractorAnalytics = NonNullable<GetAnalyticsQuery['getAnalytics']>;
+
+type UsageSegmentItem = NonNullable<
+  NonNullable<ListUsageSegmentsQuery['listUsageSegments']>['items']
+>[number];
+
+export type UsageSegment = NonNullable<UsageSegmentItem>;
+
+export { SegmentType };
 
 // ─── Raw API shapes ─────────────────────────────────────────────────────────
 
-interface RawTractor {
-  vin: string;
-  alias?: string | null;
-  registerNumber?: string | null;
-  model?: string | null;
-  plantID?: string | null;
-  orgID?: string | null;
-  loggerID?: string | null;
-  serviceStatus?: string | null;
-  color?: string | null;
-  commissionDate?: string | null;
-}
+type RawTractor = Pick<
+  ApiTractor,
+  | 'vin'
+  | 'alias'
+  | 'registerNumber'
+  | 'model'
+  | 'plantID'
+  | 'orgID'
+  | 'loggerID'
+  | 'serviceStatus'
+  | 'color'
+  | 'currentImplement'
+  | 'commissionDate'
+  | 'user'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'dispatchInfo'
+  | 'components'
+>;
 
 interface RawComplaint {
   complaintID: string;
@@ -217,7 +278,7 @@ interface RawComplaintDetail extends RawComplaint {
   events?: ComplaintEvent[] | null;
 }
 
-interface RawRuntimeEntry {
+export interface RawManualRuntimeEntry {
   loggerID: string;
   date: string;
   plantID?: string | null;
@@ -227,16 +288,26 @@ interface RawRuntimeEntry {
   endCumulativeRuntime?: number | null;
 }
 
-interface RawTelemetry {
-  tractorID?: string | null;
-  timestamp?: string | null;
-  status?: string | null;
-  SOC?: number | null;
-  BatteryV?: number | null;
-  BatteryI?: number | null;
-  BatteryT?: number | null;
-  MaxRPM?: number | null;
-  MotorT?: number | null;
+interface RawRuntimeEntry extends RawManualRuntimeEntry {}
+
+type RawTelemetry = TelemetryRow;
+
+const TELEMETRY_FETCH_CONCURRENCY = 8;
+
+async function runPool<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>
+): Promise<void> {
+  if (items.length === 0) return;
+  let index = 0;
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (index < items.length) {
+      const i = index++;
+      await worker(items[i]);
+    }
+  });
+  await Promise.all(runners);
 }
 
 // ─── Organization / users ───────────────────────────────────────────────────
@@ -348,29 +419,65 @@ function mapRawComplaint(
   };
 }
 
+function resolveTotalRuntimeHours(
+  loggerID: string | undefined,
+  cumulativeByLogger: Map<string, number>,
+  telemetryByLogger: Map<string, RawTelemetry>,
+  runtimeHoursByLogger?: Map<string, number>
+): number {
+  if (loggerID && runtimeHoursByLogger?.has(loggerID)) {
+    return Math.round(runtimeHoursByLogger.get(loggerID)!);
+  }
+  const tel = loggerID ? telemetryByLogger.get(loggerID) : undefined;
+  const fromTel = cumulativeRuntimeToHours(tel?.CumulativeRuntime);
+  if (fromTel != null) return Math.round(fromTel);
+  if (loggerID) return Math.round(cumulativeByLogger.get(loggerID) ?? 0);
+  return 0;
+}
+
 function mapRawTractor(
   t: RawTractor,
   orgID: string,
   plantById: Map<string, Plant>,
   cumulativeByLogger: Map<string, number>,
-  telemetryByLogger: Map<string, RawTelemetry>
+  telemetryByLogger: Map<string, RawTelemetry>,
+  runtimeHoursByLogger?: Map<string, number>
 ): Tractor {
   const plant = t.plantID ? plantById.get(t.plantID) : undefined;
-  const totalRuntime = t.loggerID ? cumulativeByLogger.get(t.loggerID) ?? 0 : 0;
   const tel = t.loggerID ? telemetryByLogger.get(t.loggerID) : undefined;
+  const totalRuntime = resolveTotalRuntimeHours(
+    t.loggerID || undefined,
+    cumulativeByLogger,
+    telemetryByLogger,
+    runtimeHoursByLogger
+  );
+  const liveLocation =
+    t.dispatchInfo?.liveLocation?.trim() ||
+    t.dispatchInfo?.dispatchLocation?.trim() ||
+    undefined;
+  const model = t.model?.trim() || t.vin;
   return {
     tractorID: t.vin,
     orgID: t.orgID || orgID,
     plantID: t.plantID || '',
-    model: t.model || t.alias || t.vin,
-    serialNumber: t.registerNumber || t.vin,
+    model,
+    alias: t.alias?.trim() || undefined,
+    displayName: getTractorDisplayName(t),
+    serialNumber: t.registerNumber?.trim() || t.vin,
+    registerNumber: t.registerNumber?.trim() || undefined,
     status: mapServiceStatus(t.serviceStatus),
+    serviceStatus: t.serviceStatus?.trim() || undefined,
+    serviceStatusLabel: formatServiceStatusLabel(t.serviceStatus) || undefined,
     totalRuntime: Math.round(totalRuntime),
     plantName: plant?.name,
-    location: plant?.location || plant?.name,
+    location: liveLocation || plant?.location || plant?.name,
+    liveLocation,
     loggerID: t.loggerID || undefined,
     color: t.color || undefined,
+    colorLabel: formatTractorColor(t.color) || undefined,
+    assignedUser: t.user?.trim() || undefined,
     soc: num(tel?.SOC),
+    soh: num(tel?.SOH),
     voltage: num(tel?.BatteryV),
     current: num(tel?.BatteryI),
     temp: num(tel?.BatteryT),
@@ -378,7 +485,49 @@ function mapRawTractor(
     motorTemp: num(tel?.MotorT),
     telemetryStatus: tel?.status ?? undefined,
     telemetryAt: tel?.timestamp ?? undefined,
+    isCharging: isChargingFromTelemetry(tel?.Charge),
+    limpMode: tel?.LimpMode != null && tel.LimpMode > 0,
+    latitude: tel?.Lat?.trim() || undefined,
+    longitude: tel?.Long?.trim() || undefined,
+    telemetryEcode: num(tel?.Ecode),
+    telemetryFaultDiag: num(tel?.FaultDiag),
     commissionDate: t.commissionDate || undefined,
+    createdAt: t.createdAt || undefined,
+    updatedAt: t.updatedAt || undefined,
+    currentImplement: t.currentImplement || undefined,
+  };
+}
+
+function applyTelemetryToTractor(
+  t: Tractor,
+  tel: RawTelemetry | undefined,
+  runtimeHours?: number
+): Tractor {
+  if (!tel && runtimeHours == null) return t;
+  const runtimeFromTel = cumulativeRuntimeToHours(tel?.CumulativeRuntime);
+  return {
+    ...t,
+    totalRuntime:
+      runtimeHours != null
+        ? Math.round(runtimeHours)
+        : runtimeFromTel != null
+          ? Math.round(runtimeFromTel)
+          : t.totalRuntime,
+    soc: tel ? (num(tel.SOC) ?? t.soc) : t.soc,
+    soh: tel ? (num(tel.SOH) ?? t.soh) : t.soh,
+    voltage: tel ? (num(tel.BatteryV) ?? t.voltage) : t.voltage,
+    current: tel ? (num(tel.BatteryI) ?? t.current) : t.current,
+    temp: tel ? (num(tel.BatteryT) ?? t.temp) : t.temp,
+    rpm: tel ? (num(tel.MaxRPM) ?? t.rpm) : t.rpm,
+    motorTemp: tel ? (num(tel.MotorT) ?? t.motorTemp) : t.motorTemp,
+    telemetryStatus: tel?.status ?? t.telemetryStatus,
+    telemetryAt: tel?.timestamp ?? t.telemetryAt,
+    isCharging: tel ? isChargingFromTelemetry(tel.Charge) : t.isCharging,
+    limpMode: tel ? tel.LimpMode != null && tel.LimpMode > 0 : t.limpMode,
+    latitude: tel?.Lat?.trim() || t.latitude,
+    longitude: tel?.Long?.trim() || t.longitude,
+    telemetryEcode: tel ? (num(tel.Ecode) ?? t.telemetryEcode) : t.telemetryEcode,
+    telemetryFaultDiag: tel ? (num(tel.FaultDiag) ?? t.telemetryFaultDiag) : t.telemetryFaultDiag,
   };
 }
 
@@ -437,51 +586,202 @@ async function fetchRuntimeEntriesByLogger(loggerID: string): Promise<RawRuntime
   );
 }
 
+/** Manual runtime entries for one logger (CreateManualRuntimeEntryInput shape). */
+export async function fetchManualRuntimeForLogger(loggerID: string): Promise<RawManualRuntimeEntry[]> {
+  return fetchRuntimeEntriesByLogger(loggerID);
+}
+
+/** Manual runtime rows for a calendar day (org / optional plant filter). */
+export async function fetchDailyManualRuntime(
+  orgID: string,
+  date: string,
+  plants: Plant[],
+  tractors: Tractor[],
+  plantID?: string | null
+): Promise<RuntimeRecord[]> {
+  const raw = await paginate(
+    async nextToken => {
+      const data = await gqlQuery<{
+        listManualRuntimeEntries: { items: RawRuntimeEntry[]; nextToken?: string | null };
+      }>(listManualRuntimeEntriesQuery, {
+        orgID,
+        plantID: plantID || undefined,
+        date,
+        limit: 200,
+        nextToken,
+      });
+      return data.listManualRuntimeEntries ?? { items: [] };
+    },
+    `fetchDailyManualRuntime(${date})`
+  );
+
+  const plantById = new Map(plants.map(p => [p.plantID, p]));
+  const tractorByLogger = new Map(
+    tractors.filter(t => t.loggerID).map(t => [t.loggerID as string, t])
+  );
+  const tractorByVin = new Map(tractors.map(t => [t.tractorID, t]));
+
+  return mapRawManualRuntimeToRecords(
+    raw,
+    orgID,
+    plantById,
+    new Map(
+      [...tractorByLogger.entries()].map(([loggerID, t]) => [
+        loggerID,
+        {
+          tractorID: t.tractorID,
+          model: t.model,
+          serialNumber: t.serialNumber,
+        },
+      ])
+    )
+  ).map(r => {
+    const t = tractorByVin.get(r.tractorID);
+    if (!t) return r;
+    return {
+      ...r,
+      tractorModel: r.tractorModel || t.model,
+      plantName: r.plantName || t.plantName,
+    };
+  });
+}
+
+/** Manual runtime records for a single tractor (fresh from AppSync). */
+export async function fetchTractorManualRuntime(
+  tractor: Pick<Tractor, 'tractorID' | 'loggerID' | 'model' | 'serialNumber' | 'plantID' | 'orgID'>,
+  plants: Plant[]
+): Promise<RuntimeRecord[]> {
+  if (!tractor.loggerID) return [];
+  const raw = await fetchManualRuntimeForLogger(tractor.loggerID);
+  const plantById = new Map(plants.map(p => [p.plantID, p]));
+  const tractorByLogger = new Map([
+    [
+      tractor.loggerID,
+      {
+        tractorID: tractor.tractorID,
+        model: tractor.model,
+        serialNumber: tractor.serialNumber,
+      },
+    ],
+  ]);
+  return mapRawManualRuntimeToRecords(raw, tractor.orgID, plantById, tractorByLogger);
+}
+
+function mapRawManualRuntimeToRecords(
+  raw: RawRuntimeEntry[],
+  orgID: string,
+  plantById: Map<string, Plant>,
+  tractorByLogger: Map<string, { tractorID: string; model?: string; serialNumber?: string }>
+): RuntimeRecord[] {
+  return raw
+    .map(r => {
+      const plant = r.plantID ? plantById.get(r.plantID) : undefined;
+      const tractor = tractorByLogger.get(r.loggerID);
+      const hours =
+        r.todaysRuntime ??
+        (r.endCumulativeRuntime != null && r.startCumulativeRuntime != null
+          ? r.endCumulativeRuntime - r.startCumulativeRuntime
+          : 0);
+      return {
+        recordID: `${r.loggerID}-${r.date}`,
+        tractorID: tractor?.tractorID || r.loggerID,
+        orgID: r.orgID || orgID,
+        plantID: r.plantID || '',
+        date: r.date,
+        loggerID: r.loggerID,
+        startCumulativeRuntime: r.startCumulativeRuntime ?? undefined,
+        endCumulativeRuntime: r.endCumulativeRuntime ?? undefined,
+        todaysRuntime: r.todaysRuntime ?? undefined,
+        hoursRun: Math.round(Math.max(0, hours || 0) * 10) / 10,
+        plantName: plant?.name,
+        tractorModel: tractor?.model || tractor?.serialNumber,
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 async function fetchRuntimeEntriesByLoggers(loggerIDs: string[]): Promise<RawRuntimeEntry[]> {
   const results = await Promise.all(loggerIDs.map(fetchRuntimeEntriesByLogger));
   return results.flat();
 }
 
+async function fetchRuntimeHourByLogger(loggerID: string): Promise<number | undefined> {
+  try {
+    const data = await gqlQuery<{
+      getRuntimeHourByTractor?: { CumulativeRuntime?: number | null } | null;
+    }>(getRuntimeHourByTractorQuery, { loggerID });
+    return cumulativeRuntimeToHours(data.getRuntimeHourByTractor?.CumulativeRuntime);
+  } catch {
+    return undefined;
+  }
+}
+
 async function fetchTelemetryByLogger(
   loggerID: string
-): Promise<{ loggerID: string; telemetry: RawTelemetry | null }> {
+): Promise<{ loggerID: string; telemetry: RawTelemetry | null; runtimeHours?: number }> {
   try {
-    const data = await gqlQuery<{ getTelemetryByTractor: RawTelemetry | null }>(
-      getTelemetryByTractorQuery,
-      { loggerID }
-    );
-    return { loggerID, telemetry: data.getTelemetryByTractor ?? null };
+    const [telData, runtimeHours] = await Promise.all([
+      gqlQuery<{ getTelemetryByTractor: RawTelemetry[] | null }>(getTelemetryByTractorQuery, {
+        loggerID,
+      }),
+      fetchRuntimeHourByLogger(loggerID),
+    ]);
+    const telemetry = pickLatestTelemetry(telData.getTelemetryByTractor);
+    return { loggerID, telemetry, runtimeHours };
   } catch {
     return { loggerID, telemetry: null };
   }
 }
 
-async function fetchTelemetryByLoggers(loggerIDs: string[]): Promise<Map<string, RawTelemetry>> {
-  const results = await Promise.all(loggerIDs.map(fetchTelemetryByLogger));
-  const map = new Map<string, RawTelemetry>();
-  for (const { loggerID, telemetry } of results) {
-    if (telemetry) map.set(loggerID, telemetry);
-  }
-  return map;
+async function fetchTelemetryByLoggers(loggerIDs: string[]): Promise<{
+  telemetryByLogger: Map<string, RawTelemetry>;
+  runtimeHoursByLogger: Map<string, number>;
+}> {
+  const telemetryByLogger = new Map<string, RawTelemetry>();
+  const runtimeHoursByLogger = new Map<string, number>();
+  await runPool(loggerIDs, TELEMETRY_FETCH_CONCURRENCY, async loggerID => {
+    const { telemetry, runtimeHours } = await fetchTelemetryByLogger(loggerID);
+    if (telemetry) telemetryByLogger.set(loggerID, telemetry);
+    if (runtimeHours != null) runtimeHoursByLogger.set(loggerID, runtimeHours);
+  });
+  return { telemetryByLogger, runtimeHoursByLogger };
 }
 
-export async function fetchFleetData(
+export interface PlantFleetSlice {
+  plantID: string;
+  tractors: Tractor[];
+  complaints: Complaint[];
+  runtimeRecords: RuntimeRecord[];
+}
+
+async function fetchTractorsByPlant(plantID: string): Promise<RawTractor[]> {
+  const data = await gqlQuery<{ listTractorsByPlant: RawTractor[] }>(listTractorsByPlantQuery, {
+    plantID,
+  });
+  return data.listTractorsByPlant || [];
+}
+
+async function fetchComplaintsByPlant(plantID: string): Promise<RawComplaint[]> {
+  return paginate(
+    async nextToken => {
+      const data = await gqlQuery<{
+        listComplaintsByPlant: { items: RawComplaint[]; nextToken?: string | null };
+      }>(listComplaintsByPlantSafe, { plantID, nextToken });
+      return data.listComplaintsByPlant ?? { items: [] };
+    },
+    `fetchComplaintsByPlant(${plantID})`
+  );
+}
+
+function buildFleetSlice(
   orgID: string,
-  plants: Plant[]
-): Promise<{ tractors: Tractor[]; complaints: Complaint[]; runtimeRecords: RuntimeRecord[] }> {
-  const [rawTractors, rawComplaints] = await Promise.all([
-    fetchTractorsByOrg(orgID),
-    fetchComplaintsByOrg(orgID),
-  ]);
-
-  const loggerIDs = [
-    ...new Set(rawTractors.map(t => t.loggerID).filter((id): id is string => !!id)),
-  ];
-  const [rawRuntime, telemetryByLogger] = await Promise.all([
-    fetchRuntimeEntriesByLoggers(loggerIDs),
-    fetchTelemetryByLoggers(loggerIDs),
-  ]);
-
+  plants: Plant[],
+  rawTractors: RawTractor[],
+  rawComplaints: RawComplaint[],
+  rawRuntime: RawRuntimeEntry[],
+  telemetryByLogger: Map<string, RawTelemetry>,
+  runtimeHoursByLogger?: Map<string, number>
+): Omit<PlantFleetSlice, 'plantID'> {
   const plantById = new Map(plants.map(p => [p.plantID, p]));
   const tractorByVin = new Map(rawTractors.map(t => [t.vin, t]));
   const tractorByLogger = new Map(
@@ -497,36 +797,184 @@ export async function fetchFleetData(
   }
 
   const tractors = rawTractors.map(t =>
-    mapRawTractor(t, orgID, plantById, cumulativeByLogger, telemetryByLogger)
+    mapRawTractor(t, orgID, plantById, cumulativeByLogger, telemetryByLogger, runtimeHoursByLogger)
   );
 
   const complaints = rawComplaints.map(c =>
     mapRawComplaint(c, orgID, plantById, tractorByVin)
   );
 
-  const runtimeRecords: RuntimeRecord[] = rawRuntime
-    .map(r => {
-      const plant = r.plantID ? plantById.get(r.plantID) : undefined;
-      const tractor = tractorByLogger.get(r.loggerID);
-      const hours =
-        r.todaysRuntime ??
-        (r.endCumulativeRuntime != null && r.startCumulativeRuntime != null
-          ? r.endCumulativeRuntime - r.startCumulativeRuntime
-          : 0);
-      return {
-        recordID: `${r.loggerID}-${r.date}`,
-        tractorID: tractor?.vin || r.loggerID,
-        orgID: r.orgID || orgID,
-        plantID: r.plantID || '',
-        date: r.date,
-        hoursRun: Math.round(Math.max(0, hours || 0) * 10) / 10,
-        plantName: plant?.name,
-        tractorModel: tractor?.model || tractor?.alias || tractor?.vin,
-      };
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
+  const runtimeRecords = mapRawManualRuntimeToRecords(
+    rawRuntime,
+    orgID,
+    plantById,
+    new Map(
+      [...tractorByLogger.entries()].map(([loggerID, t]) => [
+        loggerID,
+        { tractorID: t.vin, model: t.model || undefined, serialNumber: t.alias || t.vin },
+      ])
+    )
+  );
 
   return { tractors, complaints, runtimeRecords };
+}
+
+/** All tractors + complaints per plant for reports (includes uncommissioned units). */
+export async function fetchReportFleetData(
+  orgID: string,
+  plants: Plant[],
+  plantID?: string | null
+): Promise<{ tractors: Tractor[]; complaints: Complaint[] }> {
+  const targetPlants = plantID ? plants.filter(p => p.plantID === plantID) : plants;
+  const slices = await Promise.all(
+    targetPlants.map(p => fetchPlantFleetBasic(orgID, plants, p.plantID))
+  );
+  const tractorMap = new Map<string, Tractor>();
+  const complaintMap = new Map<string, Complaint>();
+  for (const slice of slices) {
+    for (const t of slice.tractors) tractorMap.set(t.tractorID, t);
+    for (const c of slice.complaints) complaintMap.set(c.complaintID, c);
+  }
+  return {
+    tractors: Array.from(tractorMap.values()),
+    complaints: Array.from(complaintMap.values()),
+  };
+}
+
+/** Fast path: tractors + complaints for one plant (no telemetry/runtime fan-out). */
+export async function fetchPlantFleetBasic(
+  orgID: string,
+  plants: Plant[],
+  plantID: string
+): Promise<PlantFleetSlice> {
+  const [rawTractors, rawComplaints] = await Promise.all([
+    fetchTractorsByPlant(plantID),
+    fetchComplaintsByPlant(plantID),
+  ]);
+  const slice = buildFleetSlice(orgID, plants, rawTractors, rawComplaints, [], new Map());
+  return { plantID, ...slice };
+}
+
+/** Re-fetch live telemetry for tractors already in memory (pull-to-refresh). */
+export async function refreshTractorsTelemetry(
+  plants: Plant[],
+  tractors: Tractor[]
+): Promise<Tractor[]> {
+  const loggerIDs = [
+    ...new Set(tractors.map(t => t.loggerID).filter((id): id is string => !!id)),
+  ];
+  if (loggerIDs.length === 0) return tractors;
+
+  const { telemetryByLogger, runtimeHoursByLogger } = await fetchTelemetryByLoggers(loggerIDs);
+  return tractors.map(t =>
+    applyTelemetryToTractor(
+      t,
+      t.loggerID ? telemetryByLogger.get(t.loggerID) : undefined,
+      t.loggerID ? runtimeHoursByLogger.get(t.loggerID) : undefined
+    )
+  );
+}
+
+/** Loads telemetry + runtime for tractors already fetched for a plant. */
+export async function enrichPlantFleet(
+  orgID: string,
+  plants: Plant[],
+  plantTractors: Tractor[]
+): Promise<Pick<PlantFleetSlice, 'tractors' | 'runtimeRecords'>> {
+  const loggerIDs = [
+    ...new Set(plantTractors.map(t => t.loggerID).filter((id): id is string => !!id)),
+  ];
+  if (loggerIDs.length === 0) {
+    return { tractors: plantTractors, runtimeRecords: [] };
+  }
+
+  const [rawRuntime, { telemetryByLogger, runtimeHoursByLogger }] = await Promise.all([
+    fetchRuntimeEntriesByLoggers(loggerIDs),
+    fetchTelemetryByLoggers(loggerIDs),
+  ]);
+
+  const cumulativeByLogger = new Map<string, number>();
+  for (const r of rawRuntime) {
+    const end = r.endCumulativeRuntime ?? 0;
+    if (end > (cumulativeByLogger.get(r.loggerID) ?? 0)) {
+      cumulativeByLogger.set(r.loggerID, end);
+    }
+  }
+
+  const plantById = new Map(plants.map(p => [p.plantID, p]));
+  const tractorByLogger = new Map(
+    plantTractors.filter(t => t.loggerID).map(t => [t.loggerID as string, t])
+  );
+
+  const tractors = plantTractors.map(t => {
+    const tel = t.loggerID ? telemetryByLogger.get(t.loggerID) : undefined;
+    const runtimeH = t.loggerID ? runtimeHoursByLogger.get(t.loggerID) : undefined;
+    const loggedRuntime = t.loggerID ? cumulativeByLogger.get(t.loggerID) : undefined;
+    const withRuntime =
+      runtimeH == null && loggedRuntime != null
+        ? { ...t, totalRuntime: Math.round(loggedRuntime) }
+        : t;
+    return applyTelemetryToTractor(withRuntime, tel, runtimeH);
+  });
+
+  const runtimeRecords = mapRawManualRuntimeToRecords(
+    rawRuntime,
+    orgID,
+    plantById,
+    new Map(
+      [...tractorByLogger.entries()].map(([loggerID, t]) => [
+        loggerID,
+        {
+          tractorID: t.tractorID,
+          model: t.model,
+          serialNumber: t.serialNumber,
+        },
+      ])
+    )
+  );
+
+  return { tractors, runtimeRecords };
+}
+
+/** Full load for a single plant (basic + enrich). */
+export async function fetchPlantFleetData(
+  orgID: string,
+  plants: Plant[],
+  plantID: string
+): Promise<PlantFleetSlice> {
+  const basic = await fetchPlantFleetBasic(orgID, plants, plantID);
+  const enriched = await enrichPlantFleet(orgID, plants, basic.tractors);
+  return {
+    plantID,
+    tractors: enriched.tractors,
+    complaints: basic.complaints,
+    runtimeRecords: enriched.runtimeRecords,
+  };
+}
+
+/** @deprecated Prefer per-plant loading via fetchPlantFleetBasic / fetchPlantFleetData. */
+export async function fetchFleetData(
+  orgID: string,
+  plants: Plant[]
+): Promise<{ tractors: Tractor[]; complaints: Complaint[]; runtimeRecords: RuntimeRecord[] }> {
+  let tractors: Tractor[] = [];
+  let complaints: Complaint[] = [];
+  let runtimeRecords: RuntimeRecord[] = [];
+
+  for (const plant of plants) {
+    const slice = await fetchPlantFleetData(orgID, plants, plant.plantID);
+    tractors = mergeByKey(tractors, slice.tractors, t => t.tractorID);
+    complaints = mergeByKey(complaints, slice.complaints, c => c.complaintID);
+    runtimeRecords = mergeByKey(runtimeRecords, slice.runtimeRecords, r => r.recordID);
+  }
+
+  return { tractors, complaints, runtimeRecords };
+}
+
+function mergeByKey<T>(existing: T[], incoming: T[], keyFn: (item: T) => string): T[] {
+  const map = new Map(existing.map(item => [keyFn(item), item]));
+  for (const item of incoming) map.set(keyFn(item), item);
+  return Array.from(map.values());
 }
 
 export async function fetchComplaintById(
@@ -571,11 +1019,17 @@ export async function fetchTractorById(
 
   const plantById = new Map(plants.map(p => [p.plantID, p]));
   const cumulativeByLogger = new Map<string, number>();
-  const telemetryByLogger = raw.loggerID
-    ? await fetchTelemetryByLoggers([raw.loggerID])
-    : new Map<string, RawTelemetry>();
+  const emptyTelemetry = new Map<string, RawTelemetry>();
+  const emptyRuntimeHours = new Map<string, number>();
+
+  let telemetryByLogger = emptyTelemetry;
+  let runtimeHoursByLogger = emptyRuntimeHours;
 
   if (raw.loggerID) {
+    const fetched = await fetchTelemetryByLoggers([raw.loggerID]);
+    telemetryByLogger = fetched.telemetryByLogger;
+    runtimeHoursByLogger = fetched.runtimeHoursByLogger;
+
     const entries = await fetchRuntimeEntriesByLogger(raw.loggerID);
     for (const r of entries) {
       const end = r.endCumulativeRuntime ?? 0;
@@ -585,7 +1039,14 @@ export async function fetchTractorById(
     }
   }
 
-  return mapRawTractor(raw, raw.orgID || '', plantById, cumulativeByLogger, telemetryByLogger);
+  return mapRawTractor(
+    raw,
+    raw.orgID || '',
+    plantById,
+    cumulativeByLogger,
+    telemetryByLogger,
+    runtimeHoursByLogger
+  );
 }
 
 export async function fetchTractorAnalytics(
@@ -593,12 +1054,85 @@ export async function fetchTractorAnalytics(
   period: AnalyticsPeriod = 'GLOBAL',
   timeSegment = 'GLOBAL'
 ): Promise<TractorAnalytics | null> {
-  const data = await gqlQuery<{ getAnalytics: TractorAnalytics | null }>(getAnalyticsQuery, {
+  const data = await gqlQuery<GetAnalyticsQuery>(getAnalyticsQuery, {
     tractorID,
     PeriodType: period as PeriodType,
     timeSegment,
   });
   return data.getAnalytics ?? null;
+}
+
+/** Batch fetch GLOBAL analytics (trips / charges buckets) for many tractors. */
+export async function fetchTractorsAnalytics(
+  tractorIDs: string[],
+  concurrency = 6
+): Promise<Map<string, TractorAnalytics | null>> {
+  const unique = [...new Set(tractorIDs.filter(Boolean))];
+  const result = new Map<string, TractorAnalytics | null>();
+  if (unique.length === 0) return result;
+
+  await runPool(unique, concurrency, async tractorID => {
+    try {
+      result.set(tractorID, await fetchTractorAnalytics(tractorID));
+    } catch {
+      result.set(tractorID, null);
+    }
+  });
+  return result;
+}
+
+export async function fetchUsageSegments(
+  tractorID: string,
+  options?: { limit?: number; startTime?: string; endTime?: string }
+): Promise<UsageSegment[]> {
+  const limit = options?.limit ?? 30;
+  return paginate(
+    async nextToken => {
+      const data = await gqlQuery<ListUsageSegmentsQuery>(listUsageSegmentsQuery, {
+        tractorID,
+        startTime: options?.startTime,
+        endTime: options?.endTime,
+        limit,
+        nextToken,
+        sortOrder: 'DESC',
+      });
+      const page = data.listUsageSegments;
+      return {
+        items: (page?.items ?? []).filter((s): s is UsageSegment => !!s),
+        nextToken: page?.nextToken,
+      };
+    },
+    `fetchUsageSegments(${tractorID})`,
+    5
+  );
+}
+
+export async function fetchUsageSegmentsByType(
+  tractorID: string,
+  type: SegmentType,
+  options?: { limit?: number }
+): Promise<UsageSegment[]> {
+  const limit = options?.limit ?? 20;
+  return paginate(
+    async nextToken => {
+      const data = await gqlQuery<{
+        listUsageSegmentsByType?: ListUsageSegmentsQuery['listUsageSegments'];
+      }>(listUsageSegmentsByTypeQuery, {
+        tractorID,
+        type,
+        limit,
+        nextToken,
+        sortOrder: 'DESC',
+      });
+      const page = data.listUsageSegmentsByType;
+      return {
+        items: (page?.items ?? []).filter((s): s is UsageSegment => !!s),
+        nextToken: page?.nextToken,
+      };
+    },
+    `fetchUsageSegmentsByType(${tractorID},${type})`,
+    4
+  );
 }
 
 /** @deprecated Amplify handles auth tokens automatically. Kept for compatibility. */
