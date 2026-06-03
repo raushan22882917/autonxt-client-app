@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -16,11 +15,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 
-const { width } = Dimensions.get('window');
-
 export default function LoginScreen() {
+  const c = useColors();
   const { signIn } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -49,7 +48,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={[styles.root, { backgroundColor: c.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -62,30 +61,32 @@ export default function LoginScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.logoWrap}>
+          <View style={[styles.logoWrap, { shadowColor: c.primary }]}>
             <Image
               source={require('../assets/images/icon.png')}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.appName}>AutoNXT Fleet</Text>
-          <Text style={styles.subtitle}>Fleet Management Portal</Text>
+          <Text style={[styles.appName, { color: c.foreground }]}>AutoNXT Fleet</Text>
+          <Text style={[styles.subtitle, { color: c.mutedForeground }]}>Fleet Management Portal</Text>
         </View>
 
         {/* Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Sign In</Text>
-          <Text style={styles.cardSub}>Access restricted to authorized personnel</Text>
+        <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
+          <Text style={[styles.cardTitle, { color: c.foreground }]}>Sign In</Text>
+          <Text style={[styles.cardSub, { color: c.mutedForeground }]}>
+            Access restricted to authorized personnel
+          </Text>
 
           <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Email / Username</Text>
-            <View style={styles.inputWrap}>
-              <Feather name="mail" size={16} color="#64748B" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: c.mutedForeground }]}>Email / Username</Text>
+            <View style={[styles.inputWrap, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+              <Feather name="mail" size={16} color={c.mutedForeground} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: c.foreground }]}
                 placeholder="your@email.com"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={c.mutedForeground}
                 value={username}
                 onChangeText={setUsername}
                 autoCapitalize="none"
@@ -97,13 +98,13 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrap}>
-              <Feather name="lock" size={16} color="#64748B" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: c.mutedForeground }]}>Password</Text>
+            <View style={[styles.inputWrap, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+              <Feather name="lock" size={16} color={c.mutedForeground} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: c.foreground }]}
                 placeholder="••••••••"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={c.mutedForeground}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -115,13 +116,13 @@ export default function LoginScreen() {
                 style={styles.eyeBtn}
                 activeOpacity={0.7}
               >
-                <Feather name={showPassword ? 'eye-off' : 'eye'} size={16} color="#64748B" />
+                <Feather name={showPassword ? 'eye-off' : 'eye'} size={16} color={c.mutedForeground} />
               </TouchableOpacity>
             </View>
           </View>
 
           <TouchableOpacity
-            style={[styles.loginBtn, isLoading && styles.loginBtnDisabled]}
+            style={[styles.loginBtn, { backgroundColor: c.primary }, isLoading && styles.loginBtnDisabled]}
             onPress={handleLogin}
             disabled={isLoading}
             activeOpacity={0.85}
@@ -134,12 +135,12 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View style={styles.secureRow}>
-            <Feather name="shield" size={13} color="#94A3B8" />
-            <Text style={styles.secureText}>Secured by AWS Cognito</Text>
+            <Feather name="shield" size={13} color={c.mutedForeground} />
+            <Text style={[styles.secureText, { color: c.mutedForeground }]}>Secured by AWS Cognito</Text>
           </View>
         </View>
 
-        <Text style={styles.accessNote}>
+        <Text style={[styles.accessNote, { color: c.mutedForeground }]}>
           Only registered users and admins can access this portal.
         </Text>
       </ScrollView>
@@ -150,7 +151,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#0A1628',
   },
   scroll: {
     alignItems: 'center',
@@ -166,73 +166,66 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     marginBottom: 16,
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 4,
   },
   logo: { width: 80, height: 80 },
   appName: {
     fontSize: 26,
     fontFamily: 'Inter_700Bold',
-    color: '#F8FAFC',
     letterSpacing: -0.3,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
     letterSpacing: 0.5,
   },
   card: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#111827',
     borderRadius: 20,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#1E293B',
     gap: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 3,
   },
   cardTitle: {
     fontSize: 22,
     fontFamily: 'Inter_700Bold',
-    color: '#F8FAFC',
     marginBottom: 2,
   },
   cardSub: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
     marginBottom: 8,
   },
   fieldWrap: { gap: 6 },
   label: {
     fontSize: 13,
     fontFamily: 'Inter_500Medium',
-    color: '#94A3B8',
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
     paddingHorizontal: 12,
     height: 48,
   },
   inputIcon: { marginRight: 8 },
   input: {
     flex: 1,
-    color: '#F8FAFC',
     fontSize: 15,
     fontFamily: 'Inter_400Regular',
   },
   eyeBtn: { padding: 4 },
   loginBtn: {
-    backgroundColor: '#F97316',
     borderRadius: 12,
     height: 50,
     alignItems: 'center',
@@ -254,13 +247,11 @@ const styles = StyleSheet.create({
   secureText: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#475569',
   },
   accessNote: {
     marginTop: 24,
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#334155',
     textAlign: 'center',
   },
 });

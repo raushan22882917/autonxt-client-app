@@ -100,10 +100,19 @@ export interface Tractor {
   status: 'ACTIVE' | 'IDLE' | 'MAINTENANCE' | 'OFFLINE';
   totalRuntime: number;
   lastActive?: string;
-  fuelLevel?: number;
-  engineHours?: number;
   location?: string;
   plantName?: string;
+  loggerID?: string;
+  color?: string;
+  // Live telemetry (latest reading from the logger), best-effort.
+  soc?: number; // battery state of charge, %
+  voltage?: number; // pack voltage, V
+  current?: number; // pack current, A
+  temp?: number; // battery temperature, °C
+  rpm?: number; // motor RPM
+  motorTemp?: number; // motor temperature, °C
+  telemetryStatus?: string;
+  telemetryAt?: string;
 }
 
 export interface Complaint {
@@ -377,6 +386,67 @@ async function fetchRuntimeEntriesByLoggers(loggerIDs: string[]): Promise<RawRun
   return results.flat();
 }
 
+// ─── Telemetry (latest live reading per logger) ─────────────────────────────
+
+interface RawTelemetry {
+  tractorID?: string | null;
+  timestamp?: string | null;
+  status?: string | null;
+  SOC?: number | null;
+  BatteryV?: number | null;
+  BatteryI?: number | null;
+  BatteryT?: number | null;
+  MaxRPM?: number | null;
+  MotorT?: number | null;
+}
+
+const GET_TELEMETRY_BY_TRACTOR = `
+  query GetTelemetryByTractor($loggerID: String!) {
+    getTelemetryByTractor(loggerID: $loggerID) {
+      tractorID
+      timestamp
+      status
+      SOC
+      BatteryV
+      BatteryI
+      BatteryT
+      MaxRPM
+      MotorT
+    }
+  }
+`;
+
+// Telemetry is best-effort: a missing/failed reading must never break the fleet
+// load, so per-logger failures resolve to null.
+async function fetchTelemetryByLogger(
+  loggerID: string
+): Promise<{ loggerID: string; telemetry: RawTelemetry | null }> {
+  try {
+    const data = await gqlQuery<{ getTelemetryByTractor: RawTelemetry | null }>(
+      GET_TELEMETRY_BY_TRACTOR,
+      { loggerID }
+    );
+    return { loggerID, telemetry: data.getTelemetryByTractor ?? null };
+  } catch {
+    return { loggerID, telemetry: null };
+  }
+}
+
+async function fetchTelemetryByLoggers(
+  loggerIDs: string[]
+): Promise<Map<string, RawTelemetry>> {
+  const results = await Promise.all(loggerIDs.map(fetchTelemetryByLogger));
+  const map = new Map<string, RawTelemetry>();
+  for (const { loggerID, telemetry } of results) {
+    if (telemetry) map.set(loggerID, telemetry);
+  }
+  return map;
+}
+
+function num(v: number | null | undefined): number | undefined {
+  return typeof v === 'number' && !Number.isNaN(v) ? v : undefined;
+}
+
 /**
  * Fetches and assembles the full fleet view (tractors, complaints, runtime) for
  * an organization, mapping the raw AppSync shapes into the app's view models and
@@ -394,7 +464,10 @@ export async function fetchFleetData(
   const loggerIDs = [
     ...new Set(rawTractors.map(t => t.loggerID).filter((id): id is string => !!id)),
   ];
-  const rawRuntime = await fetchRuntimeEntriesByLoggers(loggerIDs);
+  const [rawRuntime, telemetryByLogger] = await Promise.all([
+    fetchRuntimeEntriesByLoggers(loggerIDs),
+    fetchTelemetryByLoggers(loggerIDs),
+  ]);
 
   const plantById = new Map(plants.map(p => [p.plantID, p]));
   const tractorByVin = new Map(rawTractors.map(t => [t.vin, t]));
@@ -414,6 +487,7 @@ export async function fetchFleetData(
   const tractors: Tractor[] = rawTractors.map(t => {
     const plant = t.plantID ? plantById.get(t.plantID) : undefined;
     const totalRuntime = t.loggerID ? cumulativeByLogger.get(t.loggerID) ?? 0 : 0;
+    const tel = t.loggerID ? telemetryByLogger.get(t.loggerID) : undefined;
     return {
       tractorID: t.vin,
       orgID: t.orgID || orgID,
@@ -424,6 +498,16 @@ export async function fetchFleetData(
       totalRuntime: Math.round(totalRuntime),
       plantName: plant?.name,
       location: plant?.location || plant?.name,
+      loggerID: t.loggerID || undefined,
+      color: t.color || undefined,
+      soc: num(tel?.SOC),
+      voltage: num(tel?.BatteryV),
+      current: num(tel?.BatteryI),
+      temp: num(tel?.BatteryT),
+      rpm: num(tel?.MaxRPM),
+      motorTemp: num(tel?.MotorT),
+      telemetryStatus: tel?.status ?? undefined,
+      telemetryAt: tel?.timestamp ?? undefined,
     };
   });
 

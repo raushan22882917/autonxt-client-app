@@ -3,7 +3,6 @@ import {
   FlatList,
   Platform,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -16,7 +15,7 @@ import { PlantFilter } from '@/components/PlantFilter';
 import { RuntimeRecord } from '@/lib/appsync';
 
 export default function RuntimeScreen() {
-  const colors = useColors();
+  const c = useColors();
   const insets = useSafeAreaInsets();
   const { filteredRuntimeRecords, filteredTractors, isLoading, refresh } = useApp();
 
@@ -38,7 +37,6 @@ export default function RuntimeScreen() {
     ? (filteredTractors.reduce((s, t) => s + t.totalRuntime, 0) / filteredTractors.length).toFixed(0)
     : 0;
 
-  // Group by tractor
   const byTractor = useMemo(() => {
     const map: Record<string, { tractorID: string; model: string; plant: string; totalHours: number; records: RuntimeRecord[] }> = {};
     filteredRuntimeRecords.forEach(r => {
@@ -60,36 +58,36 @@ export default function RuntimeScreen() {
   const maxHours = byTractor.length > 0 ? byTractor[0].totalHours : 1;
 
   const renderTractor = ({ item }: { item: typeof byTractor[0] }) => (
-    <View style={[styles.card, { backgroundColor: '#111827', borderColor: '#1E293B' }]}>
+    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
       <View style={styles.cardHeader}>
-        <View style={styles.tractorIconWrap}>
-          <Feather name="truck" size={18} color="#F97316" />
+        <View style={[styles.tractorIconWrap, { backgroundColor: c.primary + '14' }]}>
+          <Feather name="truck" size={18} color={c.primary} />
         </View>
         <View style={styles.cardInfo}>
-          <Text style={styles.tractorModel}>{item.model}</Text>
-          <Text style={styles.plantName}>{item.plant}</Text>
+          <Text style={[styles.tractorModel, { color: c.foreground }]}>{item.model}</Text>
+          <Text style={[styles.plantName, { color: c.mutedForeground }]}>{item.plant}</Text>
         </View>
-        <Text style={styles.hoursNum}>{item.totalHours.toFixed(1)}h</Text>
+        <Text style={[styles.hoursNum, { color: c.primary }]}>{item.totalHours.toFixed(1)}h</Text>
       </View>
 
       {/* Bar */}
-      <View style={styles.barTrack}>
+      <View style={[styles.barTrack, { backgroundColor: c.track }]}>
         <View
           style={[
             styles.barFill,
-            { width: `${Math.min(100, (item.totalHours / maxHours) * 100)}%` as any },
+            { backgroundColor: c.primary, width: `${Math.min(100, (item.totalHours / maxHours) * 100)}%` as any },
           ]}
         />
       </View>
 
       {/* Daily breakdown (last 3) */}
       <View style={styles.dayRow}>
-        {item.records.slice(0, 3).map((r, i) => (
-          <View key={r.recordID} style={styles.dayBox}>
-            <Text style={styles.dayLabel}>{shortDate(r.date)}</Text>
-            <Text style={styles.dayHours}>{r.hoursRun}h</Text>
+        {item.records.slice(0, 3).map(r => (
+          <View key={r.recordID} style={[styles.dayBox, { backgroundColor: c.surfaceAlt }]}>
+            <Text style={[styles.dayLabel, { color: c.mutedForeground }]}>{shortDate(r.date)}</Text>
+            <Text style={[styles.dayHours, { color: c.foreground }]}>{r.hoursRun}h</Text>
             {r.fuelConsumed ? (
-              <Text style={styles.dayFuel}>{r.fuelConsumed}L</Text>
+              <Text style={[styles.dayFuel, { color: c.blue }]}>{r.fuelConsumed}L</Text>
             ) : null}
           </View>
         ))}
@@ -98,34 +96,34 @@ export default function RuntimeScreen() {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: '#0A1628' }]}>
+    <View style={[styles.root, { backgroundColor: c.background }]}>
       {/* Summary header */}
       <View style={[styles.summarySection, { paddingTop: topPad + 16 }]}>
-        <Text style={styles.sectionTitle}>Cumulative Runtime</Text>
+        <Text style={[styles.sectionTitle, { color: c.mutedForeground }]}>Cumulative Runtime</Text>
 
-        <View style={styles.kpiRow}>
+        <View style={[styles.kpiRow, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
           <View style={styles.kpi}>
-            <Feather name="clock" size={20} color="#F97316" />
-            <Text style={styles.kpiNum}>{totalHours.toFixed(0)}h</Text>
-            <Text style={styles.kpiLabel}>Total Hours</Text>
+            <Feather name="clock" size={20} color={c.primary} />
+            <Text style={[styles.kpiNum, { color: c.foreground }]}>{totalHours.toFixed(0)}h</Text>
+            <Text style={[styles.kpiLabel, { color: c.mutedForeground }]}>Total Hours</Text>
           </View>
-          <View style={styles.kpiDivider} />
+          <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
           <View style={styles.kpi}>
-            <Feather name="droplet" size={20} color="#3B82F6" />
-            <Text style={styles.kpiNum}>{totalFuel.toFixed(0)}L</Text>
-            <Text style={styles.kpiLabel}>Fuel Used</Text>
+            <Feather name="droplet" size={20} color={c.blue} />
+            <Text style={[styles.kpiNum, { color: c.foreground }]}>{totalFuel.toFixed(0)}L</Text>
+            <Text style={[styles.kpiLabel, { color: c.mutedForeground }]}>Fuel Used</Text>
           </View>
-          <View style={styles.kpiDivider} />
+          <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
           <View style={styles.kpi}>
-            <Feather name="navigation" size={20} color="#10B981" />
-            <Text style={styles.kpiNum}>{totalDistance.toFixed(0)}km</Text>
-            <Text style={styles.kpiLabel}>Distance</Text>
+            <Feather name="navigation" size={20} color={c.success} />
+            <Text style={[styles.kpiNum, { color: c.foreground }]}>{totalDistance.toFixed(0)}km</Text>
+            <Text style={[styles.kpiLabel, { color: c.mutedForeground }]}>Distance</Text>
           </View>
-          <View style={styles.kpiDivider} />
+          <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
           <View style={styles.kpi}>
-            <Feather name="bar-chart-2" size={20} color="#8B5CF6" />
-            <Text style={styles.kpiNum}>{avgHoursPerTractor}h</Text>
-            <Text style={styles.kpiLabel}>Avg/Tractor</Text>
+            <Feather name="bar-chart-2" size={20} color={c.accent} />
+            <Text style={[styles.kpiNum, { color: c.foreground }]}>{avgHoursPerTractor}h</Text>
+            <Text style={[styles.kpiLabel, { color: c.mutedForeground }]}>Avg/Tractor</Text>
           </View>
         </View>
       </View>
@@ -139,15 +137,15 @@ export default function RuntimeScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor="#F97316" />
+          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
         }
         ListHeaderComponent={
-          <Text style={styles.listHeader}>By Tractor (7-day)</Text>
+          <Text style={[styles.listHeader, { color: c.mutedForeground }]}>By Tractor</Text>
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Feather name="clock" size={36} color="#1E293B" />
-            <Text style={styles.emptyText}>No runtime data available</Text>
+            <Feather name="clock" size={36} color={c.border} />
+            <Text style={[styles.emptyText, { color: c.mutedForeground }]}>No runtime data available</Text>
           </View>
         }
       />
@@ -169,19 +167,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
-    color: '#64748B',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     marginBottom: 14,
   },
   kpiRow: {
     flexDirection: 'row',
-    backgroundColor: '#111827',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#1E293B',
     padding: 16,
     alignItems: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 1,
   },
   kpi: {
     flex: 1,
@@ -191,18 +190,15 @@ const styles = StyleSheet.create({
   kpiNum: {
     fontSize: 18,
     fontFamily: 'Inter_700Bold',
-    color: '#F8FAFC',
   },
   kpiLabel: {
     fontSize: 10,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
     textAlign: 'center',
   },
   kpiDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#1E293B',
   },
   list: {
     paddingHorizontal: 16,
@@ -212,16 +208,19 @@ const styles = StyleSheet.create({
   listHeader: {
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
-    color: '#64748B',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   card: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     padding: 14,
     gap: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -232,7 +231,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#F9731618',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -240,28 +238,23 @@ const styles = StyleSheet.create({
   tractorModel: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
-    color: '#F8FAFC',
   },
   plantName: {
     fontSize: 11,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
     marginTop: 1,
   },
   hoursNum: {
     fontSize: 18,
     fontFamily: 'Inter_700Bold',
-    color: '#F97316',
   },
   barTrack: {
     height: 6,
-    backgroundColor: '#1E293B',
     borderRadius: 3,
     overflow: 'hidden',
   },
   barFill: {
     height: 6,
-    backgroundColor: '#F97316',
     borderRadius: 3,
   },
   dayRow: {
@@ -270,7 +263,6 @@ const styles = StyleSheet.create({
   },
   dayBox: {
     flex: 1,
-    backgroundColor: '#1E293B',
     borderRadius: 8,
     padding: 8,
     alignItems: 'center',
@@ -279,17 +271,14 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontSize: 10,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
   },
   dayHours: {
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
-    color: '#F8FAFC',
   },
   dayFuel: {
     fontSize: 10,
     fontFamily: 'Inter_400Regular',
-    color: '#3B82F6',
   },
   empty: {
     alignItems: 'center',
@@ -297,7 +286,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    color: '#475569',
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
   },

@@ -14,11 +14,11 @@ import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { PlantFilter } from '@/components/PlantFilter';
-import { StatusBadge } from '@/components/StatusBadge';
+import { TractorCard } from '@/components/TractorCard';
 import { Tractor } from '@/lib/appsync';
 
 export default function TractorsScreen() {
-  const colors = useColors();
+  const c = useColors();
   const insets = useSafeAreaInsets();
   const { filteredTractors, isLoading, refresh } = useApp();
   const [search, setSearch] = useState('');
@@ -34,65 +34,24 @@ export default function TractorsScreen() {
       )
     : filteredTractors;
 
-  const renderTractor = ({ item }: { item: Tractor }) => (
-    <View style={[styles.card, { backgroundColor: '#111827', borderColor: '#1E293B' }]}>
-      <View style={styles.cardTop}>
-        <View style={styles.iconWrap}>
-          <Feather name="truck" size={22} color="#F97316" />
-        </View>
-        <View style={styles.info}>
-          <Text style={styles.model}>{item.model}</Text>
-          <Text style={styles.serial}>{item.serialNumber}</Text>
-        </View>
-        <StatusBadge status={item.status} />
-      </View>
-
-      <View style={styles.divider} />
-
-      <View style={styles.metrics}>
-        <View style={styles.metric}>
-          <Feather name="clock" size={13} color="#64748B" />
-          <Text style={styles.metricLabel}>Runtime</Text>
-          <Text style={styles.metricValue}>{item.totalRuntime}h</Text>
-        </View>
-        <View style={styles.metricDivider} />
-        <View style={styles.metric}>
-          <Feather name="battery" size={13} color="#64748B" />
-          <Text style={styles.metricLabel}>Fuel</Text>
-          <Text style={styles.metricValue}>{item.fuelLevel ?? '--'}%</Text>
-        </View>
-        <View style={styles.metricDivider} />
-        <View style={styles.metric}>
-          <Feather name="settings" size={13} color="#64748B" />
-          <Text style={styles.metricLabel}>Eng. Hrs</Text>
-          <Text style={styles.metricValue}>{item.engineHours ?? '--'}</Text>
-        </View>
-        <View style={styles.metricDivider} />
-        <View style={styles.metric}>
-          <Feather name="map-pin" size={13} color="#64748B" />
-          <Text style={styles.metricLabel}>Plant</Text>
-          <Text style={styles.metricValue} numberOfLines={1}>{item.plantName || '--'}</Text>
-        </View>
-      </View>
-    </View>
-  );
+  const renderTractor = ({ item }: { item: Tractor }) => <TractorCard tractor={item} />;
 
   return (
-    <View style={[styles.root, { backgroundColor: '#0A1628' }]}>
+    <View style={[styles.root, { backgroundColor: c.background }]}>
       {/* Search bar */}
       <View style={[styles.searchWrap, { paddingTop: topPad + 12 }]}>
-        <View style={[styles.searchBox, { borderColor: '#1E293B' }]}>
-          <Feather name="search" size={16} color="#64748B" style={{ marginRight: 8 }} />
+        <View style={[styles.searchBox, { backgroundColor: c.card, borderColor: c.border }]}>
+          <Feather name="search" size={16} color={c.mutedForeground} style={{ marginRight: 8 }} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: c.foreground }]}
             placeholder="Search tractors..."
-            placeholderTextColor="#475569"
+            placeholderTextColor={c.mutedForeground}
             value={search}
             onChangeText={setSearch}
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-              <Feather name="x" size={16} color="#64748B" />
+              <Feather name="x" size={16} color={c.mutedForeground} />
             </TouchableOpacity>
           )}
         </View>
@@ -104,18 +63,15 @@ export default function TractorsScreen() {
         data={displayed}
         keyExtractor={t => t.tractorID}
         renderItem={renderTractor}
-        contentContainerStyle={[
-          styles.list,
-          { paddingBottom: insets.bottom + 100 },
-        ]}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor="#F97316" />
+          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Feather name="truck" size={36} color="#1E293B" />
-            <Text style={styles.emptyText}>No tractors found</Text>
+            <Feather name="truck" size={36} color={c.border} />
+            <Text style={[styles.emptyText, { color: c.mutedForeground }]}>No tractors found</Text>
           </View>
         }
       />
@@ -132,84 +88,20 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111827',
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 12,
-    height: 44,
+    height: 46,
   },
   searchInput: {
     flex: 1,
-    color: '#F8FAFC',
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
   },
   list: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    gap: 10,
-  },
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
     gap: 12,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#F9731618',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  info: { flex: 1 },
-  model: {
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#F8FAFC',
-  },
-  serial: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    color: '#64748B',
-    marginTop: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#1E293B',
-  },
-  metrics: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  metric: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 3,
-  },
-  metricLabel: {
-    fontSize: 10,
-    fontFamily: 'Inter_400Regular',
-    color: '#64748B',
-    marginTop: 2,
-  },
-  metricValue: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#F8FAFC',
-    maxWidth: 60,
-  },
-  metricDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#1E293B',
   },
   empty: {
     alignItems: 'center',
@@ -217,7 +109,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    color: '#475569',
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
   },

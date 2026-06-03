@@ -9,93 +9,130 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { PlantFilter } from '@/components/PlantFilter';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Complaint } from '@/lib/appsync';
+import { severityColor, formatDate } from '@/lib/complaint';
 
 const SEVERITY_FILTERS = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const;
 type SeverityFilter = typeof SEVERITY_FILTERS[number];
 
 export default function ComplaintsScreen() {
-  const colors = useColors();
+  const c = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { filteredComplaints, isLoading, refresh } = useApp();
   const [severity, setSeverity] = useState<SeverityFilter>('ALL');
 
   const topPad = Platform.OS === 'web' ? 67 : 0;
 
-  const displayed = severity === 'ALL'
-    ? filteredComplaints
-    : filteredComplaints.filter(c => c.severity === severity);
+  const displayed =
+    severity === 'ALL'
+      ? filteredComplaints
+      : filteredComplaints.filter(x => x.severity === severity);
 
-  const critCount = filteredComplaints.filter(c => c.severity === 'CRITICAL').length;
-  const openCount = filteredComplaints.filter(c => c.status === 'OPEN').length;
+  const critCount = filteredComplaints.filter(x => x.severity === 'CRITICAL').length;
+  const openCount = filteredComplaints.filter(x => x.status === 'OPEN').length;
 
-  const renderComplaint = ({ item }: { item: Complaint }) => (
-    <View style={[styles.card, { borderColor: item.severity === 'CRITICAL' ? '#DC262640' : '#1E293B' }]}>
-      <View style={styles.cardTop}>
-        <View style={[styles.iconWrap, { backgroundColor: severityColor(item.severity) + '20' }]}>
-          <Feather name="alert-triangle" size={18} color={severityColor(item.severity)} />
+  const renderComplaint = ({ item }: { item: Complaint }) => {
+    const sev = severityColor(item.severity, c);
+    return (
+      <TouchableOpacity
+        style={[
+          styles.card,
+          {
+            backgroundColor: c.card,
+            borderColor: item.severity === 'CRITICAL' ? sev + '55' : c.border,
+            shadowColor: c.shadow,
+          },
+        ]}
+        activeOpacity={0.75}
+        onPress={() => router.push(`/complaint/${item.complaintID}`)}
+      >
+        <View style={[styles.sevStripe, { backgroundColor: sev }]} />
+        <View style={styles.cardBody}>
+          <View style={styles.cardTop}>
+            <View style={[styles.iconWrap, { backgroundColor: sev + '18' }]}>
+              <Feather name="alert-triangle" size={18} color={sev} />
+            </View>
+            <View style={styles.info}>
+              <Text style={[styles.title, { color: c.foreground }]} numberOfLines={1}>
+                {item.title}
+              </Text>
+              <Text style={[styles.sub, { color: c.mutedForeground }]} numberOfLines={1}>
+                {[item.tractorModel, item.plantName].filter(Boolean).join(' · ')}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={c.mutedForeground} />
+          </View>
+
+          <Text style={[styles.description, { color: c.mutedForeground }]} numberOfLines={2}>
+            {item.description}
+          </Text>
+
+          <View style={styles.badgeRow}>
+            <StatusBadge status={item.severity} small />
+            <StatusBadge status={item.status} small />
+            <Text style={[styles.date, { color: c.mutedForeground }]}>
+              {formatDate(item.createdAt)}
+            </Text>
+          </View>
         </View>
-        <View style={styles.info}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.sub}>{item.tractorModel} · {item.plantName}</Text>
-        </View>
-      </View>
-
-      <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
-
-      <View style={styles.badgeRow}>
-        <StatusBadge status={item.severity} small />
-        <StatusBadge status={item.status} small />
-        <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-      </View>
-    </View>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <View style={[styles.root, { backgroundColor: '#0A1628' }]}>
+    <View style={[styles.root, { backgroundColor: c.background }]}>
       <View style={[styles.header, { paddingTop: topPad + 12 }]}>
         {/* Summary */}
         <View style={styles.summaryRow}>
-          <View style={[styles.summaryBox, { borderColor: '#DC2626' }]}>
-            <Text style={[styles.summaryNum, { color: '#EF4444' }]}>{critCount}</Text>
-            <Text style={styles.summaryLabel}>Critical</Text>
+          <View style={[styles.summaryBox, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Text style={[styles.summaryNum, { color: c.red }]}>{critCount}</Text>
+            <Text style={[styles.summaryLabel, { color: c.mutedForeground }]}>Critical</Text>
           </View>
-          <View style={[styles.summaryBox, { borderColor: '#1E293B' }]}>
-            <Text style={[styles.summaryNum, { color: '#F97316' }]}>{openCount}</Text>
-            <Text style={styles.summaryLabel}>Open</Text>
+          <View style={[styles.summaryBox, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Text style={[styles.summaryNum, { color: c.primary }]}>{openCount}</Text>
+            <Text style={[styles.summaryLabel, { color: c.mutedForeground }]}>Open</Text>
           </View>
-          <View style={[styles.summaryBox, { borderColor: '#1E293B' }]}>
-            <Text style={[styles.summaryNum, { color: '#F8FAFC' }]}>{filteredComplaints.length}</Text>
-            <Text style={styles.summaryLabel}>Total</Text>
+          <View style={[styles.summaryBox, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Text style={[styles.summaryNum, { color: c.foreground }]}>{filteredComplaints.length}</Text>
+            <Text style={[styles.summaryLabel, { color: c.mutedForeground }]}>Total</Text>
           </View>
         </View>
 
         {/* Severity filter */}
         <View style={styles.severityRow}>
-          {SEVERITY_FILTERS.map(s => (
-            <TouchableOpacity
-              key={s}
-              style={[
-                styles.severityChip,
-                severity === s && { backgroundColor: '#F97316' },
-                severity !== s && { borderColor: '#1E293B' },
-              ]}
-              onPress={() => setSeverity(s)}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.severityText,
-                { color: severity === s ? '#fff' : '#64748B' },
-              ]}>
-                {s}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {SEVERITY_FILTERS.map(s => {
+            const active = severity === s;
+            return (
+              <TouchableOpacity
+                key={s}
+                style={[
+                  styles.severityChip,
+                  {
+                    backgroundColor: active ? c.primary : c.card,
+                    borderColor: active ? c.primary : c.border,
+                  },
+                ]}
+                onPress={() => setSeverity(s)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.severityText,
+                    { color: active ? c.primaryForeground : c.mutedForeground },
+                  ]}
+                >
+                  {s}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -103,37 +140,22 @@ export default function ComplaintsScreen() {
 
       <FlatList
         data={displayed}
-        keyExtractor={c => c.complaintID}
+        keyExtractor={x => x.complaintID}
         renderItem={renderComplaint}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor="#F97316" />
+          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Feather name="check-circle" size={36} color="#1E293B" />
-            <Text style={styles.emptyText}>No complaints found</Text>
+            <Feather name="check-circle" size={36} color={c.border} />
+            <Text style={[styles.emptyText, { color: c.mutedForeground }]}>No complaints found</Text>
           </View>
         }
       />
     </View>
   );
-}
-
-function severityColor(s: string): string {
-  switch (s) {
-    case 'CRITICAL': return '#EF4444';
-    case 'HIGH': return '#F97316';
-    case 'MEDIUM': return '#F59E0B';
-    case 'LOW': return '#10B981';
-    default: return '#64748B';
-  }
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
 }
 
 const styles = StyleSheet.create({
@@ -149,8 +171,7 @@ const styles = StyleSheet.create({
   },
   summaryBox: {
     flex: 1,
-    backgroundColor: '#111827',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 12,
     alignItems: 'center',
@@ -163,7 +184,6 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 11,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
   },
   severityRow: {
     flexDirection: 'row',
@@ -175,8 +195,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'transparent',
-    backgroundColor: '#111827',
   },
   severityText: {
     fontSize: 12,
@@ -188,9 +206,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   card: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 1,
+  },
+  sevStripe: {
+    width: 4,
+  },
+  cardBody: {
+    flex: 1,
     padding: 14,
     gap: 10,
   },
@@ -210,18 +239,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
-    color: '#F8FAFC',
   },
   sub: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
     marginTop: 2,
   },
   description: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
-    color: '#94A3B8',
     lineHeight: 18,
   },
   badgeRow: {
@@ -233,7 +259,6 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 11,
     fontFamily: 'Inter_400Regular',
-    color: '#475569',
     marginLeft: 'auto',
   },
   empty: {
@@ -242,7 +267,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    color: '#475569',
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
   },

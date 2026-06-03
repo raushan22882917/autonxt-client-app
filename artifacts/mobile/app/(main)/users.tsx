@@ -14,14 +14,12 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
-import { useAuth } from '@/context/AuthContext';
 import { AppUser } from '@/lib/appsync';
 
 export default function UsersScreen() {
-  const colors = useColors();
+  const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isAdmin } = useAuth();
   const { users, organization, isLoading, refresh } = useApp();
   const [search, setSearch] = useState('');
 
@@ -37,43 +35,43 @@ export default function UsersScreen() {
     : users;
 
   const roleColors: Record<string, string> = {
-    admin: '#F97316',
-    supervisor: '#8B5CF6',
-    driver: '#10B981',
-    operator: '#3B82F6',
-    default: '#64748B',
+    admin: c.red,
+    supervisor: c.info,
+    driver: c.success,
+    operator: c.blue,
+    default: c.mutedForeground,
   };
 
   const getRoleColor = (role: string) =>
     roleColors[role.toLowerCase()] || roleColors.default;
 
   const renderUser = ({ item }: { item: AppUser }) => (
-    <View style={[styles.card, { backgroundColor: '#111827', borderColor: '#1E293B' }]}>
-      <View style={styles.avatarWrap}>
+    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
+      <View style={[styles.avatarWrap, { backgroundColor: c.primary }]}>
         <Text style={styles.avatarText}>
           {item.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
         </Text>
       </View>
       <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.email} numberOfLines={1}>{item.email}</Text>
+        <Text style={[styles.name, { color: c.foreground }]}>{item.name}</Text>
+        <Text style={[styles.email, { color: c.mutedForeground }]} numberOfLines={1}>{item.email}</Text>
         <View style={styles.metaRow}>
-          <View style={[styles.roleBadge, { backgroundColor: getRoleColor(item.role) + '20' }]}>
+          <View style={[styles.roleBadge, { backgroundColor: getRoleColor(item.role) + '18' }]}>
             <Text style={[styles.roleText, { color: getRoleColor(item.role) }]}>{item.role}</Text>
           </View>
           {item.status && (
-            <View style={[styles.statusDot, { backgroundColor: item.status === 'ACTIVE' ? '#10B981' : '#6B7280' }]} />
+            <View style={[styles.statusDot, { backgroundColor: item.status === 'ACTIVE' ? c.success : c.mutedForeground }]} />
           )}
           {item.phone ? (
-            <Text style={styles.phone}>{item.phone}</Text>
+            <Text style={[styles.phone, { color: c.mutedForeground }]}>{item.phone}</Text>
           ) : null}
         </View>
       </View>
       {item.cognitoGroups && item.cognitoGroups.length > 0 && (
         <View style={styles.groupsCol}>
           {item.cognitoGroups.slice(0, 2).map(g => (
-            <View key={g} style={styles.groupChip}>
-              <Text style={styles.groupText} numberOfLines={1}>{g}</Text>
+            <View key={g} style={[styles.groupChip, { backgroundColor: c.surfaceAlt }]}>
+              <Text style={[styles.groupText, { color: c.mutedForeground }]} numberOfLines={1}>{g}</Text>
             </View>
           ))}
         </View>
@@ -82,33 +80,37 @@ export default function UsersScreen() {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: '#0A1628' }]}>
+    <View style={[styles.root, { backgroundColor: c.background }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Feather name="arrow-left" size={20} color="#94A3B8" />
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={[styles.backBtn, { backgroundColor: c.card, borderColor: c.border }]}
+          activeOpacity={0.7}
+        >
+          <Feather name="arrow-left" size={20} color={c.foreground} />
         </TouchableOpacity>
         <View>
-          <Text style={styles.headerTitle}>Users</Text>
-          <Text style={styles.headerSub}>{organization?.name || 'Organization'}</Text>
+          <Text style={[styles.headerTitle, { color: c.foreground }]}>Users</Text>
+          <Text style={[styles.headerSub, { color: c.mutedForeground }]}>{organization?.name || 'Organization'}</Text>
         </View>
-        <Text style={styles.count}>{displayed.length}</Text>
+        <Text style={[styles.count, { color: c.mutedForeground }]}>{displayed.length}</Text>
       </View>
 
       {/* Search */}
       <View style={styles.searchWrap}>
-        <View style={[styles.searchBox, { borderColor: '#1E293B' }]}>
-          <Feather name="search" size={16} color="#64748B" style={{ marginRight: 8 }} />
+        <View style={[styles.searchBox, { backgroundColor: c.card, borderColor: c.border }]}>
+          <Feather name="search" size={16} color={c.mutedForeground} style={{ marginRight: 8 }} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: c.foreground }]}
             placeholder="Search users..."
-            placeholderTextColor="#475569"
+            placeholderTextColor={c.mutedForeground}
             value={search}
             onChangeText={setSearch}
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-              <Feather name="x" size={16} color="#64748B" />
+              <Feather name="x" size={16} color={c.mutedForeground} />
             </TouchableOpacity>
           )}
         </View>
@@ -121,12 +123,12 @@ export default function UsersScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor="#F97316" />
+          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Feather name="users" size={36} color="#1E293B" />
-            <Text style={styles.emptyText}>No users found</Text>
+            <Feather name="users" size={36} color={c.border} />
+            <Text style={[styles.emptyText, { color: c.mutedForeground }]}>No users found</Text>
           </View>
         }
       />
@@ -147,25 +149,22 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#111827',
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 20,
     fontFamily: 'Inter_700Bold',
-    color: '#F8FAFC',
   },
   headerSub: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
   },
   count: {
     marginLeft: 'auto',
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
-    color: '#64748B',
   },
   searchWrap: {
     paddingHorizontal: 16,
@@ -174,7 +173,6 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111827',
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 12,
@@ -182,7 +180,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#F8FAFC',
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
   },
@@ -198,12 +195,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 12,
     gap: 12,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   avatarWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F97316',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -217,12 +217,10 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
-    color: '#F8FAFC',
   },
   email: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
   },
   metaRow: {
     flexDirection: 'row',
@@ -248,7 +246,6 @@ const styles = StyleSheet.create({
   phone: {
     fontSize: 11,
     fontFamily: 'Inter_400Regular',
-    color: '#475569',
   },
   groupsCol: {
     gap: 4,
@@ -256,7 +253,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   groupChip: {
-    backgroundColor: '#1E293B',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -265,7 +261,6 @@ const styles = StyleSheet.create({
   groupText: {
     fontSize: 9,
     fontFamily: 'Inter_500Medium',
-    color: '#64748B',
   },
   empty: {
     alignItems: 'center',
@@ -273,7 +268,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    color: '#475569',
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
   },

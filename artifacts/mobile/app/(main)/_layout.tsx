@@ -6,61 +6,54 @@ import { Tabs, useRouter } from 'expo-router';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
 import { Feather } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
-import { AppProvider } from '@/context/AppContext';
 
 function NativeTabsLayout() {
   return (
-    <AppProvider>
-      <NativeTabs>
-        <NativeTabs.Trigger name="dashboard">
-          <Icon sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }} />
-          <Label>Fleet</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="tractors">
-          <Icon sf={{ default: 'car', selected: 'car.fill' }} />
-          <Label>Tractors</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="complaints">
-          <Icon sf={{ default: 'exclamationmark.triangle', selected: 'exclamationmark.triangle.fill' }} />
-          <Label>Complaints</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="runtime">
-          <Icon sf={{ default: 'clock', selected: 'clock.fill' }} />
-          <Label>Runtime</Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="ai">
-          <Icon sf={{ default: 'sparkles', selected: 'sparkles' }} />
-          <Label>AI</Label>
-        </NativeTabs.Trigger>
-      </NativeTabs>
-    </AppProvider>
+    <NativeTabs>
+      <NativeTabs.Trigger name="dashboard">
+        <Icon sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }} />
+        <Label>Fleet</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="tractors">
+        <Icon sf={{ default: 'car', selected: 'car.fill' }} />
+        <Label>Tractors</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="complaints">
+        <Icon sf={{ default: 'exclamationmark.triangle', selected: 'exclamationmark.triangle.fill' }} />
+        <Label>Complaints</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="runtime">
+        <Icon sf={{ default: 'clock', selected: 'clock.fill' }} />
+        <Label>Runtime</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="ai">
+        <Icon sf={{ default: 'sparkles', selected: 'sparkles' }} />
+        <Label>AI</Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }
 
 function ClassicTabsLayout() {
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
 
   return (
-    <AppProvider>
-      <Tabs
+    <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#F97316',
+          tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.mutedForeground,
-          headerStyle: { backgroundColor: '#0A1628' },
-          headerTintColor: '#F8FAFC',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.foreground,
           headerTitleStyle: { fontFamily: 'Inter_600SemiBold', fontSize: 17 },
           tabBarStyle: {
             position: 'absolute',
-            backgroundColor: isIOS ? 'transparent' : '#0A1628',
+            backgroundColor: isIOS ? 'transparent' : colors.card,
             borderTopWidth: 1,
-            borderTopColor: '#1E293B',
+            borderTopColor: colors.border,
             elevation: 0,
             ...(isWeb ? { height: 84 } : {}),
           },
@@ -71,12 +64,12 @@ function ClassicTabsLayout() {
           tabBarBackground: () =>
             isIOS ? (
               <BlurView
-                intensity={90}
-                tint={isDark ? 'dark' : 'dark'}
+                intensity={80}
+                tint="light"
                 style={StyleSheet.absoluteFill}
               />
             ) : isWeb ? (
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0A1628' }]} />
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
             ) : null,
         }}
       >
@@ -151,7 +144,6 @@ function ClassicTabsLayout() {
           }}
         />
       </Tabs>
-    </AppProvider>
   );
 }
 

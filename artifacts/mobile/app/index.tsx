@@ -8,11 +8,11 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 
-const { width, height } = Dimensions.get('window');
-
 export default function SplashScreen() {
+  const c = useColors();
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -62,10 +62,13 @@ export default function SplashScreen() {
   }, [isLoading, user, router]);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.bg} />
-
-      <Animated.View style={[styles.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
+    <View style={[styles.container, { backgroundColor: c.background }]}>
+      <Animated.View
+        style={[
+          styles.logoWrap,
+          { shadowColor: c.primary, opacity: logoOpacity, transform: [{ scale: logoScale }] },
+        ]}
+      >
         <Image
           source={require('../assets/images/icon.png')}
           style={styles.logo}
@@ -73,16 +76,16 @@ export default function SplashScreen() {
         />
       </Animated.View>
 
-      <Animated.Text style={[styles.appName, { opacity: textOpacity }]}>
+      <Animated.Text style={[styles.appName, { color: c.foreground, opacity: textOpacity }]}>
         AutoNXT Fleet
       </Animated.Text>
 
-      <Animated.Text style={[styles.tagline, { opacity: taglineOpacity }]}>
+      <Animated.Text style={[styles.tagline, { color: c.mutedForeground, opacity: taglineOpacity }]}>
         Smart Fleet. Total Control.
       </Animated.Text>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Powered by AutoNXT</Text>
+        <Text style={[styles.footerText, { color: c.mutedForeground }]}>Powered by AutoNXT</Text>
       </View>
     </View>
   );
@@ -91,24 +94,18 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A1628',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  bg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#0A1628',
   },
   logoWrap: {
     width: 120,
     height: 120,
     borderRadius: 28,
     overflow: 'hidden',
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 30,
-    elevation: 20,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 12,
     marginBottom: 24,
   },
   logo: {
@@ -118,14 +115,12 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 32,
     fontFamily: 'Inter_700Bold',
-    color: '#FFFFFF',
     letterSpacing: -0.5,
     marginBottom: 8,
   },
   tagline: {
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
-    color: '#94A3B8',
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -136,6 +131,5 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#334155',
   },
 });

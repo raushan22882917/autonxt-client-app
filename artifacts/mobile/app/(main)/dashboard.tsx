@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Platform,
   RefreshControl,
   ScrollView,
@@ -21,7 +20,7 @@ import { StatCard } from '@/components/StatCard';
 import { StatusBadge } from '@/components/StatusBadge';
 
 export default function DashboardScreen() {
-  const colors = useColors();
+  const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, isAdmin, signOut } = useAuth();
@@ -47,20 +46,20 @@ export default function DashboardScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.centered, { backgroundColor: '#0A1628' }]}>
-        <ActivityIndicator size="large" color="#F97316" />
-        <Text style={styles.loadingText}>Loading fleet data...</Text>
+      <View style={[styles.centered, { backgroundColor: c.background }]}>
+        <ActivityIndicator size="large" color={c.primary} />
+        <Text style={[styles.loadingText, { color: c.mutedForeground }]}>Loading fleet data...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.centered, { backgroundColor: '#0A1628' }]}>
-        <Feather name="wifi-off" size={40} color="#475569" />
-        <Text style={styles.errorTitle}>Failed to load</Text>
-        <Text style={styles.errorSub}>{error}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={refresh}>
+      <View style={[styles.centered, { backgroundColor: c.background }]}>
+        <Feather name="wifi-off" size={40} color={c.mutedForeground} />
+        <Text style={[styles.errorTitle, { color: c.foreground }]}>Failed to load</Text>
+        <Text style={[styles.errorSub, { color: c.mutedForeground }]}>{error}</Text>
+        <TouchableOpacity style={[styles.retryBtn, { backgroundColor: c.primary }]} onPress={refresh}>
           <Text style={styles.retryText}>Retry</Text>
         </TouchableOpacity>
       </View>
@@ -69,47 +68,51 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView
-      style={[styles.root, { backgroundColor: '#0A1628' }]}
+      style={[styles.root, { backgroundColor: c.background }]}
       contentContainerStyle={[
         styles.content,
         { paddingTop: topPad + 16, paddingBottom: insets.bottom + 100 },
       ]}
       refreshControl={
-        <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor="#F97316" />
+        <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
       }
       showsVerticalScrollIndicator={false}
     >
       {/* Org Header */}
       <View style={styles.orgRow}>
         <View style={styles.orgInfo}>
-          <Text style={styles.orgName} numberOfLines={1}>
+          <Text style={[styles.orgName, { color: c.foreground }]} numberOfLines={1}>
             {organization?.name || 'Fleet Overview'}
           </Text>
           {organization?.location ? (
             <View style={styles.orgMeta}>
-              <Feather name="map-pin" size={12} color="#64748B" />
-              <Text style={styles.orgLocation}>{organization.location}</Text>
+              <Feather name="map-pin" size={12} color={c.mutedForeground} />
+              <Text style={[styles.orgLocation, { color: c.mutedForeground }]}>{organization.location}</Text>
             </View>
           ) : null}
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={styles.usersBtn}
+            style={[styles.iconBtn, { backgroundColor: c.card, borderColor: c.border }]}
             onPress={() => router.push('/(main)/users')}
             activeOpacity={0.7}
           >
-            <Feather name="users" size={18} color="#94A3B8" />
+            <Feather name="users" size={18} color={c.foreground} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.signOutBtn} onPress={signOut} activeOpacity={0.7}>
-            <Feather name="log-out" size={18} color="#64748B" />
+          <TouchableOpacity
+            style={[styles.iconBtn, { backgroundColor: c.card, borderColor: c.border }]}
+            onPress={signOut}
+            activeOpacity={0.7}
+          >
+            <Feather name="log-out" size={18} color={c.mutedForeground} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* User tag */}
       <View style={styles.userTag}>
-        <Feather name="user" size={12} color={isAdmin ? '#F97316' : '#64748B'} />
-        <Text style={[styles.userTagText, isAdmin && { color: '#F97316' }]}>
+        <Feather name="user" size={12} color={isAdmin ? c.primary : c.mutedForeground} />
+        <Text style={[styles.userTagText, { color: c.mutedForeground }, isAdmin && { color: c.primary }]}>
           {user?.name || user?.email} {isAdmin ? '· Admin' : ''}
         </Text>
       </View>
@@ -120,32 +123,32 @@ export default function DashboardScreen() {
       </View>
 
       {/* Stats Row 1 */}
-      <Text style={styles.sectionLabel}>Fleet Status</Text>
+      <Text style={[styles.sectionLabel, { color: c.mutedForeground }]}>Fleet Status</Text>
       <View style={styles.statsRow}>
-        <StatCard title="Total Tractors" value={filteredTractors.length} icon="truck" iconColor="#F97316" />
-        <StatCard title="Active Now" value={activeCount} icon="zap" iconColor="#10B981" />
+        <StatCard title="Total Tractors" value={filteredTractors.length} icon="truck" iconColor={c.primary} />
+        <StatCard title="Active Now" value={activeCount} icon="zap" iconColor={c.success} />
       </View>
       <View style={[styles.statsRow, { marginTop: 10 }]}>
-        <StatCard title="In Maintenance" value={maintenanceCount} icon="tool" iconColor="#3B82F6" />
-        <StatCard title="Idle" value={idleCount} icon="pause-circle" iconColor="#F59E0B" />
+        <StatCard title="In Maintenance" value={maintenanceCount} icon="tool" iconColor={c.blue} />
+        <StatCard title="Idle" value={idleCount} icon="pause-circle" iconColor={c.warning} />
       </View>
 
       {/* Complaints summary */}
-      <Text style={[styles.sectionLabel, { marginTop: 24 }]}>Complaints</Text>
+      <Text style={[styles.sectionLabel, { color: c.mutedForeground, marginTop: 24 }]}>Complaints</Text>
       <View style={styles.statsRow}>
-        <StatCard title="Open Issues" value={openComplaints} icon="alert-circle" iconColor="#EF4444" />
-        <StatCard title="Critical" value={criticalComplaints} icon="alert-triangle" iconColor="#DC2626" />
+        <StatCard title="Open Issues" value={openComplaints} icon="alert-circle" iconColor={c.warning} />
+        <StatCard title="Critical" value={criticalComplaints} icon="alert-triangle" iconColor={c.red} />
       </View>
 
       {/* Plants summary */}
-      <Text style={[styles.sectionLabel, { marginTop: 24 }]}>Plants</Text>
+      <Text style={[styles.sectionLabel, { color: c.mutedForeground, marginTop: 24 }]}>Plants</Text>
       <View style={styles.statsRow}>
-        <StatCard title="Total Plants" value={plants.length} icon="layers" iconColor="#8B5CF6" />
+        <StatCard title="Total Plants" value={plants.length} icon="layers" iconColor={c.primary} />
         <StatCard
           title="Hub Warehouses"
           value={plants.filter(p => p.plantType === 'HUB_WAREHOUSE').length}
           icon="home"
-          iconColor="#06B6D4"
+          iconColor={c.info}
         />
       </View>
 
@@ -153,19 +156,23 @@ export default function DashboardScreen() {
       {recentTractors.length > 0 && (
         <>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionLabel, { marginTop: 24, marginBottom: 0 }]}>Recent Tractors</Text>
+            <Text style={[styles.sectionLabel, { color: c.mutedForeground, marginTop: 0, marginBottom: 0 }]}>
+              Recent Tractors
+            </Text>
             <TouchableOpacity onPress={() => router.push('/(main)/tractors')} activeOpacity={0.7}>
-              <Text style={styles.seeAll}>See all</Text>
+              <Text style={[styles.seeAll, { color: c.primary }]}>See all</Text>
             </TouchableOpacity>
           </View>
           {recentTractors.map(t => (
-            <View key={t.tractorID} style={[styles.tractorRow, { borderColor: '#1E293B' }]}>
-              <View style={styles.tractorIcon}>
-                <Feather name="truck" size={18} color="#F97316" />
+            <View key={t.tractorID} style={[styles.tractorRow, { backgroundColor: c.card, borderColor: c.border }]}>
+              <View style={[styles.tractorIcon, { backgroundColor: c.primary + '14' }]}>
+                <Feather name="truck" size={18} color={c.primary} />
               </View>
               <View style={styles.tractorInfo}>
-                <Text style={styles.tractorModel}>{t.model}</Text>
-                <Text style={styles.tractorSub}>{t.serialNumber} · {t.plantName}</Text>
+                <Text style={[styles.tractorModel, { color: c.foreground }]}>{t.model}</Text>
+                <Text style={[styles.tractorSub, { color: c.mutedForeground }]}>
+                  {[t.serialNumber, t.plantName].filter(Boolean).join(' · ')}
+                </Text>
               </View>
               <StatusBadge status={t.status} small />
             </View>
@@ -187,24 +194,20 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   loadingText: {
-    color: '#94A3B8',
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
     marginTop: 8,
   },
   errorTitle: {
-    color: '#F8FAFC',
     fontSize: 18,
     fontFamily: 'Inter_600SemiBold',
   },
   errorSub: {
-    color: '#64748B',
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
   },
   retryBtn: {
-    backgroundColor: '#F97316',
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 10,
@@ -225,7 +228,6 @@ const styles = StyleSheet.create({
   orgName: {
     fontSize: 22,
     fontFamily: 'Inter_700Bold',
-    color: '#F8FAFC',
     letterSpacing: -0.3,
   },
   orgMeta: {
@@ -237,25 +239,16 @@ const styles = StyleSheet.create({
   orgLocation: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
   },
   headerActions: {
     flexDirection: 'row',
     gap: 8,
   },
-  usersBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#1E293B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  signOutBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#1E293B',
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -268,7 +261,6 @@ const styles = StyleSheet.create({
   userTagText: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
   },
   filterWrap: {
     marginHorizontal: -16,
@@ -277,7 +269,6 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
-    color: '#64748B',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     marginBottom: 12,
@@ -294,15 +285,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   seeAll: {
-    color: '#F97316',
     fontSize: 13,
     fontFamily: 'Inter_500Medium',
   },
   tractorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111827',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 12,
     marginBottom: 8,
@@ -312,7 +301,6 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#F9731618',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -320,12 +308,10 @@ const styles = StyleSheet.create({
   tractorModel: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
-    color: '#F8FAFC',
   },
   tractorSub: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    color: '#64748B',
     marginTop: 2,
   },
 });
