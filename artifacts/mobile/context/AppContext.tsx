@@ -12,9 +12,7 @@ import {
   fetchPlantsByOrg,
   fetchUsersByOrg,
   fetchAllUsers,
-  getMockTractors,
-  getMockComplaints,
-  getMockRuntimeRecords,
+  fetchFleetData,
 } from '@/lib/appsync';
 
 interface AppState {
@@ -96,9 +94,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           fetchedUsers = await fetchUsersByOrg(orgID);
         }
 
-        const fetchedTractors = org ? getMockTractors(org.orgID, fetchedPlants) : [];
-        const fetchedComplaints = getMockComplaints(org?.orgID || '', fetchedTractors);
-        const fetchedRuntime = getMockRuntimeRecords(fetchedTractors);
+        const fleet = org
+          ? await fetchFleetData(org.orgID, fetchedPlants)
+          : { tractors: [], complaints: [], runtimeRecords: [] };
+        const fetchedTractors = fleet.tractors;
+        const fetchedComplaints = fleet.complaints;
+        const fetchedRuntime = fleet.runtimeRecords;
 
         setOrganizations(orgs);
         setOrganization(org);

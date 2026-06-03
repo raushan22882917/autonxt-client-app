@@ -34,3 +34,20 @@ trap (see expo-replit-secrets.md).
 **How to apply:** When a user hands you an Amplify/AWS config, bake the public
 identifiers into committed config as the source of truth. Don't read them from
 env (a typo'd secret would override). Verify with `pnpm exec expo config --json`.
+
+## IAM SigV4 can introspect the schema, but data is userPool-only
+SigV4-signed requests (service `appsync`) to the GraphQL endpoint can run
+`__schema`/`__type` **introspection** even when `defaultAuthMode` is `userPool`,
+but the data resolvers enforce Cognito User Pool authorization — IAM-signed
+**data** queries return `errorType: "Unauthorized"` ("Not Authorized to access X
+on type Query").
+
+**Why:** Introspection is governed by API-level config, while each resolver has
+its own auth directives tied to Cognito groups/claims. This is also a safety
+property: leaked AWS IAM keys cannot read app data through AppSync.
+
+**How to apply:** To discover field names, enum values, and argument types when
+you lack a live user token, use IAM SigV4 introspection in the build env only
+(never ship IAM keys in the app). Then build the queries the app runs with the
+user's idToken. Don't expect IAM creds to return real data for verification —
+end-to-end data checks require a logged-in user token.

@@ -39,7 +39,17 @@ export async function gqlQuery<T = unknown>(
     body: JSON.stringify({ query, variables }),
   });
 
-  const json = await response.json();
+  let json: { data?: T; errors?: Array<{ message?: string }> };
+  try {
+    json = await response.json();
+  } catch {
+    throw new Error(`AppSync request failed (HTTP ${response.status} ${response.statusText}).`);
+  }
+
+  if (!response.ok) {
+    const msg = json?.errors?.[0]?.message || response.statusText || 'request failed';
+    throw new Error(`AppSync request failed (HTTP ${response.status}): ${msg}`);
+  }
 
   if (json.errors?.length) {
     throw new Error(json.errors[0].message || 'GraphQL error');
@@ -195,82 +205,257 @@ export async function fetchAllUsers(): Promise<AppUser[]> {
   return data.listAllUsers || [];
 }
 
-// ─── Mock data for tractors/complaints/runtime (no schema yet) ──────────────
+// ─── Fleet data (tractors / complaints / runtime) ───────────────────────────
+//
+// These come from the real AppSync schema. The backend models electric
+// tractors (telemetry-based) and a maintenance/complaint workflow, so the raw
+// shapes differ from this app's view models — we map them below.
 
-export function getMockTractors(orgID: string, plants: Plant[]): Tractor[] {
-  const statuses: Tractor['status'][] = ['ACTIVE', 'IDLE', 'MAINTENANCE', 'OFFLINE'];
-  const models = ['AutoNXT X45H2', 'AutoNXT X60C2L', 'AutoNXT X45C4', 'AutoNXT X60C2', 'AutoNXT X60C4'];
-  const tractors: Tractor[] = [];
-  plants.forEach((plant, pi) => {
-    for (let i = 0; i < 4 + pi; i++) {
-      tractors.push({
-        tractorID: `TRC-${plant.plantID}-${i + 1}`,
-        orgID,
-        plantID: plant.plantID,
-        model: models[i % models.length],
-        serialNumber: `SN-${plant.plantID.slice(-4)}-${1000 + i}`,
-        status: statuses[i % statuses.length],
-        totalRuntime: Math.floor(1200 + Math.random() * 4000),
-        lastActive: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString(),
-        fuelLevel: Math.floor(20 + Math.random() * 80),
-        engineHours: Math.floor(800 + Math.random() * 3000),
-        location: plant.location || plant.name,
-        plantName: plant.name,
-      });
-    }
-  });
-  return tractors;
+interface RawTractor {
+  vin: string;
+  alias?: string | null;
+  registerNumber?: string | null;
+  model?: string | null;
+  plantID?: string | null;
+  orgID?: string | null;
+  loggerID?: string | null;
+  serviceStatus?: string | null;
+  color?: string | null;
 }
 
-export function getMockComplaints(orgID: string, tractors: Tractor[]): Complaint[] {
-  const titles = [
-    'Engine overheating',
-    'Hydraulic pressure low',
-    'PTO not engaging',
-    'Transmission noise',
-    'Fuel leak detected',
-    'Brake failure',
-    'Electrical fault',
-    'Coolant leak',
-  ];
-  const severities: Complaint['severity'][] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
-  const statuses: Complaint['status'][] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
-  return tractors.slice(0, Math.min(tractors.length, 12)).map((t, i) => ({
-    complaintID: `CMP-${t.tractorID}-${i}`,
-    tractorID: t.tractorID,
-    orgID,
-    plantID: t.plantID,
-    title: titles[i % titles.length],
-    description: `Reported issue: ${titles[i % titles.length]}. Immediate inspection required.`,
-    severity: severities[i % severities.length],
-    status: statuses[i % statuses.length],
-    reportedBy: 'Operator',
-    createdAt: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString(),
-    resolvedAt: statuses[i % statuses.length] === 'RESOLVED' ? new Date().toISOString() : undefined,
-    plantName: t.plantName,
-    tractorModel: t.model,
-  }));
+interface RawComplaint {
+  complaintID: string;
+  orgID?: string | null;
+  plantID?: string | null;
+  tractorVIN?: string | null;
+  problemType?: string | null;
+  problemSubType?: string | null;
+  description?: string | null;
+  priority?: string | null;
+  state?: string | null;
+  createdAt?: string | null;
+  closedAt?: string | null;
+  driverName?: string | null;
+  raisedByUserID?: string | null;
 }
 
-export function getMockRuntimeRecords(tractors: Tractor[]): RuntimeRecord[] {
-  const records: RuntimeRecord[] = [];
-  tractors.slice(0, 8).forEach(t => {
-    for (let d = 0; d < 7; d++) {
-      const date = new Date(Date.now() - d * 86400000);
-      records.push({
-        recordID: `RT-${t.tractorID}-${d}`,
-        tractorID: t.tractorID,
-        orgID: t.orgID,
-        plantID: t.plantID,
-        date: date.toISOString().split('T')[0],
-        hoursRun: Math.round((2 + Math.random() * 10) * 10) / 10,
-        fuelConsumed: Math.round((15 + Math.random() * 40) * 10) / 10,
-        distanceCovered: Math.round((30 + Math.random() * 120) * 10) / 10,
-        operatorID: `OP-${Math.floor(Math.random() * 5) + 1}`,
-        plantName: t.plantName,
-        tractorModel: t.model,
-      });
+interface RawRuntimeEntry {
+  loggerID: string;
+  date: string;
+  plantID?: string | null;
+  orgID?: string | null;
+  todaysRuntime?: number | null;
+  startCumulativeRuntime?: number | null;
+  endCumulativeRuntime?: number | null;
+}
+
+const LIST_TRACTORS_BY_ORG = `
+  query ListTractorsByOrg($orgID: ID!) {
+    listTractorsByOrg(orgID: $orgID) {
+      vin alias registerNumber model plantID orgID loggerID serviceStatus color
     }
+  }
+`;
+
+const LIST_COMPLAINTS_BY_ORG = `
+  query ListComplaintsByOrg($orgID: ID!, $nextToken: String) {
+    listComplaintsByOrg(orgID: $orgID, nextToken: $nextToken) {
+      items {
+        complaintID orgID plantID tractorVIN problemType problemSubType
+        description priority state createdAt closedAt driverName raisedByUserID
+      }
+      nextToken
+    }
+  }
+`;
+
+const LIST_MANUAL_RUNTIME_BY_ORG = `
+  query ListManualRuntimeEntries($orgID: String, $limit: Int, $nextToken: String) {
+    listManualRuntimeEntries(orgID: $orgID, limit: $limit, nextToken: $nextToken) {
+      items {
+        loggerID date plantID orgID todaysRuntime startCumulativeRuntime endCumulativeRuntime
+      }
+      nextToken
+    }
+  }
+`;
+
+// ─── Mappers ────────────────────────────────────────────────────────────────
+
+function mapServiceStatus(raw?: string | null): Tractor['status'] {
+  const s = (raw || '').toUpperCase();
+  if (/MAINT|SERVIC|REPAIR|BREAKDOWN|VOR/.test(s)) return 'MAINTENANCE';
+  if (/IDLE|STANDBY/.test(s)) return 'IDLE';
+  if (/OFFLINE|INACTIVE|DECOMMISSION|RETIRED/.test(s)) return 'OFFLINE';
+  return 'ACTIVE';
+}
+
+function humanizeProblemType(raw?: string | null): string {
+  if (!raw) return 'Issue';
+  return raw
+    .split('_')
+    .map(w => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function mapSeverity(priority?: string | null, problemType?: string | null): Complaint['severity'] {
+  const pt = (problemType || '').toUpperCase();
+  if (pt === 'MAJOR_BREAKDOWN' || pt === 'ACCIDENT') return 'CRITICAL';
+  switch ((priority || '').toUpperCase()) {
+    case 'HIGH': return 'HIGH';
+    case 'LOW': return 'LOW';
+    case 'MEDIUM': return 'MEDIUM';
+    default: return 'MEDIUM';
+  }
+}
+
+function mapComplaintStatus(state?: string | null): Complaint['status'] {
+  switch ((state || '').toUpperCase()) {
+    case 'PENDING': return 'OPEN';
+    case 'ACCEPTED':
+    case 'RESOLVING': return 'IN_PROGRESS';
+    case 'RESOLVED': return 'RESOLVED';
+    case 'CLOSED':
+    case 'CANCELLED': return 'CLOSED';
+    default: return 'OPEN';
+  }
+}
+
+// ─── Fetchers ───────────────────────────────────────────────────────────────
+
+async function fetchTractorsByOrg(orgID: string): Promise<RawTractor[]> {
+  const data = await gqlQuery<{ listTractorsByOrg: RawTractor[] }>(LIST_TRACTORS_BY_ORG, { orgID });
+  return data.listTractorsByOrg || [];
+}
+
+async function fetchComplaintsByOrg(orgID: string): Promise<RawComplaint[]> {
+  const items: RawComplaint[] = [];
+  let nextToken: string | null | undefined;
+  let pages = 0;
+  do {
+    const data = await gqlQuery<{ listComplaintsByOrg: { items: RawComplaint[]; nextToken?: string | null } }>(
+      LIST_COMPLAINTS_BY_ORG,
+      { orgID, nextToken }
+    );
+    const conn = data.listComplaintsByOrg;
+    if (conn?.items) items.push(...conn.items);
+    nextToken = conn?.nextToken;
+    pages++;
+  } while (nextToken && pages < 25);
+  if (nextToken) {
+    console.warn('fetchComplaintsByOrg: page cap reached; complaint list may be truncated.');
+  }
+  return items;
+}
+
+async function fetchRuntimeEntriesByOrg(orgID: string): Promise<RawRuntimeEntry[]> {
+  const items: RawRuntimeEntry[] = [];
+  let nextToken: string | null | undefined;
+  let pages = 0;
+  do {
+    const data = await gqlQuery<{ listManualRuntimeEntries: { items: RawRuntimeEntry[]; nextToken?: string | null } }>(
+      LIST_MANUAL_RUNTIME_BY_ORG,
+      { orgID, limit: 200, nextToken }
+    );
+    const conn = data.listManualRuntimeEntries;
+    if (conn?.items) items.push(...conn.items);
+    nextToken = conn?.nextToken;
+    pages++;
+  } while (nextToken && pages < 25);
+  if (nextToken) {
+    console.warn('fetchRuntimeEntriesByOrg: page cap reached; runtime list may be truncated.');
+  }
+  return items;
+}
+
+/**
+ * Fetches and assembles the full fleet view (tractors, complaints, runtime) for
+ * an organization, mapping the raw AppSync shapes into the app's view models and
+ * cross-referencing plant names and tractor models.
+ */
+export async function fetchFleetData(
+  orgID: string,
+  plants: Plant[]
+): Promise<{ tractors: Tractor[]; complaints: Complaint[]; runtimeRecords: RuntimeRecord[] }> {
+  const [rawTractors, rawComplaints, rawRuntime] = await Promise.all([
+    fetchTractorsByOrg(orgID),
+    fetchComplaintsByOrg(orgID),
+    fetchRuntimeEntriesByOrg(orgID),
+  ]);
+
+  const plantById = new Map(plants.map(p => [p.plantID, p]));
+  const tractorByVin = new Map(rawTractors.map(t => [t.vin, t]));
+  const tractorByLogger = new Map(
+    rawTractors.filter(t => t.loggerID).map(t => [t.loggerID as string, t])
+  );
+
+  // Latest cumulative runtime per logger → tractor total runtime.
+  const cumulativeByLogger = new Map<string, number>();
+  for (const r of rawRuntime) {
+    const end = r.endCumulativeRuntime ?? 0;
+    if (end > (cumulativeByLogger.get(r.loggerID) ?? 0)) {
+      cumulativeByLogger.set(r.loggerID, end);
+    }
+  }
+
+  const tractors: Tractor[] = rawTractors.map(t => {
+    const plant = t.plantID ? plantById.get(t.plantID) : undefined;
+    const totalRuntime = t.loggerID ? cumulativeByLogger.get(t.loggerID) ?? 0 : 0;
+    return {
+      tractorID: t.vin,
+      orgID: t.orgID || orgID,
+      plantID: t.plantID || '',
+      model: t.model || t.alias || t.vin,
+      serialNumber: t.registerNumber || t.vin,
+      status: mapServiceStatus(t.serviceStatus),
+      totalRuntime: Math.round(totalRuntime),
+      plantName: plant?.name,
+      location: plant?.location || plant?.name,
+    };
   });
-  return records;
+
+  const complaints: Complaint[] = rawComplaints.map(c => {
+    const plant = c.plantID ? plantById.get(c.plantID) : undefined;
+    const tractor = c.tractorVIN ? tractorByVin.get(c.tractorVIN) : undefined;
+    const title = c.problemSubType?.trim() || humanizeProblemType(c.problemType);
+    return {
+      complaintID: c.complaintID,
+      tractorID: c.tractorVIN || '',
+      orgID: c.orgID || orgID,
+      plantID: c.plantID || '',
+      title,
+      description: c.description || title,
+      severity: mapSeverity(c.priority, c.problemType),
+      status: mapComplaintStatus(c.state),
+      reportedBy: c.driverName || c.raisedByUserID || 'Unknown',
+      createdAt: c.createdAt || new Date().toISOString(),
+      resolvedAt: c.closedAt || undefined,
+      plantName: plant?.name,
+      tractorModel: tractor?.model || tractor?.alias || c.tractorVIN || undefined,
+    };
+  });
+
+  const runtimeRecords: RuntimeRecord[] = rawRuntime
+    .map(r => {
+      const plant = r.plantID ? plantById.get(r.plantID) : undefined;
+      const tractor = tractorByLogger.get(r.loggerID);
+      const hours =
+        r.todaysRuntime ??
+        (r.endCumulativeRuntime != null && r.startCumulativeRuntime != null
+          ? r.endCumulativeRuntime - r.startCumulativeRuntime
+          : 0);
+      return {
+        recordID: `${r.loggerID}-${r.date}`,
+        tractorID: tractor?.vin || r.loggerID,
+        orgID: r.orgID || orgID,
+        plantID: r.plantID || '',
+        date: r.date,
+        hoursRun: Math.round(Math.max(0, hours || 0) * 10) / 10,
+        plantName: plant?.name,
+        tractorModel: tractor?.model || tractor?.alias || tractor?.vin,
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  return { tractors, complaints, runtimeRecords };
 }
