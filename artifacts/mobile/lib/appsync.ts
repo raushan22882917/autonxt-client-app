@@ -113,6 +113,7 @@ export interface Tractor {
   motorTemp?: number; // motor temperature, °C
   telemetryStatus?: string;
   telemetryAt?: string;
+  commissionDate?: string; // ISO date the tractor was commissioned, if set
 }
 
 export interface Complaint {
@@ -230,6 +231,7 @@ interface RawTractor {
   loggerID?: string | null;
   serviceStatus?: string | null;
   color?: string | null;
+  commissionDate?: string | null;
 }
 
 interface RawComplaint {
@@ -261,7 +263,7 @@ interface RawRuntimeEntry {
 const LIST_TRACTORS_BY_ORG = `
   query ListTractorsByOrg($orgID: ID!) {
     listTractorsByOrg(orgID: $orgID) {
-      vin alias registerNumber model plantID orgID loggerID serviceStatus color
+      vin alias registerNumber model plantID orgID loggerID serviceStatus color commissionDate
     }
   }
 `;
@@ -508,6 +510,7 @@ export async function fetchFleetData(
       motorTemp: num(tel?.MotorT),
       telemetryStatus: tel?.status ?? undefined,
       telemetryAt: tel?.timestamp ?? undefined,
+      commissionDate: t.commissionDate || undefined,
     };
   });
 
@@ -559,4 +562,76 @@ export async function fetchFleetData(
     .sort((a, b) => b.date.localeCompare(a.date));
 
   return { tractors, complaints, runtimeRecords };
+}
+
+// ─── Analytics (trips / charges) ────────────────────────────────────────────
+//
+// getAnalytics returns usage rolled up into buckets (trips, charges, standby…)
+// for a tractor over a period. We use the GLOBAL period for lifetime totals.
+
+export type AnalyticsPeriod = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' | 'GLOBAL';
+
+export interface AnalyticsBucket {
+  totalCount?: number | null;
+  totalDuration?: number | null;
+  totalLoggedDuration?: number | null;
+  totalDistance?: number | null;
+  totalKwhDelivered?: number | null;
+  totalKwhCharged?: number | null;
+  totalDisconnectCount?: number | null;
+  totalDisconnectDuration?: number | null;
+  totalCostSavings?: number | null;
+  totalTreesSaved?: number | null;
+}
+
+export interface TractorAnalytics {
+  tractorID: string;
+  PeriodType: AnalyticsPeriod;
+  timeSegment: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  cumulative?: AnalyticsBucket | null;
+  trips?: AnalyticsBucket | null;
+  charges?: AnalyticsBucket | null;
+  standby?: AnalyticsBucket | null;
+}
+
+const ANALYTICS_BUCKET_FIELDS = `
+  totalCount totalDuration totalLoggedDuration totalDistance
+  totalKwhDelivered totalKwhCharged totalDisconnectCount
+  totalDisconnectDuration totalCostSavings totalTreesSaved
+`;
+
+const GET_ANALYTICS = `
+  query GetAnalytics($tractorID: ID!, $PeriodType: PeriodType!, $timeSegment: String!) {
+    getAnalytics(tractorID: $tractorID, PeriodType: $PeriodType, timeSegment: $timeSegment) {
+      tractorID
+      PeriodType
+      timeSegment
+      startTime
+      endTime
+      cumulative { ${ANALYTICS_BUCKET_FIELDS} }
+      trips { ${ANALYTICS_BUCKET_FIELDS} }
+      charges { ${ANALYTICS_BUCKET_FIELDS} }
+      standby { ${ANALYTICS_BUCKET_FIELDS} }
+    }
+  }
+`;
+
+/**
+ * Fetches usage analytics (trips/charges/standby buckets) for a tractor.
+ * Defaults to the GLOBAL lifetime period. Returns null when no analytics exist
+ * for the tractor (the caller renders an empty state) — errors propagate.
+ */
+export async function fetchTractorAnalytics(
+  tractorID: string,
+  period: AnalyticsPeriod = 'GLOBAL',
+  timeSegment = 'GLOBAL'
+): Promise<TractorAnalytics | null> {
+  const data = await gqlQuery<{ getAnalytics: TractorAnalytics | null }>(GET_ANALYTICS, {
+    tractorID,
+    PeriodType: period,
+    timeSegment,
+  });
+  return data.getAnalytics ?? null;
 }

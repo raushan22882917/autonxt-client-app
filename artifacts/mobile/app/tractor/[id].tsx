@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,31 @@ import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { severityColor, formatDate, formatDateTime } from '@/lib/complaint';
+import {
+  fetchTractorAnalytics,
+  type AnalyticsBucket,
+  type TractorAnalytics,
+} from '@/lib/appsync';
+
+function fmtNum(v: number | null | undefined, digits = 0): string {
+  if (v === null || v === undefined || Number.isNaN(v)) return '—';
+  return (Math.round(v * 10 ** digits) / 10 ** digits).toLocaleString();
+}
+
+// Formats a value with a unit, preserving a legitimate 0 (only null/undefined → "—").
+function fmtUnit(v: number | null | undefined, unit: string, digits = 1): string {
+  if (v === null || v === undefined || Number.isNaN(v)) return '—';
+  return `${fmtNum(v, digits)} ${unit}`;
+}
+
+// Durations from the analytics API are reported in seconds.
+function fmtDuration(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined || Number.isNaN(seconds) || seconds <= 0) return '—';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.round((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
 
 const tractorImg = require('../../assets/images/tractor.png');
 
@@ -33,6 +59,29 @@ export default function TractorDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { tractors, complaints, runtimeRecords } = useApp();
   const [tab, setTab] = useState<TabKey>('runtime');
+  const [analytics, setAnalytics] = useState<TractorAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    fetchTractorAnalytics(id)
+      .then(res => {
+        if (!cancelled) setAnalytics(res);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setAnalyticsError(err instanceof Error ? err.message : 'Failed to load usage data');
+      })
+      .finally(() => {
+        if (!cancelled) setAnalyticsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const tractor = tractors.find(t => t.tractorID === id);
 
@@ -230,10 +279,11 @@ export default function TractorDetailScreen() {
 
         {tab === 'trips' && (
           <View style={styles.tabContent}>
-            <EmptyState
-              icon="navigation"
-              title="Trips coming soon"
-              sub="Trip history for this tractor isn't connected to the backend yet."
+            <AnalyticsTab
+              loading={analyticsLoading}
+              error={analyticsError}
+              bucket={analytics?.trips}
+              kind="trips"
               c={c}
             />
           </View>
@@ -241,15 +291,97 @@ export default function TractorDetailScreen() {
 
         {tab === 'charge' && (
           <View style={styles.tabContent}>
-            <EmptyState
-              icon="battery-charging"
-              title="Charge sessions coming soon"
-              sub="Charging session history for this tractor isn't connected to the backend yet."
+            <AnalyticsTab
+              loading={analyticsLoading}
+              error={analyticsError}
+              bucket={analytics?.charges}
+              kind="charge"
               c={c}
             />
           </View>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+function AnalyticsTab({
+  loading,
+  error,
+  bucket,
+  kind,
+  c,
+}: {
+  loading: boolean;
+  error: string | null;
+  bucket: AnalyticsBucket | null | undefined;
+  kind: 'trips' | 'charge';
+  c: ReturnType<typeof useColors>;
+}) {
+  if (loading) {
+    return (
+      <View style={[styles.emptyBlock, { backgroundColor: c.card, borderColor: c.border }]}>
+        <ActivityIndicator color={c.primary} />
+        <Text style={[styles.emptyBlockSub, { color: c.mutedForeground, marginTop: 8 }]}>
+          Loading usage data…
+        </Text>
+      </View>
+    );
+  }
+  if (error) {
+    return (
+      <EmptyState
+        icon="alert-circle"
+        title="Couldn't load usage data"
+        sub={error}
+        c={c}
+      />
+    );
+  }
+  const hasData = !!bucket && (bucket.totalCount ?? 0) > 0;
+  if (!hasData) {
+    return kind === 'trips' ? (
+      <EmptyState icon="navigation" title="No trips recorded" sub="This tractor has no trip activity for the selected period." c={c} />
+    ) : (
+      <EmptyState icon="battery-charging" title="No charging sessions" sub="This tractor has no charging activity for the selected period." c={c} />
+    );
+  }
+
+  const metrics: { icon: keyof typeof Feather.glyphMap; label: string; value: string }[] =
+    kind === 'trips'
+      ? [
+          { icon: 'navigation', label: 'Trips', value: fmtNum(bucket!.totalCount) },
+          { icon: 'clock', label: 'Run Time', value: fmtDuration(bucket!.totalDuration) },
+          { icon: 'map', label: 'Distance', value: fmtUnit(bucket!.totalDistance, 'km') },
+          { icon: 'zap', label: 'Energy Used', value: fmtUnit(bucket!.totalKwhDelivered, 'kWh') },
+          {
+            icon: 'dollar-sign',
+            label: 'Cost Savings',
+            value:
+              bucket!.totalCostSavings === null || bucket!.totalCostSavings === undefined
+                ? '—'
+                : `₹${fmtNum(bucket!.totalCostSavings)}`,
+          },
+          { icon: 'feather', label: 'Trees Saved', value: fmtNum(bucket!.totalTreesSaved, 1) },
+        ]
+      : [
+          { icon: 'battery-charging', label: 'Sessions', value: fmtNum(bucket!.totalCount) },
+          { icon: 'clock', label: 'Charge Time', value: fmtDuration(bucket!.totalDuration) },
+          { icon: 'zap', label: 'Energy Added', value: fmtUnit(bucket!.totalKwhCharged, 'kWh') },
+          { icon: 'alert-triangle', label: 'Disconnects', value: fmtNum(bucket!.totalDisconnectCount) },
+        ];
+
+  return (
+    <View style={styles.metricsGrid}>
+      {metrics.map(m => (
+        <View key={m.label} style={[styles.metricCard, { backgroundColor: c.card, borderColor: c.border }]}>
+          <View style={[styles.metricIcon, { backgroundColor: c.primary + '14' }]}>
+            <Feather name={m.icon} size={16} color={c.primary} />
+          </View>
+          <Text style={[styles.metricValue, { color: c.foreground }]}>{m.value}</Text>
+          <Text style={[styles.metricLabel, { color: c.mutedForeground }]}>{m.label}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -387,6 +519,35 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     gap: 10,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  metricCard: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 6,
+  },
+  metricIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricValue: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.3,
+  },
+  metricLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
   },
   summaryCard: {
     flexDirection: 'row',

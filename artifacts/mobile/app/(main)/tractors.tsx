@@ -27,14 +27,17 @@ export default function TractorsScreen() {
 
   const topPad = Platform.OS === 'web' ? 67 : 0;
 
+  // Only show commissioned tractors (those with a commissioning date set).
+  const commissioned = filteredTractors.filter(t => !!t.commissionDate);
+
   const displayed = search.trim()
-    ? filteredTractors.filter(
+    ? commissioned.filter(
         t =>
           t.model.toLowerCase().includes(search.toLowerCase()) ||
           t.serialNumber.toLowerCase().includes(search.toLowerCase()) ||
           (t.plantName || '').toLowerCase().includes(search.toLowerCase())
       )
-    : filteredTractors;
+    : commissioned;
 
   const renderTractor = ({ item }: { item: Tractor }) => (
     <TractorCard
