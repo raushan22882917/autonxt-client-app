@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
@@ -20,6 +21,7 @@ import { Tractor } from '@/lib/appsync';
 export default function TractorsScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { filteredTractors, isLoading, refresh } = useApp();
   const [search, setSearch] = useState('');
 
@@ -34,7 +36,12 @@ export default function TractorsScreen() {
       )
     : filteredTractors;
 
-  const renderTractor = ({ item }: { item: Tractor }) => <TractorCard tractor={item} />;
+  const renderTractor = ({ item }: { item: Tractor }) => (
+    <TractorCard
+      tractor={item}
+      onPress={() => router.push(`/tractor/${encodeURIComponent(item.tractorID)}`)}
+    />
+  );
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>

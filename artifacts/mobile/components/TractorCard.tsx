@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { Tractor } from '@/lib/appsync';
@@ -9,6 +9,7 @@ const tractorImg = require('../assets/images/tractor.png');
 
 interface Props {
   tractor: Tractor;
+  onPress?: () => void;
 }
 
 function fmt(v: number | undefined, digits = 0): string {
@@ -16,7 +17,7 @@ function fmt(v: number | undefined, digits = 0): string {
   return digits > 0 ? v.toFixed(digits) : String(Math.round(v));
 }
 
-export function TractorCard({ tractor: t }: Props) {
+export function TractorCard({ tractor: t, onPress }: Props) {
   const c = useColors();
 
   const soc = t.soc;
@@ -43,7 +44,12 @@ export function TractorCard({ tractor: t }: Props) {
   ];
 
   return (
-    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.85}
+    >
       {/* Header */}
       <View style={styles.header}>
         <View style={[styles.imageWrap, { backgroundColor: c.surfaceAlt }]}>
@@ -105,7 +111,7 @@ export function TractorCard({ tractor: t }: Props) {
           </View>
         ))}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

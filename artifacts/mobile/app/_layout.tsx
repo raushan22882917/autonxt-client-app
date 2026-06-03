@@ -31,6 +31,10 @@ function RootLayoutNav() {
         name="complaint/[id]"
         options={{ headerShown: false, presentation: "card", animation: "slide_from_right" }}
       />
+      <Stack.Screen
+        name="tractor/[id]"
+        options={{ headerShown: false, presentation: "card", animation: "slide_from_right" }}
+      />
     </Stack>
   );
 }
