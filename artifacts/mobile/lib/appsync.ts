@@ -269,9 +269,9 @@ const LIST_COMPLAINTS_BY_ORG = `
   }
 `;
 
-const LIST_MANUAL_RUNTIME_BY_ORG = `
-  query ListManualRuntimeEntries($orgID: String, $limit: Int, $nextToken: String) {
-    listManualRuntimeEntries(orgID: $orgID, limit: $limit, nextToken: $nextToken) {
+const LIST_MANUAL_RUNTIME_BY_LOGGER = `
+  query ListManualRuntimeEntries($loggerID: String!, $limit: Int, $nextToken: String) {
+    listManualRuntimeEntries(loggerID: $loggerID, limit: $limit, nextToken: $nextToken) {
       items {
         loggerID date plantID orgID todaysRuntime startCumulativeRuntime endCumulativeRuntime
       }
@@ -350,14 +350,14 @@ async function fetchComplaintsByOrg(orgID: string): Promise<RawComplaint[]> {
   return items;
 }
 
-async function fetchRuntimeEntriesByOrg(orgID: string): Promise<RawRuntimeEntry[]> {
+async function fetchRuntimeEntriesByLogger(loggerID: string): Promise<RawRuntimeEntry[]> {
   const items: RawRuntimeEntry[] = [];
   let nextToken: string | null | undefined;
   let pages = 0;
   do {
     const data = await gqlQuery<{ listManualRuntimeEntries: { items: RawRuntimeEntry[]; nextToken?: string | null } }>(
-      LIST_MANUAL_RUNTIME_BY_ORG,
-      { orgID, limit: 200, nextToken }
+      LIST_MANUAL_RUNTIME_BY_LOGGER,
+      { loggerID, limit: 200, nextToken }
     );
     const conn = data.listManualRuntimeEntries;
     if (conn?.items) items.push(...conn.items);
@@ -365,9 +365,16 @@ async function fetchRuntimeEntriesByOrg(orgID: string): Promise<RawRuntimeEntry[
     pages++;
   } while (nextToken && pages < 25);
   if (nextToken) {
-    console.warn('fetchRuntimeEntriesByOrg: page cap reached; runtime list may be truncated.');
+    console.warn(`fetchRuntimeEntriesByLogger: page cap reached for logger ${loggerID}; runtime list may be truncated.`);
   }
   return items;
+}
+
+// The runtime resolver requires loggerID (or plantID+date / orgID+date), so we
+// fan out one query per tractor logger and merge the results.
+async function fetchRuntimeEntriesByLoggers(loggerIDs: string[]): Promise<RawRuntimeEntry[]> {
+  const results = await Promise.all(loggerIDs.map(fetchRuntimeEntriesByLogger));
+  return results.flat();
 }
 
 /**
@@ -379,11 +386,15 @@ export async function fetchFleetData(
   orgID: string,
   plants: Plant[]
 ): Promise<{ tractors: Tractor[]; complaints: Complaint[]; runtimeRecords: RuntimeRecord[] }> {
-  const [rawTractors, rawComplaints, rawRuntime] = await Promise.all([
+  const [rawTractors, rawComplaints] = await Promise.all([
     fetchTractorsByOrg(orgID),
     fetchComplaintsByOrg(orgID),
-    fetchRuntimeEntriesByOrg(orgID),
   ]);
+
+  const loggerIDs = [
+    ...new Set(rawTractors.map(t => t.loggerID).filter((id): id is string => !!id)),
+  ];
+  const rawRuntime = await fetchRuntimeEntriesByLoggers(loggerIDs);
 
   const plantById = new Map(plants.map(p => [p.plantID, p]));
   const tractorByVin = new Map(rawTractors.map(t => [t.vin, t]));
