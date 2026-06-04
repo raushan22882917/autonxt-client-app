@@ -1,50 +1,74 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Image,
   Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/context/AppContext';
-
-const companyLogo = require('../assets/images/small-logo-black.png');
 
 export function FleetHeader() {
   const c = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { user } = useAuth();
   const {
-    organization,
     plants,
     tractors,
     selectedPlantID,
     setSelectedPlantID,
-    isLoadingMorePlants,
     loadedPlantIDs,
+    organization,
   } = useApp();
-  const [open, setOpen] = useState(false);
+
+  const [plantOpen, setPlantOpen] = useState(false);
+  const [plantQuery, setPlantQuery] = useState('');
 
   const selectedLabel = useMemo(() => {
     if (!selectedPlantID) return 'All Plants';
     return plants.find(p => p.plantID === selectedPlantID)?.name ?? 'All Plants';
   }, [plants, selectedPlantID]);
 
+  const filteredPlants = useMemo(() => {
+    const q = plantQuery.trim().toLowerCase();
+    if (!q) return plants;
+    return plants.filter(
+      p =>
+        p.name.toLowerCase().includes(q) ||
+        p.location?.toLowerCase().includes(q) ||
+        p.plantID.toLowerCase().includes(q)
+    );
+  }, [plants, plantQuery]);
+
   const countFor = (plantID: string | null) =>
     plantID ? tractors.filter(t => t.plantID === plantID).length : tractors.length;
 
   const selectPlant = (plantID: string | null) => {
     setSelectedPlantID(plantID);
-    setOpen(false);
+    setPlantOpen(false);
+    setPlantQuery('');
   };
 
   const topPad = Platform.OS === 'web' ? 12 : insets.top;
+
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : 'U';
 
   return (
     <>
@@ -58,48 +82,103 @@ export function FleetHeader() {
           },
         ]}
       >
-        <Image source={companyLogo} style={styles.logo} resizeMode="contain" />
-
-        <View style={styles.center}>
-          <Text style={[styles.orgName, { color: c.foreground }]} numberOfLines={1}>
-            {organization?.name || 'AutoNXT Fleet'}
-          </Text>
-
-          <TouchableOpacity
-            style={[styles.dropdown, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}
-            onPress={() => setOpen(true)}
-            activeOpacity={0.8}
-            disabled={plants.length === 0}
-          >
-            <Feather name="map-pin" size={14} color={c.primary} />
-            <Text style={[styles.dropdownText, { color: c.foreground }]} numberOfLines={1}>
+        {/* Plant picker button */}
+        <TouchableOpacity
+          style={[
+            styles.plantPicker,
+            {
+              backgroundColor: selectedPlantID ? c.primary + '0E' : c.surfaceAlt,
+              borderColor: selectedPlantID ? c.primary + '35' : c.border,
+            },
+          ]}
+          onPress={() => setPlantOpen(true)}
+          activeOpacity={0.8}
+          disabled={plants.length === 0}
+        >
+          <View style={[styles.plantPickerIcon, { backgroundColor: selectedPlantID ? c.primary : c.muted }]}>
+            <Feather
+              name={selectedPlantID ? 'map-pin' : 'layers'}
+              size={14}
+              color={selectedPlantID ? c.primaryForeground : c.mutedForeground}
+            />
+          </View>
+          <View style={styles.plantPickerText}>
+            <Text style={[styles.plantPickerLabel, { color: c.mutedForeground }]}>
+              {organization?.name ?? 'Fleet'}
+            </Text>
+            <Text style={[styles.plantPickerValue, { color: c.foreground }]} numberOfLines={1}>
               {selectedLabel}
             </Text>
-            <View style={[styles.countBadge, { backgroundColor: c.primary + '18' }]}>
-              <Text style={[styles.countText, { color: c.primary }]}>{countFor(selectedPlantID)}</Text>
-            </View>
-            <Feather name="chevron-down" size={16} color={c.mutedForeground} />
-          </TouchableOpacity>
-        </View>
+          </View>
+          <View style={[styles.tractorBadge, { backgroundColor: c.primary + '14' }]}>
+            <Text style={[styles.tractorBadgeText, { color: c.primary }]}>
+              {countFor(selectedPlantID)}
+            </Text>
+          </View>
+          <Feather name="chevron-down" size={16} color={c.mutedForeground} />
+        </TouchableOpacity>
+
+        {/* Profile button */}
+        <TouchableOpacity
+          style={[styles.avatarBtn, { backgroundColor: c.primary }]}
+          onPress={() => router.push('/(main)/profile')}
+          activeOpacity={0.75}
+          accessibilityLabel="Profile"
+        >
+          <Text style={[styles.avatarText, { color: c.primaryForeground }]}>{initials}</Text>
+        </TouchableOpacity>
       </View>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
+      {/* Plant picker modal */}
+      <Modal
+        visible={plantOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPlantOpen(false)}
+      >
+        <Pressable style={styles.overlay} onPress={() => setPlantOpen(false)}>
           <Pressable
             style={[styles.menu, { backgroundColor: c.card, borderColor: c.border }]}
             onPress={e => e.stopPropagation()}
           >
-            <Text style={[styles.menuTitle, { color: c.mutedForeground }]}>Select plant</Text>
-            <ScrollView style={styles.menuScroll} keyboardShouldPersistTaps="handled">
-              <PlantOption
-                label="All Plants"
-                sublabel="Show entire fleet"
-                count={tractors.length}
-                active={!selectedPlantID}
-                onPress={() => selectPlant(null)}
-                c={c}
+            {/* Search */}
+            <View
+              style={[styles.menuSearch, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}
+            >
+              <Feather name="search" size={17} color={c.mutedForeground} />
+              <TextInput
+                style={[styles.menuSearchInput, { color: c.foreground }]}
+                placeholder="Search plants…"
+                placeholderTextColor={c.mutedForeground + '88'}
+                value={plantQuery}
+                onChangeText={setPlantQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
               />
-              {plants.map(p => {
+              {plantQuery.length > 0 ? (
+                <TouchableOpacity onPress={() => setPlantQuery('')} hitSlop={8}>
+                  <Feather name="x" size={17} color={c.mutedForeground} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <ScrollView
+              style={styles.menuScroll}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {!plantQuery.trim() ? (
+                <PlantOption
+                  label="All Plants"
+                  sublabel={`${plants.length} plant${plants.length !== 1 ? 's' : ''} · entire fleet`}
+                  count={tractors.length}
+                  active={!selectedPlantID}
+                  onPress={() => selectPlant(null)}
+                  c={c}
+                />
+              ) : null}
+              {filteredPlants.map(p => {
                 const loaded = loadedPlantIDs.includes(p.plantID);
                 return (
                   <PlantOption
@@ -110,7 +189,7 @@ export function FleetHeader() {
                         ? p.location || (p.plantType === 'HUB_WAREHOUSE' ? 'Hub warehouse' : 'Site')
                         : 'Loading…'
                     }
-                    count={loaded ? countFor(p.plantID) : '…'}
+                    count={loaded ? countFor(p.plantID) : null}
                     active={selectedPlantID === p.plantID}
                     hub={p.plantType === 'HUB_WAREHOUSE'}
                     onPress={() => selectPlant(p.plantID)}
@@ -118,6 +197,12 @@ export function FleetHeader() {
                   />
                 );
               })}
+              {plantQuery.trim() && filteredPlants.length === 0 ? (
+                <Text style={[styles.emptySearch, { color: c.mutedForeground }]}>
+                  No plants match your search
+                </Text>
+              ) : null}
+              <View style={{ height: 8 }} />
             </ScrollView>
           </Pressable>
         </Pressable>
@@ -137,7 +222,7 @@ function PlantOption({
 }: {
   label: string;
   sublabel?: string;
-  count: number | string;
+  count: number | null;
   active: boolean;
   hub?: boolean;
   onPress: () => void;
@@ -148,8 +233,8 @@ function PlantOption({
       style={[
         styles.option,
         {
-          backgroundColor: active ? c.primary + '12' : 'transparent',
-          borderColor: active ? c.primary + '40' : c.border,
+          backgroundColor: active ? c.primary + '0E' : 'transparent',
+          borderColor: active ? c.primary + '35' : c.border,
         },
       ]}
       onPress={onPress}
@@ -157,8 +242,8 @@ function PlantOption({
     >
       <View style={[styles.optionIcon, { backgroundColor: active ? c.primary : c.surfaceAlt }]}>
         <Feather
-          name={hub ? 'home' : 'map-pin'}
-          size={16}
+          name={hub ? 'home' : active ? 'check' : 'map-pin'}
+          size={15}
           color={active ? c.primaryForeground : c.mutedForeground}
         />
       </View>
@@ -172,8 +257,20 @@ function PlantOption({
           </Text>
         ) : null}
       </View>
-      <Text style={[styles.optionCount, { color: active ? c.primary : c.mutedForeground }]}>{count}</Text>
-      {active ? <Feather name="check" size={18} color={c.primary} /> : null}
+      {count !== null ? (
+        <View
+          style={[
+            styles.optionCount,
+            { backgroundColor: active ? c.primary + '18' : c.muted },
+          ]}
+        >
+          <Text style={[styles.optionCountText, { color: active ? c.primary : c.mutedForeground }]}>
+            {count}
+          </Text>
+        </View>
+      ) : (
+        <Text style={[styles.optionCountText, { color: c.mutedForeground }]}>…</Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -184,110 +281,144 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    gap: 12,
+    gap: 10,
     borderBottomWidth: 1,
   },
-  logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  center: {
+  plantPicker: {
     flex: 1,
-    gap: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    minHeight: 48,
   },
-  orgName: {
-    fontSize: 15,
+  plantPickerIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  plantPickerText: { flex: 1, gap: 1 },
+  plantPickerLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  plantPickerValue: {
+    fontSize: 14,
     fontFamily: 'Inter_700Bold',
     letterSpacing: -0.2,
   },
-  dropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  dropdownText: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  countBadge: {
+  tractorBadge: {
     minWidth: 26,
     height: 22,
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
   },
-  countText: {
-    fontSize: 11,
+  tractorBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Inter_700Bold',
+  },
+  avatarBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 14,
     fontFamily: 'Inter_700Bold',
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(11, 18, 32, 0.45)',
+    backgroundColor: 'rgba(8, 16, 43, 0.5)',
     justifyContent: 'flex-start',
-    paddingTop: 100,
+    paddingTop: 90,
     paddingHorizontal: 16,
   },
   menu: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    maxHeight: 360,
+    maxHeight: 440,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.16,
+    shadowRadius: 32,
+    elevation: 12,
   },
-  menuTitle: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 8,
+  menuSearch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    margin: 14,
+    marginBottom: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  menuSearchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+    paddingVertical: 0,
   },
   menuScroll: {
-    maxHeight: 300,
+    maxHeight: 340,
+  },
+  emptySearch: {
+    textAlign: 'center',
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    padding: 24,
   },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginHorizontal: 10,
+    marginHorizontal: 12,
     marginBottom: 8,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
   },
   optionIcon: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  optionBody: {
-    flex: 1,
-    gap: 2,
-  },
+  optionBody: { flex: 1, gap: 2 },
   optionLabel: {
     fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.1,
   },
   optionSub: {
     fontSize: 11,
     fontFamily: 'Inter_400Regular',
   },
   optionCount: {
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 7,
+  },
+  optionCountText: {
     fontSize: 13,
     fontFamily: 'Inter_700Bold',
-    marginRight: 4,
   },
 });

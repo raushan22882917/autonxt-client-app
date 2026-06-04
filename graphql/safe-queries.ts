@@ -55,6 +55,8 @@ export const listComplaintsByOrgSafe = /* GraphQL */ `
         tractorVIN
         problemSubType
         breakdownType
+        maintenanceType
+        breakdownDate
         description
         priority
         state
@@ -78,6 +80,8 @@ export const listComplaintsByPlantSafe = /* GraphQL */ `
         tractorVIN
         problemSubType
         breakdownType
+        maintenanceType
+        breakdownDate
         description
         priority
         state

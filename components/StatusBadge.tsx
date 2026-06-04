@@ -1,22 +1,36 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-type Status = 'ACTIVE' | 'IDLE' | 'MAINTENANCE' | 'OFFLINE' | 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+type Status =
+  | 'ACTIVE'
+  | 'IDLE'
+  | 'MAINTENANCE'
+  | 'OFFLINE'
+  | 'OPEN'
+  | 'IN_PROGRESS'
+  | 'RESOLVED'
+  | 'CLOSED'
+  | 'LOW'
+  | 'MEDIUM'
+  | 'HIGH'
+  | 'CRITICAL';
 
 const STATUS_CONFIG: Record<Status, { label: string; bg: string; text: string; dot: string }> = {
-  ACTIVE: { label: 'Active', bg: '#E7F6EC', text: '#127A38', dot: '#16A34A' },
-  IDLE: { label: 'Idle', bg: '#FCF1E2', text: '#9A6206', dot: '#D97706' },
-  MAINTENANCE: { label: 'Maintenance', bg: '#E8EFFD', text: '#1444B8', dot: '#1456E0' },
-  OFFLINE: { label: 'Offline', bg: '#EEF1F5', text: '#64748B', dot: '#94A3B8' },
-  OPEN: { label: 'Open', bg: '#FDECEC', text: '#A30E18', dot: '#C1121F' },
-  IN_PROGRESS: { label: 'In Progress', bg: '#E8EFFD', text: '#1444B8', dot: '#1456E0' },
-  RESOLVED: { label: 'Resolved', bg: '#E7F6EC', text: '#127A38', dot: '#16A34A' },
-  CLOSED: { label: 'Closed', bg: '#EEF1F5', text: '#64748B', dot: '#94A3B8' },
-  LOW: { label: 'Low', bg: '#E7F6EC', text: '#127A38', dot: '#16A34A' },
-  MEDIUM: { label: 'Medium', bg: '#FCF1E2', text: '#9A6206', dot: '#CA8A04' },
-  HIGH: { label: 'High', bg: '#FCEEE0', text: '#9A4406', dot: '#D97706' },
-  CRITICAL: { label: 'Critical', bg: '#FDECEC', text: '#A30E18', dot: '#C1121F' },
+  ACTIVE:      { label: 'Active',      bg: '#E4F7EC', text: '#0A7032', dot: '#0A9040' },
+  IDLE:        { label: 'Idle',        bg: '#FDF0E0', text: '#8A5200', dot: '#CA7000' },
+  MAINTENANCE: { label: 'Maintenance', bg: '#E8EFFD', text: '#1040A8', dot: '#1246C8' },
+  OFFLINE:     { label: 'Offline',     bg: '#EEF1F6', text: '#526070', dot: '#7A8FA6' },
+  OPEN:        { label: 'Open',        bg: '#FDECED', text: '#98080F', dot: '#C1121F' },
+  IN_PROGRESS: { label: 'In Progress', bg: '#E8EFFD', text: '#1040A8', dot: '#1246C8' },
+  RESOLVED:    { label: 'Resolved',    bg: '#E4F7EC', text: '#0A7032', dot: '#0A9040' },
+  CLOSED:      { label: 'Closed',      bg: '#EEF1F6', text: '#526070', dot: '#7A8FA6' },
+  LOW:         { label: 'Low',         bg: '#E4F7EC', text: '#0A7032', dot: '#0A9040' },
+  MEDIUM:      { label: 'Medium',      bg: '#FDF0E0', text: '#8A5200', dot: '#CA7000' },
+  HIGH:        { label: 'High',        bg: '#FDE8DA', text: '#8A3400', dot: '#C44E00' },
+  CRITICAL:    { label: 'Critical',    bg: '#FDECED', text: '#98080F', dot: '#C1121F' },
 };
+
+const FALLBACK = { label: '—', bg: '#EEF1F6', text: '#526070', dot: '#7A8FA6' };
 
 interface Props {
   status: Status;
@@ -24,7 +38,7 @@ interface Props {
 }
 
 export function StatusBadge({ status, small }: Props) {
-  const config = STATUS_CONFIG[status] || { label: status, bg: '#EEF1F5', text: '#64748B', dot: '#94A3B8' };
+  const config = STATUS_CONFIG[status] ?? FALLBACK;
   return (
     <View style={[styles.badge, { backgroundColor: config.bg }, small && styles.small]}>
       <View style={[styles.dot, { backgroundColor: config.dot }, small && styles.dotSmall]} />
@@ -39,10 +53,10 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 20,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 24,
     alignSelf: 'flex-start',
   },
   dot: {
@@ -56,14 +70,15 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.1,
   },
   small: {
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 5,
   },
   smallText: {
-    fontSize: 10,
+    fontSize: 11,
   },
 });

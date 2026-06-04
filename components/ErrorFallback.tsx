@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { reloadAppAsync } from "expo";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   Modal,
@@ -8,10 +9,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { useColors } from "@/hooks/useColors";
 
 export type ErrorFallbackProps = {
@@ -20,26 +21,16 @@ export type ErrorFallbackProps = {
 };
 
 export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
-  const colors = useColors();
+  const c = useColors();
   const insets = useSafeAreaInsets();
-
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const handleRestart = async () => {
     try {
       await reloadAppAsync();
-    } catch (restartError) {
-      console.error("Failed to restart app:", restartError);
+    } catch {
       resetError();
     }
-  };
-
-  const formatErrorDetails = (): string => {
-    let details = `Error: ${error.message}\n\n`;
-    if (error.stack) {
-      details += `Stack Trace:\n${error.stack}`;
-    }
-    return details;
   };
 
   const monoFont = Platform.select({
@@ -49,122 +40,133 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   });
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {__DEV__ ? (
-        <Pressable
-          onPress={() => setIsModalVisible(true)}
-          accessibilityLabel="View error details"
-          accessibilityRole="button"
-          style={({ pressed }) => [
-            styles.topButton,
-            {
-              top: insets.top + 16,
-              backgroundColor: colors.card,
-              opacity: pressed ? 0.8 : 1,
-            },
-          ]}
-        >
-          <Feather name="alert-circle" size={20} color={colors.foreground} />
-        </Pressable>
-      ) : null}
+    <View style={[styles.root, { backgroundColor: c.background }]}>
+      {/* Subtle gradient accent at top */}
+      <LinearGradient
+        colors={[c.primary + "22", "transparent"]}
+        style={styles.topGradient}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        pointerEvents="none"
+      />
 
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          Something went wrong
+      <View
+        style={[
+          styles.content,
+          { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 },
+        ]}
+      >
+        {/* Icon */}
+        <View style={[styles.iconOuter, { backgroundColor: c.redSoft, borderColor: c.redBorder }]}>
+          <View style={[styles.iconInner, { backgroundColor: c.red + "14" }]}>
+            <Feather name="alert-octagon" size={36} color={c.red} />
+          </View>
+        </View>
+
+        {/* Text */}
+        <Text style={[styles.title, { color: c.foreground }]}>Something went wrong</Text>
+        <Text style={[styles.message, { color: c.mutedForeground }]}>
+          An unexpected error occurred. You can try reloading the app — your fleet data will
+          sync again automatically.
         </Text>
 
-        <Text style={[styles.message, { color: colors.mutedForeground }]}>
-          Please reload the app to continue.
-        </Text>
-
-        <Pressable
-          onPress={handleRestart}
-          style={({ pressed }) => [
-            styles.button,
-            {
-              backgroundColor: colors.primary,
-              opacity: pressed ? 0.9 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-            },
-          ]}
-        >
+        {/* Error preview */}
+        <View style={[styles.errorPreview, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+          <View style={styles.errorPreviewHeader}>
+            <Feather name="code" size={13} color={c.mutedForeground} />
+            <Text style={[styles.errorPreviewLabel, { color: c.mutedForeground }]}>Error</Text>
+          </View>
           <Text
-            style={[
-              styles.buttonText,
-              { color: colors.primaryForeground },
-            ]}
+            style={[styles.errorMessage, { color: c.foreground, fontFamily: monoFont }]}
+            numberOfLines={3}
           >
-            Try Again
+            {error.message}
           </Text>
-        </Pressable>
+        </View>
+
+        {/* Actions */}
+        <TouchableOpacity
+          style={[styles.primaryBtn, { backgroundColor: c.primary, shadowColor: c.primary }]}
+          onPress={handleRestart}
+          activeOpacity={0.85}
+        >
+          <Feather name="refresh-cw" size={18} color={c.primaryForeground} />
+          <Text style={[styles.primaryBtnText, { color: c.primaryForeground }]}>
+            Reload App
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.secondaryBtn, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}
+          onPress={resetError}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.secondaryBtnText, { color: c.foreground }]}>Try without reload</Text>
+        </TouchableOpacity>
+
+        {__DEV__ ? (
+          <TouchableOpacity
+            style={styles.detailsLink}
+            onPress={() => setShowDetails(true)}
+            activeOpacity={0.7}
+          >
+            <Feather name="terminal" size={13} color={c.mutedForeground} />
+            <Text style={[styles.detailsLinkText, { color: c.mutedForeground }]}>
+              View stack trace
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
+      {/* Dev stack trace modal */}
       {__DEV__ ? (
         <Modal
-          visible={isModalVisible}
+          visible={showDetails}
           animationType="slide"
-          transparent={true}
-          onRequestClose={() => setIsModalVisible(false)}
+          transparent
+          onRequestClose={() => setShowDetails(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View
+          <Pressable style={styles.overlay} onPress={() => setShowDetails(false)}>
+            <Pressable
               style={[
-                styles.modalContainer,
-                { backgroundColor: colors.background },
+                styles.detailSheet,
+                { backgroundColor: c.card, borderColor: c.border, paddingBottom: insets.bottom + 16 },
               ]}
+              onPress={e => e.stopPropagation()}
             >
-              <View
-                style={[
-                  styles.modalHeader,
-                  { borderBottomColor: colors.border },
-                ]}
-              >
-                <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-                  Error Details
-                </Text>
-                <Pressable
-                  onPress={() => setIsModalVisible(false)}
-                  accessibilityLabel="Close error details"
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.closeButton,
-                    { opacity: pressed ? 0.6 : 1 },
-                  ]}
+              <View style={[styles.sheetHandle, { backgroundColor: c.border }]} />
+              <View style={[styles.sheetHeader, { borderBottomColor: c.hairline }]}>
+                <View style={[styles.sheetIcon, { backgroundColor: c.red + "12" }]}>
+                  <Feather name="terminal" size={18} color={c.red} />
+                </View>
+                <Text style={[styles.sheetTitle, { color: c.foreground }]}>Stack Trace</Text>
+                <TouchableOpacity
+                  onPress={() => setShowDetails(false)}
+                  style={[styles.sheetClose, { backgroundColor: c.surfaceAlt }]}
+                  hitSlop={8}
                 >
-                  <Feather name="x" size={24} color={colors.foreground} />
-                </Pressable>
+                  <Feather name="x" size={18} color={c.foreground} />
+                </TouchableOpacity>
               </View>
-
               <ScrollView
-                style={styles.modalScrollView}
+                style={{ flex: 1 }}
                 contentContainerStyle={[
-                  styles.modalScrollContent,
+                  styles.sheetContent,
                   { paddingBottom: insets.bottom + 16 },
                 ]}
                 showsVerticalScrollIndicator
               >
-                <View
-                  style={[
-                    styles.errorContainer,
-                    { backgroundColor: colors.card },
-                  ]}
-                >
+                <View style={[styles.stackWrap, { backgroundColor: c.foreground + "08", borderColor: c.border }]}>
                   <Text
-                    style={[
-                      styles.errorText,
-                      {
-                        color: colors.foreground,
-                        fontFamily: monoFont,
-                      },
-                    ]}
+                    style={[styles.stackText, { color: c.foreground, fontFamily: monoFont }]}
                     selectable
                   >
-                    {formatErrorDetails()}
+                    {`${error.message}\n\n${error.stack ?? ""}`}
                   </Text>
                 </View>
               </ScrollView>
-            </View>
-          </View>
+            </Pressable>
+          </Pressable>
         </Modal>
       ) : null}
     </View>
@@ -172,107 +174,173 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
+  },
+  topGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 200,
   },
   content: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 28,
     gap: 16,
-    width: "100%",
-    maxWidth: 600,
+  },
+  iconOuter: {
+    width: 96,
+    height: 96,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  iconInner: {
+    width: 76,
+    height: 76,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 24,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.5,
     textAlign: "center",
-    lineHeight: 40,
   },
   message: {
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
     textAlign: "center",
-    lineHeight: 24,
+    lineHeight: 22,
+    maxWidth: 320,
   },
-  topButton: {
-    position: "absolute",
-    right: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 8,
+  errorPreview: {
+    width: "100%",
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 8,
+    marginTop: 4,
+  },
+  errorPreviewHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
+    gap: 6,
   },
-  button: {
-    paddingVertical: 16,
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    minWidth: 200,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  errorPreviewLabel: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  buttonText: {
-    fontWeight: "600",
-    textAlign: "center",
-    fontSize: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContainer: {
-    width: "100%",
-    height: "90%",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  closeButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalScrollContent: {
-    padding: 16,
-  },
-  errorContainer: {
-    width: "100%",
-    borderRadius: 8,
-    overflow: "hidden",
-    padding: 16,
-  },
-  errorText: {
+  errorMessage: {
     fontSize: 12,
     lineHeight: 18,
+  },
+  primaryBtn: {
     width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginTop: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  primaryBtnText: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.2,
+  },
+  secondaryBtn: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  secondaryBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+  },
+  detailsLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+  },
+  detailsLinkText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    textDecorationLine: "underline",
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(8, 16, 43, 0.55)",
+    justifyContent: "flex-end",
+  },
+  detailSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    height: "80%",
+    paddingTop: 8,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 14,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+  },
+  sheetIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+  },
+  sheetClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetContent: {
+    padding: 16,
+  },
+  stackWrap: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+  },
+  stackText: {
+    fontSize: 11,
+    lineHeight: 18,
   },
 });

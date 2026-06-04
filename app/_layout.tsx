@@ -29,7 +29,7 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#EEF2F7" } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#F0F4FA" } }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="(main)" options={{ headerShown: false }} />
@@ -39,6 +39,10 @@ function RootLayoutNav() {
       />
       <Stack.Screen
         name="tractor/[id]"
+        options={{ headerShown: false, presentation: "card", animation: "slide_from_right" }}
+      />
+      <Stack.Screen
+        name="plant/[id]"
         options={{ headerShown: false, presentation: "card", animation: "slide_from_right" }}
       />
     </Stack>

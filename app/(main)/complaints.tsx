@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   FlatList,
   Platform,
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -13,50 +14,105 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { ComplaintFilterSheet } from '@/components/ComplaintFilterSheet';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Complaint } from '@/lib/appsync';
 import { severityColor, formatDate } from '@/lib/complaint';
+import {
+  COMPLAINT_STATUS_TABS,
+  complaintPeriodLabel,
+  countActiveComplaintFilters,
+  DEFAULT_COMPLAINT_FILTERS,
+  emptyMessageForTab,
+  filterComplaintList,
+  filterComplaintsByPeriod,
+  isActiveComplaint,
+  type ComplaintFilterValues,
+} from '@/lib/complaintFilters';
+import { isBreakdownComplaint } from '@/lib/isBreakdownComplaint';
 
-const SEVERITY_FILTERS = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const;
-type SeverityFilter = typeof SEVERITY_FILTERS[number];
+function activeFilterSummary(filters: ComplaintFilterValues): string {
+  const statusLabel =
+    COMPLAINT_STATUS_TABS.find(t => t.key === filters.statusTab)?.label ?? filters.statusTab;
+  const periodLabel = complaintPeriodLabel(
+    filters.period,
+    filters.period === 'CUSTOM' ? filters.customMonth : undefined
+  );
+  const parts = [statusLabel, periodLabel];
+  if (filters.severity !== 'ALL') parts.push(filters.severity);
+  if (filters.breakdownOnly) parts.push('Breakdown');
+  return parts.join(' · ');
+}
 
 export default function ComplaintsScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { filteredComplaints, isLoading, refresh } = useApp();
-  const [severity, setSeverity] = useState<SeverityFilter>('ALL');
+
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<ComplaintFilterValues>(DEFAULT_COMPLAINT_FILTERS);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  const { period, customMonth, statusTab, severity, breakdownOnly } = filters;
+  const activeFilterCount = countActiveComplaintFilters(filters);
 
   const topPad = Platform.OS === 'web' ? 67 : 0;
+  const periodLabel = complaintPeriodLabel(
+    period,
+    period === 'CUSTOM' ? customMonth : undefined
+  );
 
-  const displayed =
-    severity === 'ALL'
-      ? filteredComplaints
-      : filteredComplaints.filter(x => x.severity === severity);
+  const inPeriod = useMemo(
+    () => filterComplaintsByPeriod(filteredComplaints, period, customMonth),
+    [filteredComplaints, period, customMonth]
+  );
 
-  const critCount = filteredComplaints.filter(x => x.severity === 'CRITICAL').length;
-  const openCount = filteredComplaints.filter(x => x.status === 'OPEN').length;
+  const displayed = useMemo(
+    () =>
+      filterComplaintList(filteredComplaints, {
+        statusTab,
+        severity,
+        breakdownOnly,
+        search,
+        period,
+        customMonth,
+      }),
+    [filteredComplaints, statusTab, severity, breakdownOnly, search, period, customMonth]
+  );
+
+  const raisedCount = inPeriod.length;
+  const critCount = inPeriod.filter(x => x.severity === 'CRITICAL').length;
+  const openCount = inPeriod.filter(isActiveComplaint).length;
+  const breakdownRaised = inPeriod.filter(isBreakdownComplaint).length;
 
   const renderComplaint = ({ item }: { item: Complaint }) => {
     const sev = severityColor(item.severity, c);
+    const isCritical = item.severity === 'CRITICAL';
+    const isBreakdown = isBreakdownComplaint(item);
+
     return (
       <TouchableOpacity
         style={[
           styles.card,
           {
             backgroundColor: c.card,
-            borderColor: item.severity === 'CRITICAL' ? sev + '55' : c.border,
-            shadowColor: c.shadow,
+            borderColor: isCritical ? sev + '44' : c.border,
+            shadowColor: c.shadowStrong,
           },
         ]}
         activeOpacity={0.75}
         onPress={() => router.push(`/complaint/${item.complaintID}`)}
+        accessibilityRole="button"
       >
+        {/* Severity stripe */}
         <View style={[styles.sevStripe, { backgroundColor: sev }]} />
+
         <View style={styles.cardBody}>
+          {/* Header row */}
           <View style={styles.cardTop}>
-            <View style={[styles.iconWrap, { backgroundColor: sev + '18' }]}>
-              <Feather name="alert-triangle" size={18} color={sev} />
+            <View style={[styles.iconWrap, { backgroundColor: sev + '15' }]}>
+              <Feather name={isBreakdown ? 'alert-octagon' : 'alert-triangle'} size={19} color={sev} />
             </View>
             <View style={styles.info}>
               <Text style={[styles.title, { color: c.foreground }]} numberOfLines={1}>
@@ -66,151 +122,306 @@ export default function ComplaintsScreen() {
                 {[item.tractorModel, item.plantName].filter(Boolean).join(' · ')}
               </Text>
             </View>
-            <Feather name="chevron-right" size={18} color={c.mutedForeground} />
+            <View style={[styles.arrowWrap, { backgroundColor: c.surfaceAlt }]}>
+              <Feather name="chevron-right" size={16} color={c.mutedForeground} />
+            </View>
           </View>
 
+          {/* Description */}
           <Text style={[styles.description, { color: c.mutedForeground }]} numberOfLines={2}>
             {item.description}
           </Text>
 
+          {/* Footer row */}
           <View style={styles.badgeRow}>
             <StatusBadge status={item.severity} small />
             <StatusBadge status={item.status} small />
-            <Text style={[styles.date, { color: c.mutedForeground }]}>
-              {formatDate(item.createdAt)}
-            </Text>
+            {isBreakdown ? (
+              <View style={[styles.breakdownPill, { backgroundColor: c.red + '14', borderColor: c.red + '30' }]}>
+                <Feather name="alert-octagon" size={9} color={c.red} />
+                <Text style={[styles.breakdownPillText, { color: c.red }]}>Breakdown</Text>
+              </View>
+            ) : null}
+            <View style={styles.dateRow}>
+              <Feather name="calendar" size={11} color={c.mutedForeground} />
+              <Text style={[styles.date, { color: c.mutedForeground }]}>
+                {formatDate(item.createdAt)}
+              </Text>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
     );
   };
 
-  return (
-    <View style={[styles.root, { backgroundColor: c.background }]}>
-      <View style={[styles.header, { paddingTop: topPad + 12 }]}>
-        {/* Summary */}
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryBox, { backgroundColor: c.card, borderColor: c.border }]}>
-            <Text style={[styles.summaryNum, { color: c.red }]}>{critCount}</Text>
-            <Text style={[styles.summaryLabel, { color: c.mutedForeground }]}>Critical</Text>
-          </View>
-          <View style={[styles.summaryBox, { backgroundColor: c.card, borderColor: c.border }]}>
-            <Text style={[styles.summaryNum, { color: c.primary }]}>{openCount}</Text>
-            <Text style={[styles.summaryLabel, { color: c.mutedForeground }]}>Open</Text>
-          </View>
-          <View style={[styles.summaryBox, { backgroundColor: c.card, borderColor: c.border }]}>
-            <Text style={[styles.summaryNum, { color: c.foreground }]}>{filteredComplaints.length}</Text>
-            <Text style={[styles.summaryLabel, { color: c.mutedForeground }]}>Total</Text>
-          </View>
+  const ListHeader = (
+    <View style={[styles.header, { paddingTop: topPad + 14 }]}>
+      {/* Search + Filter row */}
+      <View style={styles.searchRow}>
+        <View style={[styles.searchBox, { backgroundColor: c.card, borderColor: c.border }]}>
+          <Feather name="search" size={17} color={c.mutedForeground} />
+          <TextInput
+            style={[styles.searchInput, { color: c.foreground }]}
+            placeholder="Search tickets…"
+            placeholderTextColor={c.mutedForeground + '88'}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 ? (
+            <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+              <View style={[styles.clearBtn, { backgroundColor: c.border }]}>
+                <Feather name="x" size={12} color={c.mutedForeground} />
+              </View>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
-        {/* Severity filter */}
-        <View style={styles.severityRow}>
-          {SEVERITY_FILTERS.map(s => {
-            const active = severity === s;
-            return (
-              <TouchableOpacity
-                key={s}
-                style={[
-                  styles.severityChip,
-                  {
-                    backgroundColor: active ? c.primary : c.card,
-                    borderColor: active ? c.primary : c.border,
-                  },
-                ]}
-                onPress={() => setSeverity(s)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.severityText,
-                    { color: active ? c.primaryForeground : c.mutedForeground },
-                  ]}
-                >
-                  {s}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <TouchableOpacity
+          style={[
+            styles.filterBtn,
+            {
+              backgroundColor: activeFilterCount > 0 ? c.primary : c.card,
+              borderColor: activeFilterCount > 0 ? c.primary : c.border,
+              shadowColor: activeFilterCount > 0 ? c.primary : 'transparent',
+            },
+          ]}
+          onPress={() => setFilterSheetOpen(true)}
+          activeOpacity={0.8}
+        >
+          <Feather
+            name="sliders"
+            size={19}
+            color={activeFilterCount > 0 ? c.primaryForeground : c.foreground}
+          />
+          {activeFilterCount > 0 ? (
+            <View style={[styles.filterBadge, { backgroundColor: c.primaryForeground }]}>
+              <Text style={[styles.filterBadgeText, { color: c.primary }]}>{activeFilterCount}</Text>
+            </View>
+          ) : null}
+        </TouchableOpacity>
       </View>
 
+      {/* Active filter summary */}
+      <Text style={[styles.activeFilters, { color: c.mutedForeground }]} numberOfLines={1}>
+        {activeFilterSummary(filters)}
+      </Text>
+
+      {/* Stats row */}
+      <View style={styles.summaryRow}>
+        <SummaryBox
+          value={raisedCount}
+          label="Raised"
+          color={c.primary}
+          bg={c.blueSoft}
+          border={c.primary + '25'}
+        />
+        <SummaryBox
+          value={critCount}
+          label="Critical"
+          color={c.red}
+          bg={c.redSoft}
+          border={c.redBorder}
+        />
+        <SummaryBox
+          value={openCount}
+          label="Open"
+          color={c.warning}
+          bg={c.warningSoft}
+          border={c.warningBorder}
+        />
+        <SummaryBox
+          value={breakdownRaised}
+          label="Breakdown"
+          color={c.foreground}
+          bg={c.surfaceAlt}
+          border={c.border}
+        />
+      </View>
+
+      {/* Results count */}
+      <Text style={[styles.periodHint, { color: c.mutedForeground }]}>
+        Showing {displayed.length} of {raisedCount} · {periodLabel}
+      </Text>
+    </View>
+  );
+
+  return (
+    <View style={[styles.root, { backgroundColor: c.background }]}>
       <FlatList
         data={displayed}
         keyExtractor={x => x.complaintID}
         renderItem={renderComplaint}
+        ListHeaderComponent={ListHeader}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
         }
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Feather name="check-circle" size={36} color={c.border} />
-            <Text style={[styles.emptyText, { color: c.mutedForeground }]}>No complaints found</Text>
+          <View style={[styles.empty, { backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={[styles.emptyIconWrap, { backgroundColor: c.successSoft }]}>
+              <Feather name="check-circle" size={32} color={c.success} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: c.foreground }]}>
+              {search ? 'No Results' : 'All Clear'}
+            </Text>
+            <Text style={[styles.emptyText, { color: c.mutedForeground }]}>
+              {emptyMessageForTab(statusTab, breakdownOnly, periodLabel)}
+            </Text>
+            <TouchableOpacity
+              style={[styles.emptyFilterBtn, { borderColor: c.primary + '44', backgroundColor: c.blueSoft }]}
+              onPress={() => setFilterSheetOpen(true)}
+            >
+              <Feather name="sliders" size={15} color={c.primary} />
+              <Text style={[styles.emptyFilterText, { color: c.primary }]}>Adjust filters</Text>
+            </TouchableOpacity>
           </View>
         }
+      />
+
+      <ComplaintFilterSheet
+        visible={filterSheetOpen}
+        applied={filters}
+        onClose={() => setFilterSheetOpen(false)}
+        onApply={setFilters}
       />
     </View>
   );
 }
+
+function SummaryBox({
+  value,
+  label,
+  color,
+  bg,
+  border,
+}: {
+  value: number;
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+}) {
+  return (
+    <View style={[summaryStyles.box, { backgroundColor: bg, borderColor: border }]}>
+      <Text style={[summaryStyles.num, { color }]}>{value}</Text>
+      <Text style={[summaryStyles.label, { color: color + 'CC' }]}>{label}</Text>
+    </View>
+  );
+}
+
+const summaryStyles = StyleSheet.create({
+  box: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    gap: 2,
+  },
+  num: {
+    fontSize: 24,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.5,
+  },
+  label: {
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+});
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: {
     paddingHorizontal: 16,
     paddingBottom: 8,
-    gap: 12,
+    gap: 10,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  searchBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+    padding: 0,
+  },
+  clearBtn: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  filterBadgeText: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+  },
+  activeFilters: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    letterSpacing: 0.1,
   },
   summaryRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
-  summaryBox: {
-    flex: 1,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 12,
-    alignItems: 'center',
-    gap: 2,
-  },
-  summaryNum: {
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
-  },
-  summaryLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter_400Regular',
-  },
-  severityRow: {
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  severityChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  severityText: {
+  periodHint: {
     fontSize: 12,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Inter_400Regular',
   },
   list: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    gap: 10,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     flexDirection: 'row',
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
     shadowRadius: 10,
-    elevation: 1,
+    elevation: 2,
   },
   sevStripe: {
     width: 4,
@@ -226,45 +437,107 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  info: { flex: 1 },
+  info: { flex: 1, gap: 2 },
   title: {
     fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.1,
   },
   sub: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    marginTop: 2,
+  },
+  arrowWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   description: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
-    lineHeight: 18,
+    lineHeight: 19,
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
     flexWrap: 'wrap',
+  },
+  breakdownPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  breakdownPillText: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 'auto',
   },
   date: {
     fontSize: 11,
-    fontFamily: 'Inter_400Regular',
-    marginLeft: 'auto',
+    fontFamily: 'Inter_500Medium',
   },
   empty: {
     alignItems: 'center',
-    paddingTop: 80,
-    gap: 12,
+    padding: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 8,
+    gap: 10,
+  },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.3,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 12,
+  },
+  emptyFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  emptyFilterText: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
   },
 });

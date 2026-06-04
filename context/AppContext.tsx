@@ -14,6 +14,8 @@ import {
   fetchUsersByOrg,
   fetchAllUsers,
   fetchPlantFleetData,
+  fetchPlantFleetBasic,
+  enrichPlantFleet,
   refreshTractorsTelemetry,
   isCommissionedTractor,
 } from '@/lib/appsync';
@@ -154,6 +156,61 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLoadedPlantIDs(Array.from(loadedSetRef.current));
   }, []);
 
+  const applyEnrichment = useCallback(
+    (enriched: Pick<PlantFleetSlice, 'tractors' | 'runtimeRecords'>) => {
+      const byTractorId = new Map(enriched.tractors.map(t => [t.tractorID, t]));
+      setTractors(prev =>
+        prev.map(t => (byTractorId.has(t.tractorID) ? (byTractorId.get(t.tractorID) as Tractor) : t))
+      );
+      setRuntimeRecords(prev => {
+        const map = new Map(prev.map(r => [r.recordID, r]));
+        for (const r of enriched.runtimeRecords) map.set(r.recordID, r);
+        return Array.from(map.values());
+      });
+    },
+    []
+  );
+
+  const loadRemainingPlants = useCallback(
+    async (org: Organization, plantList: Plant[], remaining: Plant[]) => {
+      if (remaining.length === 0) return;
+
+      setIsLoadingMorePlants(true);
+      setLoadingMessage(`Loading ${remaining.length} plants…`);
+
+      try {
+        const basics = await Promise.all(
+          remaining.map(p => fetchPlantFleetBasic(org.orgID, plantList, p.plantID))
+        );
+        if (cancelledRef.current) return;
+
+        for (const slice of basics) {
+          applySlice(slice);
+        }
+
+        const tractorsToEnrich = basics
+          .flatMap(s => s.tractors)
+          .filter(isCommissionedTractor);
+        if (tractorsToEnrich.length === 0) return;
+
+        setLoadingMessage('Syncing live telemetry…');
+        const enriched = await enrichPlantFleet(org.orgID, plantList, tractorsToEnrich);
+        if (cancelledRef.current) return;
+        applyEnrichment(enriched);
+      } catch (e: unknown) {
+        if (!cancelledRef.current) {
+          console.warn('Failed to load remaining plants:', e);
+        }
+      } finally {
+        if (!cancelledRef.current) {
+          setIsLoadingMorePlants(false);
+          setLoadingMessage('');
+        }
+      }
+    },
+    [applySlice, applyEnrichment]
+  );
+
   const loadPlant = useCallback(
     async (plantID: string, options?: { priority?: boolean }) => {
       const org = orgRef.current;
@@ -167,9 +224,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setLoadingMessage(`Loading ${plantName}…`);
 
       try {
-        const slice = await fetchPlantFleetData(org.orgID, plantList, plantID);
+        const basic = await fetchPlantFleetBasic(org.orgID, plantList, plantID);
         if (cancelledRef.current) return;
-        applySlice(slice);
+        applySlice(basic);
+
+        const toEnrich = basic.tractors.filter(isCommissionedTractor);
+        if (toEnrich.length > 0) {
+          const enriched = await enrichPlantFleet(org.orgID, plantList, toEnrich);
+          if (cancelledRef.current) return;
+          applyEnrichment(enriched);
+        }
       } catch (e: unknown) {
         if (!cancelledRef.current) {
           console.warn(`Failed to load plant ${plantID}:`, e);
@@ -246,13 +310,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         applySlice(firstSlice);
         setIsLoading(false);
-        for (let i = 1; i < fetchedPlants.length; i++) {
-          if (cancelledRef.current) break;
-          const plant = fetchedPlants[i];
-          setLoadingMessage(`Loading ${plant.name} (${i + 1}/${fetchedPlants.length})…`);
-          await loadPlant(plant.plantID);
+
+        const remainingPlants = fetchedPlants.slice(1);
+        if (remainingPlants.length > 0 && !cancelledRef.current) {
+          await loadRemainingPlants(org, fetchedPlants, remainingPlants);
+        } else if (!cancelledRef.current) {
+          setIsLoadingMorePlants(false);
         }
-        if (!cancelledRef.current) setIsLoadingMorePlants(false);
       } catch (e: unknown) {
         if (!cancelledRef.current) {
           const msg = e instanceof Error ? e.message : 'Failed to load data';
@@ -268,7 +332,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelledRef.current = true;
     };
-  }, [user, isAdmin, tick, applySlice, loadPlant]);
+  }, [user, isAdmin, tick, applySlice, loadRemainingPlants]);
 
   // When user picks a plant that is not loaded yet, fetch it next.
   useEffect(() => {

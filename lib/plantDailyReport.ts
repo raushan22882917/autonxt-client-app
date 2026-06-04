@@ -7,6 +7,7 @@ import {
   type Tractor,
 } from '@/lib/appsync';
 import { rowsToCsv } from '@/lib/csv';
+import { isBreakdownComplaint } from '@/lib/complaintBreakdown';
 import { isOnDate, toDateKey } from '@/lib/dailyReport';
 import { manualRuntimeDayHours } from '@/lib/tractorRuntime';
 
@@ -80,14 +81,6 @@ function isOperationalTractor(t: Tractor): boolean {
   return isAvailableTractor(t) && t.status === 'ACTIVE';
 }
 
-function isBreakdownComplaint(c: Complaint): boolean {
-  const text = `${c.title} ${c.description}`.toLowerCase();
-  return (
-    /breakdown|break down|off road|vor/.test(text) ||
-    c.severity === 'CRITICAL' ||
-    c.severity === 'HIGH'
-  );
-}
 
 type ImplementCounts = {
   total: number;

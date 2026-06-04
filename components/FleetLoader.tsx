@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { LoadingRing } from '@/components/LoadingRing';
 import { useColors } from '@/hooks/useColors';
 
 const companyLogo = require('../assets/images/small-logo-black.png');
@@ -32,20 +33,10 @@ export function FleetLoader({
   inline = false,
 }: FleetLoaderProps) {
   const c = useColors();
-  const spin = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) return;
-
-    const spinLoop = Animated.loop(
-      Animated.timing(spin, {
-        toValue: 1,
-        duration: 1400,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
 
     const pulseLoop = Animated.loop(
       Animated.sequence([
@@ -64,20 +55,12 @@ export function FleetLoader({
       ])
     );
 
-    spinLoop.start();
     pulseLoop.start();
     return () => {
-      spinLoop.stop();
       pulseLoop.stop();
-      spin.setValue(0);
       pulse.setValue(0);
     };
-  }, [visible, spin, pulse]);
-
-  const rotate = spin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+  }, [visible, pulse]);
 
   const logoScale = pulse.interpolate({
     inputRange: [0, 1],
@@ -90,20 +73,9 @@ export function FleetLoader({
   if (!visible) return null;
 
   const card = (
-        <View style={[styles.card, inline && styles.cardInline, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
+        <View style={[styles.card, inline && styles.cardInline, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadowStrong }]}>
           <View style={styles.spinnerWrap}>
-            <Animated.View
-              style={[
-                styles.ring,
-                {
-                  borderTopColor: c.primary,
-                  borderRightColor: c.primary + '55',
-                  borderBottomColor: c.border,
-                  borderLeftColor: c.border,
-                  transform: [{ rotate }],
-                },
-              ]}
-            />
+            <LoadingRing size="lg" color={c.primary} dual />
             <Animated.View style={[styles.logoWrap, { transform: [{ scale: logoScale }] }]}>
               <Image source={companyLogo} style={styles.logo} resizeMode="contain" />
             </Animated.View>
@@ -229,16 +201,16 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 320,
-    borderRadius: 24,
+    borderRadius: 26,
     borderWidth: 1,
-    paddingVertical: 32,
-    paddingHorizontal: 28,
+    paddingVertical: 36,
+    paddingHorizontal: 32,
     alignItems: 'center',
     gap: 10,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 28,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.1,
+    shadowRadius: 36,
+    elevation: 8,
   },
   spinnerWrap: {
     width: 88,
@@ -247,14 +219,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  ring: {
-    position: 'absolute',
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 3,
-  },
   logoWrap: {
+    position: 'absolute',
     width: 56,
     height: 56,
     borderRadius: 28,

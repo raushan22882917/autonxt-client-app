@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Platform,
   RefreshControl,
@@ -11,62 +11,103 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
-import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/context/AppContext';
+import { fetchFleetTotalCostSavings } from '@/lib/appsync';
+import {
+  buildDashboardActivity,
+  formatInr,
+  formatRelativeTime,
+  type ActivityItem,
+} from '@/lib/dashboardActivity';
+import { FleetStatusCard } from '@/components/FleetStatusCard';
+import { LoadingRing } from '@/components/LoadingRing';
 import { StatCard } from '@/components/StatCard';
-import { StatusBadge } from '@/components/StatusBadge';
-
-function HeroStat({ label, value, dot }: { label: string; value: number; dot: string }) {
-  return (
-    <View style={styles.heroStat}>
-      <View style={styles.heroStatTop}>
-        <View style={[styles.heroStatDot, { backgroundColor: dot }]} />
-        <Text style={styles.heroStatValue}>{value}</Text>
-      </View>
-      <Text style={styles.heroStatLabel}>{label}</Text>
-    </View>
-  );
-}
 
 export default function DashboardScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, isAdmin, signOut } = useAuth();
   const {
-    organization,
-    plants,
     filteredTractors,
     filteredComplaints,
+    organization,
     isLoading,
+    isLoadingMorePlants,
     error,
     refresh,
   } = useApp();
 
+  const [costSavings, setCostSavings] = useState<number | null>(null);
+  const [costLoading, setCostLoading] = useState(false);
+
   const topPad = Platform.OS === 'web' ? 67 : 0;
 
-  const activeCount = filteredTractors.filter(t => t.status === 'ACTIVE').length;
-  const idleCount = filteredTractors.filter(t => t.status === 'IDLE').length;
-  const maintenanceCount = filteredTractors.filter(t => t.status === 'MAINTENANCE').length;
-  const offlineCount = filteredTractors.filter(t => t.status === 'OFFLINE').length;
-  const openComplaints = filteredComplaints.filter(c => c.status === 'OPEN' || c.status === 'IN_PROGRESS').length;
-  const criticalComplaints = filteredComplaints.filter(c => c.severity === 'CRITICAL').length;
+  const totalFleet = filteredTractors.length;
+  const inMaintenance = filteredTractors.filter(t => t.status === 'MAINTENANCE').length;
 
-  const utilization = filteredTractors.length
-    ? Math.round((activeCount / filteredTractors.length) * 100)
-    : 0;
+  const tractorIds = useMemo(
+    () => filteredTractors.map(t => t.tractorID),
+    [filteredTractors]
+  );
 
-  const recentTractors = filteredTractors.slice(0, 5);
+  useEffect(() => {
+    if (tractorIds.length === 0) {
+      setCostSavings(0);
+      return;
+    }
+    let cancelled = false;
+    setCostLoading(true);
+    fetchFleetTotalCostSavings(tractorIds)
+      .then(sum => {
+        if (!cancelled) setCostSavings(sum);
+      })
+      .catch(() => {
+        if (!cancelled) setCostSavings(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCostLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tractorIds.join('|')]);
+
+  const openTickets = useMemo(
+    () =>
+      filteredComplaints.filter(c => c.status === 'OPEN' || c.status === 'IN_PROGRESS').length,
+    [filteredComplaints]
+  );
+
+  const inOperation = Math.max(0, totalFleet - inMaintenance);
+
+  const activity = useMemo(
+    () => buildDashboardActivity(filteredComplaints, filteredTractors),
+    [filteredComplaints, filteredTractors]
+  );
+
+  const costLabel =
+    costSavings != null ? formatInr(costSavings) : '—';
+
+  const costCardLoading = costLoading && costSavings === null;
+  const statsSyncing = isLoadingMorePlants || costCardLoading;
 
   if (error && !isLoading) {
     return (
       <View style={[styles.centered, { backgroundColor: c.background }]}>
-        <Feather name="wifi-off" size={40} color={c.mutedForeground} />
-        <Text style={[styles.errorTitle, { color: c.foreground }]}>Failed to load</Text>
+        <View style={[styles.errorIconWrap, { backgroundColor: c.red + '14' }]}>
+          <Feather name="wifi-off" size={32} color={c.red} />
+        </View>
+        <Text style={[styles.errorTitle, { color: c.foreground }]}>Connection Failed</Text>
         <Text style={[styles.errorSub, { color: c.mutedForeground }]}>{error}</Text>
-        <TouchableOpacity style={[styles.retryBtn, { backgroundColor: c.primary }]} onPress={refresh}>
-          <Text style={styles.retryText}>Retry</Text>
+        <TouchableOpacity
+          style={[styles.retryBtn, { backgroundColor: c.primary, shadowColor: c.primary }]}
+          onPress={refresh}
+          activeOpacity={0.85}
+        >
+          <Feather name="refresh-cw" size={16} color={c.primaryForeground} />
+          <Text style={[styles.retryText, { color: c.primaryForeground }]}>Try Again</Text>
         </TouchableOpacity>
       </View>
     );
@@ -84,314 +125,314 @@ export default function DashboardScreen() {
       }
       showsVerticalScrollIndicator={false}
     >
-      {/* Org Header */}
-      <View style={styles.orgRow}>
-        <View style={styles.orgInfo}>
-          <Text style={[styles.orgName, { color: c.foreground }]} numberOfLines={1}>
-            {organization?.name || 'Fleet Overview'}
+      {/* Welcome Banner */}
+      <View style={[styles.welcomeBanner, { shadowColor: c.primary }]}>
+        <LinearGradient
+          colors={[c.primary, c.gradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.welcomeGradient, { borderRadius: 20 }]}
+        >
+          <View style={styles.welcomeLeft}>
+            <Text style={[styles.welcomeOrg, { color: c.primaryForeground + 'CC' }]}>
+              {organization?.name ?? 'Fleet Dashboard'}
+            </Text>
+            <Text style={[styles.welcomeTitle, { color: c.primaryForeground }]}>
+              Fleet Overview
+            </Text>
+            <Text style={[styles.welcomeSub, { color: c.primaryForeground + 'AA' }]}>
+              {totalFleet} tractors · {organization?.location ?? 'Live telemetry'}
+            </Text>
+          </View>
+          <View style={[styles.welcomeIconWrap, { backgroundColor: c.primaryForeground + '14' }]}>
+            <Feather name="truck" size={28} color={c.primaryForeground} />
+          </View>
+        </LinearGradient>
+      </View>
+
+      {/* Syncing indicator */}
+      {statsSyncing ? (
+        <View style={[styles.syncBanner, { backgroundColor: c.blueSoft, borderColor: c.primary + '30' }]}>
+          <LoadingRing size="sm" color={c.primary} dual />
+          <Text style={[styles.syncText, { color: c.primary }]}>
+            {costCardLoading ? 'Loading analytics…' : 'Syncing fleet data…'}
           </Text>
-          {organization?.location ? (
-            <View style={styles.orgMeta}>
-              <Feather name="map-pin" size={12} color={c.mutedForeground} />
-              <Text style={[styles.orgLocation, { color: c.mutedForeground }]}>{organization.location}</Text>
-            </View>
-          ) : null}
         </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[styles.iconBtn, { backgroundColor: c.card, borderColor: c.border }]}
-            onPress={() => router.push('/(main)/users')}
-            activeOpacity={0.7}
-          >
-            <Feather name="users" size={18} color={c.foreground} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.iconBtn, { backgroundColor: c.card, borderColor: c.border }]}
-            onPress={signOut}
-            activeOpacity={0.7}
-          >
-            <Feather name="log-out" size={18} color={c.mutedForeground} />
-          </TouchableOpacity>
+      ) : null}
+
+      {/* Stats Grid */}
+      <View style={styles.statsGrid}>
+        <View style={styles.statsRow}>
+          <StatCard
+            title="Total Fleet"
+            value={totalFleet}
+            icon="truck"
+            iconColor={c.primary}
+            loading={statsSyncing}
+          />
+          <StatCard
+            title="Open Tickets"
+            value={openTickets}
+            icon="alert-circle"
+            iconColor={openTickets > 0 ? c.warning : c.success}
+            subtitle={openTickets === 0 ? 'All clear' : 'OPEN & IN_PROGRESS'}
+            loading={statsSyncing}
+          />
+        </View>
+        <View style={styles.statsRow}>
+          <FleetStatusCard
+            inOperation={inOperation}
+            inMaintenance={inMaintenance}
+            loading={statsSyncing}
+          />
+          <StatCard
+            title="Cost Saved"
+            value={costLabel}
+            icon="trending-up"
+            iconColor={c.success}
+            subtitle={costCardLoading ? 'Calculating…' : 'Fleet cumulative'}
+            loading={costCardLoading}
+          />
         </View>
       </View>
 
-      {/* User tag */}
-      <View style={styles.userTag}>
-        <Feather name="user" size={12} color={isAdmin ? c.primary : c.mutedForeground} />
-        <Text style={[styles.userTagText, { color: c.mutedForeground }, isAdmin && { color: c.primary }]}>
-          {user?.name || user?.email} {isAdmin ? '· Admin' : ''}
-        </Text>
+      {/* Section Header */}
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleRow}>
+          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
+          <Text style={[styles.sectionLabel, { color: c.foreground }]}>Recent Activity</Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.seeAllBtn, { backgroundColor: c.primary + '12', borderColor: c.primary + '30' }]}
+          onPress={() => router.push('/(main)/complaints')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.seeAll, { color: c.primary }]}>All Tickets</Text>
+          <Feather name="arrow-right" size={13} color={c.primary} />
+        </TouchableOpacity>
       </View>
 
-      {/* Fleet Health hero */}
-      <View style={[styles.hero, { backgroundColor: c.foreground, shadowColor: c.shadow }]}>
-        <View style={styles.heroTop}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroLabel}>Fleet Utilization</Text>
-            <View style={styles.heroValueRow}>
-              <Text style={styles.heroValue}>{utilization}</Text>
-              <Text style={styles.heroPct}>%</Text>
-            </View>
-            <Text style={styles.heroSub}>
-              {activeCount} of {filteredTractors.length} tractors active
-            </Text>
+      {activity.length === 0 ? (
+        <View style={[styles.emptyActivity, { backgroundColor: c.card, borderColor: c.border }]}>
+          <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
+            <Feather name="inbox" size={28} color={c.mutedForeground} />
           </View>
-          <View style={styles.heroIcon}>
-            <Feather name="activity" size={22} color="#fff" />
-          </View>
+          <Text style={[styles.emptyTitle, { color: c.foreground }]}>All Quiet</Text>
+          <Text style={[styles.emptySub, { color: c.mutedForeground }]}>
+            No recent alerts or tickets. Fleet is operating normally.
+          </Text>
         </View>
-
-        <View style={styles.heroTrack}>
-          <View style={[styles.heroFill, { width: `${utilization}%`, backgroundColor: c.success }]} />
-        </View>
-
-        <View style={styles.heroStatsRow}>
-          <HeroStat label="Active" value={activeCount} dot={c.success} />
-          <HeroStat label="Idle" value={idleCount} dot={c.warning} />
-          <HeroStat label="Service" value={maintenanceCount} dot={c.blue} />
-          <HeroStat label="Offline" value={offlineCount} dot="#94A3B8" />
-        </View>
-      </View>
-
-      {/* Stats Row 1 */}
-      <Text style={[styles.sectionLabel, { color: c.mutedForeground }]}>Fleet Status</Text>
-      <View style={styles.statsRow}>
-        <StatCard title="Total Tractors" value={filteredTractors.length} icon="truck" iconColor={c.primary} />
-        <StatCard title="Active Now" value={activeCount} icon="zap" iconColor={c.success} />
-      </View>
-      <View style={[styles.statsRow, { marginTop: 10 }]}>
-        <StatCard title="In Maintenance" value={maintenanceCount} icon="tool" iconColor={c.blue} />
-        <StatCard title="Idle" value={idleCount} icon="pause-circle" iconColor={c.warning} />
-      </View>
-
-      {/* Complaints summary */}
-      <Text style={[styles.sectionLabel, { color: c.mutedForeground, marginTop: 24 }]}>Complaints</Text>
-      <View style={styles.statsRow}>
-        <StatCard title="Open Issues" value={openComplaints} icon="alert-circle" iconColor={c.warning} />
-        <StatCard title="Critical" value={criticalComplaints} icon="alert-triangle" iconColor={c.red} />
-      </View>
-
-      {/* Plants summary */}
-      <Text style={[styles.sectionLabel, { color: c.mutedForeground, marginTop: 24 }]}>Plants</Text>
-      <View style={styles.statsRow}>
-        <StatCard title="Total Plants" value={plants.length} icon="layers" iconColor={c.primary} />
-        <StatCard
-          title="Hub Warehouses"
-          value={plants.filter(p => p.plantType === 'HUB_WAREHOUSE').length}
-          icon="home"
-          iconColor={c.info}
-        />
-      </View>
-
-      {/* Recent Tractors */}
-      {recentTractors.length > 0 && (
-        <>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionLabel, { color: c.mutedForeground, marginTop: 0, marginBottom: 0 }]}>
-              Recent Tractors
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/(main)/tractors')} activeOpacity={0.7}>
-              <Text style={[styles.seeAll, { color: c.primary }]}>See all</Text>
-            </TouchableOpacity>
-          </View>
-          {recentTractors.map(t => (
-            <View key={t.tractorID} style={[styles.tractorRow, { backgroundColor: c.card, borderColor: c.border }]}>
-              <View style={[styles.tractorIcon, { backgroundColor: c.primary + '14' }]}>
-                <Feather name="truck" size={18} color={c.primary} />
-              </View>
-              <View style={styles.tractorInfo}>
-                <Text style={[styles.tractorModel, { color: c.foreground }]}>{t.model}</Text>
-                <Text style={[styles.tractorSub, { color: c.mutedForeground }]}>
-                  {[t.serialNumber, t.plantName].filter(Boolean).join(' · ')}
-                </Text>
-              </View>
-              <StatusBadge status={t.status} small />
-            </View>
-          ))}
-        </>
+      ) : (
+        activity.map((item, idx) => (
+          <ActivityRow
+            key={item.id}
+            item={item}
+            c={c}
+            isLast={idx === activity.length - 1}
+            onPress={onActivityPress(item, router)}
+          />
+        ))
       )}
     </ScrollView>
   );
 }
 
+function onActivityPress(item: ActivityItem, router: ReturnType<typeof useRouter>) {
+  return () => {
+    if (item.complaintID) {
+      router.push(`/complaint/${encodeURIComponent(item.complaintID)}`);
+    }
+  };
+}
+
+function ActivityRow({
+  item,
+  c,
+  isLast,
+  onPress,
+}: {
+  item: ActivityItem;
+  c: ReturnType<typeof useColors>;
+  isLast: boolean;
+  onPress: () => void;
+}) {
+  const iconColor =
+    item.severity === 'critical'
+      ? c.red
+      : item.severity === 'warning'
+        ? c.warning
+        : item.kind === 'ticket'
+          ? c.primary
+          : c.mutedForeground;
+
+  const isTicket = item.kind === 'ticket';
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.activityRow,
+        {
+          backgroundColor: c.card,
+          borderColor: item.severity === 'critical' ? c.red + '33' : c.border,
+          shadowColor: c.shadowStrong,
+          marginBottom: isLast ? 0 : 10,
+        },
+      ]}
+      onPress={onPress}
+      activeOpacity={item.complaintID ? 0.75 : 1}
+      disabled={!item.complaintID}
+    >
+      {/* Severity stripe */}
+      <View style={[styles.activityStripe, { backgroundColor: iconColor }]} />
+
+      <View style={[styles.activityIcon, { backgroundColor: iconColor + '18' }]}>
+        <Feather name={item.icon} size={19} color={iconColor} />
+      </View>
+
+      <View style={styles.activityBody}>
+        <View style={styles.activityTop}>
+          <Text style={[styles.activityTitle, { color: c.foreground }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <View
+            style={[
+              styles.kindPill,
+              {
+                backgroundColor: isTicket ? c.primary + '14' : c.surfaceAlt,
+                borderColor: isTicket ? c.primary + '30' : c.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.kindPillText,
+                { color: isTicket ? c.primary : c.mutedForeground },
+              ]}
+            >
+              {isTicket ? 'Ticket' : 'Alert'}
+            </Text>
+          </View>
+        </View>
+        <Text style={[styles.activitySub, { color: c.mutedForeground }]} numberOfLines={2}>
+          {item.subtitle}
+        </Text>
+        <View style={styles.activityFooter}>
+          <Feather name="clock" size={11} color={c.mutedForeground} />
+          <Text style={[styles.activityTime, { color: c.mutedForeground }]}>
+            {formatRelativeTime(item.timestamp)}
+          </Text>
+        </View>
+      </View>
+
+      {item.complaintID ? (
+        <View style={[styles.chevronWrap, { backgroundColor: c.surfaceAlt }]}>
+          <Feather name="chevron-right" size={16} color={c.mutedForeground} />
+        </View>
+      ) : null}
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { paddingHorizontal: 16 },
+  content: { paddingHorizontal: 16, gap: 0 },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 16,
     padding: 24,
   },
-  loadingText: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-    marginTop: 8,
+  errorIconWrap: {
+    width: 70,
+    height: 70,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
   errorTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter_600SemiBold',
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.3,
   },
   errorSub: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
+    lineHeight: 20,
   },
   retryBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginTop: 8,
-  },
-  retryText: {
-    color: '#fff',
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
-  },
-  orgRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  orgInfo: { flex: 1 },
-  orgName: {
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.3,
-  },
-  orgMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
-  },
-  orgLocation: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-  },
-  headerActions: {
-    flexDirection: 'row',
     gap: 8,
-  },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  userTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginBottom: 12,
-  },
-  userTagText: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-  },
-  hero: {
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 18,
-    gap: 14,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
+    paddingHorizontal: 28,
+    paddingVertical: 13,
+    borderRadius: 14,
+    marginTop: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
     elevation: 4,
   },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  heroLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
+  retryText: {
     fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.6,
+    fontSize: 15,
+  },
+  welcomeBanner: {
+    marginBottom: 16,
+    borderRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  welcomeGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
+  },
+  welcomeLeft: { flex: 1, gap: 4 },
+  welcomeOrg: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
-  heroValueRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    marginTop: 2,
-  },
-  heroValue: {
-    color: '#fff',
-    fontSize: 40,
+  welcomeTitle: {
+    fontSize: 22,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: -1.5,
-    lineHeight: 44,
+    letterSpacing: -0.5,
   },
-  heroPct: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 20,
-    fontFamily: 'Inter_700Bold',
-    marginBottom: 5,
-    marginLeft: 2,
-  },
-  heroSub: {
-    color: 'rgba(255,255,255,0.6)',
+  welcomeSub: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
-    marginTop: 2,
   },
-  heroIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  welcomeIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    overflow: 'hidden',
-  },
-  heroFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  heroStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  heroStat: {
-    flex: 1,
-    gap: 3,
-  },
-  heroStatTop: {
+  syncBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 12,
   },
-  heroStatDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  heroStatValue: {
-    color: '#fff',
-    fontSize: 17,
-    fontFamily: 'Inter_700Bold',
-  },
-  heroStatLabel: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-    marginLeft: 13,
-  },
-  sectionLabel: {
+  syncText: {
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 12,
+  },
+  statsGrid: {
+    gap: 10,
+    marginBottom: 24,
   },
   statsRow: {
     flexDirection: 'row',
@@ -401,37 +442,141 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 24,
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  seeAll: {
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-  },
-  tractorRow: {
+  sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 12,
-    marginBottom: 8,
-    gap: 12,
+    gap: 10,
   },
-  tractorIcon: {
-    width: 38,
-    height: 38,
+  sectionAccent: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
+  },
+  seeAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  seeAll: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  activityStripe: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  activityIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginLeft: 3,
+  },
+  activityBody: {
+    flex: 1,
+    gap: 4,
+  },
+  activityTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activityTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    flex: 1,
+    letterSpacing: -0.1,
+  },
+  kindPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  kindPillText: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  activitySub: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 18,
+  },
+  activityFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  activityTime: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+  },
+  chevronWrap: {
+    width: 30,
+    height: 30,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  tractorInfo: { flex: 1 },
-  tractorModel: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
+  emptyActivity: {
+    alignItems: 'center',
+    padding: 36,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 10,
   },
-  tractorSub: {
-    fontSize: 12,
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.3,
+  },
+  emptySub: {
+    fontSize: 13,
     fontFamily: 'Inter_400Regular',
-    marginTop: 2,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

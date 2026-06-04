@@ -9,6 +9,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -60,27 +61,35 @@ export default function ComplaintDetailScreen() {
     else router.replace('/(main)/complaints');
   };
 
-  const Header = (
-    <View style={[styles.topBar, { paddingTop: insets.top + 8, backgroundColor: c.card, borderColor: c.border }]}>
-      <TouchableOpacity style={[styles.backBtn, { backgroundColor: c.surfaceAlt }]} onPress={goBack} activeOpacity={0.7}>
-        <Feather name="chevron-left" size={22} color={c.foreground} />
+  const TopBar = (
+    <View
+      style={[
+        styles.topBar,
+        {
+          paddingTop: insets.top + 8,
+          backgroundColor: c.card,
+          borderBottomColor: c.border,
+        },
+      ]}
+    >
+      <TouchableOpacity
+        style={[styles.backBtn, { backgroundColor: c.surfaceAlt }]}
+        onPress={goBack}
+        activeOpacity={0.7}
+      >
+        <Feather name="arrow-left" size={20} color={c.foreground} />
       </TouchableOpacity>
-      <Text style={[styles.topTitle, { color: c.foreground }]}>Complaint Details</Text>
-      <View style={{ width: 38 }} />
+      <Text style={[styles.topTitle, { color: c.foreground }]}>Ticket Details</Text>
+      <View style={{ width: 40 }} />
     </View>
   );
 
   if (loading && !complaint) {
     return (
       <View style={[styles.root, { backgroundColor: c.background }]}>
-        {Header}
+        {TopBar}
         <View style={styles.empty}>
-          <FleetLoader
-            visible
-            inline
-            title="Complaint details"
-            message="Loading issue information…"
-          />
+          <FleetLoader visible inline title="Ticket details" message="Loading issue information…" />
         </View>
       </View>
     );
@@ -89,9 +98,12 @@ export default function ComplaintDetailScreen() {
   if (!complaint) {
     return (
       <View style={[styles.root, { backgroundColor: c.background }]}>
-        {Header}
+        {TopBar}
         <View style={styles.empty}>
-          <Feather name="search" size={40} color={c.border} />
+          <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
+            <Feather name="search" size={32} color={c.mutedForeground} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: c.foreground }]}>Not Found</Text>
           <Text style={[styles.emptyText, { color: c.mutedForeground }]}>
             {error || 'Complaint not found'}
           </Text>
@@ -124,66 +136,117 @@ export default function ComplaintDetailScreen() {
 
   const telemetry = tractor
     ? [
-        { icon: 'battery-charging' as const, label: 'Battery', value: tractor.soc === undefined ? '—' : `${Math.round(tractor.soc)}%` },
-        { icon: 'thermometer' as const, label: 'Temp', value: tractor.temp === undefined ? '—' : `${tractor.temp.toFixed(1)}°C` },
-        { icon: 'rotate-cw' as const, label: 'RPM', value: tractor.rpm === undefined ? '—' : String(Math.round(tractor.rpm)) },
-        { icon: 'zap' as const, label: 'Voltage', value: tractor.voltage === undefined ? '—' : `${tractor.voltage.toFixed(1)}V` },
-        { icon: 'activity' as const, label: 'Current', value: tractor.current === undefined ? '—' : `${tractor.current.toFixed(1)}A` },
+        { icon: 'battery-charging' as const, label: 'Battery', value: tractor.soc === undefined ? '—' : `${Math.round(tractor.soc)}%`, color: c.success },
+        { icon: 'thermometer' as const, label: 'Temp', value: tractor.temp === undefined ? '—' : `${tractor.temp.toFixed(1)}°C`, color: c.warning },
+        { icon: 'rotate-cw' as const, label: 'RPM', value: tractor.rpm === undefined ? '—' : String(Math.round(tractor.rpm)), color: c.primary },
+        { icon: 'zap' as const, label: 'Voltage', value: tractor.voltage === undefined ? '—' : `${tractor.voltage.toFixed(1)}V`, color: c.info },
+        { icon: 'activity' as const, label: 'Current', value: tractor.current === undefined ? '—' : `${tractor.current.toFixed(1)}A`, color: c.accent },
       ]
     : [];
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
-      {Header}
+      {TopBar}
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero */}
-        <View style={[styles.hero, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
-          <View style={[styles.heroIcon, { backgroundColor: sev + '18' }]}>
-            <Feather name="alert-triangle" size={26} color={sev} />
-          </View>
-          <Text style={[styles.heroTitle, { color: c.foreground }]}>{complaint.title}</Text>
-          <View style={styles.badgeRow}>
-            <StatusBadge status={complaint.severity} />
-            <StatusBadge status={complaint.status} />
-          </View>
+        <View style={[styles.heroCard, { shadowColor: sev }]}>
+          <LinearGradient
+            colors={[sev + '18', sev + '06']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.heroGradient, { borderRadius: 20, borderWidth: 1, borderColor: sev + '33' }]}
+          >
+            <View style={[styles.heroIconWrap, { backgroundColor: sev + '1C' }]}>
+              <Feather name="alert-triangle" size={28} color={sev} />
+            </View>
+            <Text style={[styles.heroTitle, { color: c.foreground }]}>{complaint.title}</Text>
+            <View style={styles.badgeRow}>
+              <StatusBadge status={complaint.severity} />
+              <StatusBadge status={complaint.status} />
+            </View>
+          </LinearGradient>
         </View>
 
         {/* Description */}
-        <Text style={[styles.sectionLabel, { color: c.mutedForeground }]}>Description</Text>
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
+          <Text style={[styles.sectionLabel, { color: c.foreground }]}>Description</Text>
+        </View>
         <View style={[styles.block, { backgroundColor: c.card, borderColor: c.border }]}>
           <Text style={[styles.description, { color: c.foreground }]}>{complaint.description}</Text>
         </View>
 
+        {/* Status banner */}
+        <View
+          style={[
+            styles.statusBanner,
+            {
+              backgroundColor: isResolved ? c.successSoft : sev + '12',
+              borderColor: isResolved ? c.successBorder : sev + '35',
+            },
+          ]}
+        >
+          <View style={[styles.bannerIcon, { backgroundColor: isResolved ? c.success + '18' : sev + '18' }]}>
+            <Feather
+              name={isResolved ? 'check-circle' : 'clock'}
+              size={18}
+              color={isResolved ? c.success : sev}
+            />
+          </View>
+          <Text style={[styles.bannerText, { color: isResolved ? c.success : sev }]}>
+            {isResolved
+              ? 'This complaint has been resolved.'
+              : 'This complaint is awaiting resolution.'}
+          </Text>
+        </View>
+
         {/* Details */}
-        <Text style={[styles.sectionLabel, { color: c.mutedForeground }]}>Details</Text>
-        <View style={[styles.block, { backgroundColor: c.card, borderColor: c.border, paddingVertical: 4 }]}>
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
+          <Text style={[styles.sectionLabel, { color: c.foreground }]}>Details</Text>
+        </View>
+        <View style={[styles.block, { backgroundColor: c.card, borderColor: c.border }]}>
           {meta.map((m, i) => (
             <View
               key={m.label}
-              style={[styles.metaRow, i < meta.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.hairline }]}
+              style={[
+                styles.metaRow,
+                i < meta.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.hairline },
+              ]}
             >
-              <View style={[styles.metaIcon, { backgroundColor: c.surfaceAlt }]}>
+              <View style={[styles.metaIcon, { backgroundColor: c.primary + '12' }]}>
                 <Feather name={m.icon} size={15} color={c.primary} />
               </View>
               <Text style={[styles.metaLabel, { color: c.mutedForeground }]}>{m.label}</Text>
-              <Text style={[styles.metaValue, { color: c.foreground }]} numberOfLines={1}>
+              <Text style={[styles.metaValue, { color: c.foreground }]} numberOfLines={2}>
                 {m.value}
               </Text>
             </View>
           ))}
         </View>
 
-        {/* Live telemetry of related tractor */}
+        {/* Live telemetry */}
         {tractor ? (
           <>
-            <Text style={[styles.sectionLabel, { color: c.mutedForeground }]}>Tractor Telemetry</Text>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
+              <Text style={[styles.sectionLabel, { color: c.foreground }]}>Live Telemetry</Text>
+            </View>
             <View style={styles.telemetryGrid}>
               {telemetry.map(t => (
-                <View key={t.label} style={[styles.telemetryChip, { backgroundColor: c.card, borderColor: c.border }]}>
-                  <Feather name={t.icon} size={15} color={c.primary} />
+                <View
+                  key={t.label}
+                  style={[
+                    styles.telemetryChip,
+                    { backgroundColor: c.card, borderColor: t.color + '30' },
+                  ]}
+                >
+                  <View style={[styles.teleIcon, { backgroundColor: t.color + '14' }]}>
+                    <Feather name={t.icon} size={14} color={t.color} />
+                  </View>
                   <Text style={[styles.telemetryValue, { color: c.foreground }]}>{t.value}</Text>
                   <Text style={[styles.telemetryLabel, { color: c.mutedForeground }]}>{t.label}</Text>
                 </View>
@@ -192,36 +255,26 @@ export default function ComplaintDetailScreen() {
           </>
         ) : null}
 
-        {/* Status banner */}
-        <View
-          style={[
-            styles.statusBanner,
-            { backgroundColor: isResolved ? c.successSoft : sev + '14', borderColor: isResolved ? c.success + '55' : sev + '40' },
-          ]}
-        >
-          <Feather
-            name={isResolved ? 'check-circle' : 'clock'}
-            size={16}
-            color={isResolved ? c.success : sev}
-          />
-          <Text style={[styles.statusBannerText, { color: isResolved ? c.success : sev }]}>
-            {isResolved ? 'This complaint has been resolved.' : 'This complaint is awaiting resolution.'}
-          </Text>
-        </View>
-
+        {/* Timeline */}
         {complaint.events && complaint.events.length > 0 ? (
           <>
-            <Text style={[styles.sectionLabel, { color: c.mutedForeground }]}>Timeline</Text>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
+              <Text style={[styles.sectionLabel, { color: c.foreground }]}>Timeline</Text>
+            </View>
             <View style={[styles.block, { backgroundColor: c.card, borderColor: c.border, paddingVertical: 4 }]}>
               {complaint.events.map((event, i) => (
                 <View
                   key={`${event.ts}-${event.type}-${i}`}
                   style={[
                     styles.metaRow,
-                    i < complaint.events!.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.hairline },
+                    i < complaint.events!.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: c.hairline,
+                    },
                   ]}
                 >
-                  <View style={[styles.metaIcon, { backgroundColor: c.surfaceAlt }]}>
+                  <View style={[styles.metaIcon, { backgroundColor: c.primary + '12' }]}>
                     <Feather name="activity" size={15} color={c.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -250,41 +303,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 13,
     borderBottomWidth: 1,
   },
   backBtn: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   topTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
+    fontSize: 17,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
   },
   content: {
     padding: 16,
-    gap: 8,
-  },
-  hero: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 20,
-    alignItems: 'center',
     gap: 12,
-    marginBottom: 8,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    elevation: 2,
   },
-  heroIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+    padding: 24,
+  },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+  },
+  heroCard: {
+    borderRadius: 20,
+    marginBottom: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 4,
+  },
+  heroGradient: {
+    padding: 24,
+    alignItems: 'center',
+    gap: 14,
+  },
+  heroIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -292,29 +370,63 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'Inter_700Bold',
     textAlign: 'center',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
+    lineHeight: 28,
   },
   badgeRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
+  sectionAccent: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginTop: 12,
-    marginBottom: 6,
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
   },
   block: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
+    overflow: 'hidden',
     padding: 16,
   },
   description: {
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
     lineHeight: 22,
+  },
+  statusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+  },
+  bannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  bannerText: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    flex: 1,
+    lineHeight: 20,
   },
   metaRow: {
     flexDirection: 'row',
@@ -323,70 +435,57 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   metaIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   metaLabel: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
+    width: 100,
+    flexShrink: 0,
   },
   metaValue: {
     fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    marginLeft: 'auto',
-    flexShrink: 1,
+    fontFamily: 'Inter_700Bold',
+    flex: 1,
     textAlign: 'right',
   },
   telemetryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   telemetryChip: {
+    flex: 1,
     flexBasis: '18%',
-    flexGrow: 1,
-    minWidth: 60,
-    borderRadius: 12,
+    minWidth: 64,
+    borderRadius: 14,
     borderWidth: 1,
-    paddingVertical: 11,
+    paddingVertical: 14,
     alignItems: 'center',
-    gap: 3,
+    gap: 5,
   },
-  telemetryValue: {
-    fontSize: 13,
-    fontFamily: 'Inter_700Bold',
-  },
-  telemetryLabel: {
-    fontSize: 9,
-    fontFamily: 'Inter_500Medium',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  statusBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 14,
-    marginTop: 16,
-  },
-  statusBannerText: {
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-    flex: 1,
-  },
-  empty: {
-    flex: 1,
+  teleIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    marginBottom: 2,
   },
-  emptyText: {
+  telemetryValue: {
     fontSize: 14,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.3,
+  },
+  telemetryLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
 });

@@ -11,25 +11,14 @@ import { TractorImage } from './TractorImage';
 interface Props {
   tractor: Tractor;
   onOpenDetail?: () => void;
+  /** Detail screen: same card, no info/chevron actions */
+  hideActions?: boolean;
 }
 
-function SignalIcon({ live, onColor, offColor }: { live: boolean; onColor: string; offColor: string }) {
-  if (live) {
-    return (
-      <View style={styles.signalWrap}>
-        <Text style={[styles.signalTri, { color: onColor }]}>▲</Text>
-      </View>
-    );
-  }
-  return (
-    <View style={[styles.signalWrap, { borderWidth: 1.5, borderColor: offColor, borderRadius: 4 }]}>
-      <Text style={[styles.signalTri, { color: offColor }]}>▲</Text>
-    </View>
-  );
-}
-
-export function TractorCard({ tractor: t, onOpenDetail }: Props) {
+export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
   const c = useColors();
+  const inMaintenance = t.status === 'MAINTENANCE';
+  const isActive = t.status === 'ACTIVE';
   const live = !isTelemetryDisconnected(t.telemetryAt);
   const headlineId = t.registerNumber || t.serialNumber;
   const systemId = t.loggerID || t.registerNumber || t.serialNumber;
@@ -38,103 +27,149 @@ export function TractorCard({ tractor: t, onOpenDetail }: Props) {
     ? getImplementFeetLabel(t.currentImplement) || t.currentImplement
     : 'No implement';
 
-  const iconColor = c.foreground;
+  const cardBg = inMaintenance ? c.warningSoft : c.card;
+  const cardBorder = inMaintenance ? c.warningBorder : c.border;
+  const accentColor = inMaintenance ? c.warning : c.primary;
 
   const chips: { key: string; icon: React.ReactNode; label: string }[] = [
     {
       key: 'soc',
-      icon: <Feather name="battery" size={13} color={iconColor} />,
+      icon: <Feather name="battery" size={12} color={c.success} />,
       label: `${fmtMetric(t.soc)}%`,
     },
     {
       key: 'temp',
-      icon: <Feather name="thermometer" size={13} color={iconColor} />,
+      icon: <Feather name="thermometer" size={12} color={c.warning} />,
       label: `${fmtMetric(t.temp, 1)}°C`,
     },
     {
       key: 'rpm',
-      icon: <MaterialCommunityIcons name="speedometer" size={14} color={iconColor} />,
-      label: `${fmtMetric(t.rpm)} RPM`,
+      icon: <MaterialCommunityIcons name="speedometer" size={13} color={c.primary} />,
+      label: `${fmtMetric(t.rpm)} rpm`,
     },
     {
       key: 'volt',
-      icon: <MaterialCommunityIcons name="battery-outline" size={14} color={iconColor} />,
-      label: `${fmtMetric(t.voltage, 1)} V`,
+      icon: <MaterialCommunityIcons name="battery-outline" size={13} color={c.info} />,
+      label: `${fmtMetric(t.voltage, 1)}V`,
     },
     {
       key: 'amp',
-      icon: <Feather name="activity" size={13} color={iconColor} />,
-      label: `${fmtMetric(t.current, 1)} A`,
+      icon: <Feather name="activity" size={12} color={c.accent} />,
+      label: `${fmtMetric(t.current, 1)}A`,
     },
     {
       key: 'id',
-      icon: <MaterialCommunityIcons name="cog-outline" size={14} color={iconColor} />,
+      icon: <Feather name="hash" size={12} color={c.mutedForeground} />,
       label: systemId,
     },
     {
       key: 'loc',
-      icon: <MaterialCommunityIcons name="office-building" size={14} color={iconColor} />,
+      icon: <Feather name="map-pin" size={12} color={c.mutedForeground} />,
       label: location,
     },
   ];
-
-  const chipStyle = {
-    backgroundColor: c.surfaceAlt,
-    borderColor: c.border,
-  };
 
   return (
     <View
       style={[
         styles.card,
         {
-          backgroundColor: c.card,
-          borderColor: c.border,
-          shadowColor: c.shadow,
+          backgroundColor: cardBg,
+          borderColor: cardBorder,
+          shadowColor: c.shadowStrong,
         },
       ]}
     >
-      {/* Left: image + status */}
-      <View style={styles.left}>
-        <TouchableOpacity
-          style={[styles.infoBtn, { backgroundColor: c.red }]}
-          onPress={onOpenDetail}
-          activeOpacity={0.8}
-          disabled={!onOpenDetail}
-          accessibilityLabel="Tractor info"
-        >
-          <Feather name="info" size={14} color={c.primaryForeground} />
-        </TouchableOpacity>
+      {/* Status banner for maintenance */}
+      {inMaintenance && (
+        <View style={[styles.statusBanner, { backgroundColor: c.warning + 'EE' }]}>
+          <Feather name="tool" size={11} color={c.card} />
+          <Text style={[styles.statusBannerText, { color: c.card }]}>In Maintenance</Text>
+        </View>
+      )}
 
-        <View style={styles.imageBox}>
-          <TractorImage tractor={t} style={styles.image} resizeMode="contain" />
+      {/* Left: image zone */}
+      <View style={styles.left}>
+        {!hideActions && onOpenDetail ? (
+          <TouchableOpacity
+            style={[styles.detailBtn, { backgroundColor: c.primary }]}
+            onPress={onOpenDetail}
+            activeOpacity={0.8}
+            accessibilityLabel="View tractor details"
+          >
+            <Feather name="info" size={13} color={c.primaryForeground} />
+          </TouchableOpacity>
+        ) : null}
+
+        <View style={[styles.imageBox, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+          <TractorImage tractor={t} resizeMode="contain" colorful />
         </View>
 
-        <View style={styles.leftFooter}>
-          <SignalIcon live={live} onColor={c.success} offColor={c.red} />
-          <MaterialCommunityIcons
-            name={t.isCharging ? 'power-plug' : 'power-plug-off-outline'}
-            size={22}
-            color={t.isCharging ? c.success : c.mutedForeground}
-          />
-          <View style={[styles.modelPill, { backgroundColor: c.red }]}>
-            <Feather name="zap" size={12} color={c.primaryForeground} />
-            <Text style={[styles.modelPillText, { color: c.primaryForeground }]} numberOfLines={1}>
-              {t.model}
+        {/* Status row */}
+        <View style={styles.statusRow}>
+          {/* Live signal */}
+          <View
+            style={[
+              styles.signalBadge,
+              {
+                backgroundColor: live ? c.successSoft : c.surfaceAlt,
+                borderColor: live ? c.success + '55' : c.border,
+              },
+            ]}
+          >
+            <View style={[styles.signalDot, { backgroundColor: live ? c.success : c.mutedForeground }]} />
+            <Text style={[styles.signalText, { color: live ? c.success : c.mutedForeground }]}>
+              {live ? 'Live' : 'Off'}
             </Text>
           </View>
+
+          {/* Charging */}
+          <View
+            style={[
+              styles.chargeBadge,
+              {
+                backgroundColor: t.isCharging ? c.blueSoft : c.surfaceAlt,
+                borderColor: t.isCharging ? c.blueBorder : c.border,
+              },
+            ]}
+          >
+            <MaterialCommunityIcons
+              name={t.isCharging ? 'power-plug' : 'power-plug-off-outline'}
+              size={13}
+              color={t.isCharging ? c.primary : c.mutedForeground}
+            />
+          </View>
+        </View>
+
+        {/* Model pill */}
+        <View style={[styles.modelPill, { backgroundColor: c.accent }]}>
+          <Feather name="zap" size={10} color={c.card} />
+          <Text style={[styles.modelPillText, { color: c.card }]} numberOfLines={1}>
+            {t.model}
+          </Text>
         </View>
       </View>
 
-      {/* Right: ID + chips + implement */}
+      {/* Right: data zone */}
       <View style={styles.right}>
-        <Text style={[styles.headlineId, { color: c.foreground }]} numberOfLines={1}>
+        <Text
+          style={[styles.headlineId, { color: inMaintenance ? c.warning : c.foreground }]}
+          numberOfLines={1}
+        >
           {headlineId}
         </Text>
 
+        <Text style={[styles.displayName, { color: c.mutedForeground }]} numberOfLines={1}>
+          {t.displayName || t.tractorID}
+        </Text>
+
+        {/* Telemetry chips */}
         <View style={styles.chipGrid}>
           {chips.map(chip => (
-            <View key={chip.key} style={[styles.chip, chipStyle]}>
+            <View
+              key={chip.key}
+              style={[styles.chip, { backgroundColor: c.surfaceAlt, borderColor: c.hairline }]}
+            >
               {chip.icon}
               <Text style={[styles.chipText, { color: c.foreground }]} numberOfLines={1}>
                 {chip.label}
@@ -143,15 +178,22 @@ export function TractorCard({ tractor: t, onOpenDetail }: Props) {
           ))}
         </View>
 
-        <View style={[styles.implementChip, chipStyle]}>
-          <Feather name="tool" size={13} color={c.foreground} />
+        {/* Implement */}
+        <View
+          style={[
+            styles.implementChip,
+            { backgroundColor: c.chip, borderColor: c.border },
+          ]}
+        >
+          <Feather name="tool" size={12} color={c.primary} />
           <Text style={[styles.chipText, { color: c.foreground }]} numberOfLines={1}>
             {implementLabel}
           </Text>
         </View>
       </View>
 
-      {onOpenDetail ? (
+      {/* Chevron */}
+      {onOpenDetail && !hideActions ? (
         <TouchableOpacity
           style={styles.arrowHit}
           onPress={onOpenDetail}
@@ -159,7 +201,9 @@ export function TractorCard({ tractor: t, onOpenDetail }: Props) {
           accessibilityLabel="Open tractor details"
           accessibilityRole="button"
         >
-          <Feather name="chevron-right" size={22} color={c.mutedForeground} />
+          <View style={[styles.chevronWrap, { backgroundColor: c.surfaceAlt }]}>
+            <Feather name="chevron-right" size={18} color={c.mutedForeground} />
+          </View>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -169,103 +213,138 @@ export function TractorCard({ tractor: t, onOpenDetail }: Props) {
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
     alignItems: 'stretch',
-    minHeight: 168,
+    minHeight: 176,
+    borderWidth: 1,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 3,
+    position: 'relative',
+    overflow: 'hidden',
+    gap: 12,
+  },
+  statusBanner: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderBottomLeftRadius: 12,
+    zIndex: 1,
+  },
+  statusBannerText: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   left: {
-    width: '38%',
-    maxWidth: 148,
-    minWidth: 120,
-    paddingRight: 6,
+    width: 118,
+    flexShrink: 0,
+    gap: 8,
   },
-  infoBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  detailBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    alignSelf: 'flex-start',
   },
   imageBox: {
     flex: 1,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 72,
+    overflow: 'hidden',
+    minHeight: 80,
+    borderWidth: 1,
   },
-  image: {
-    width: 118,
-    height: 88,
+  statusRow: {
+    flexDirection: 'row',
+    gap: 6,
   },
-  leftFooter: {
+  signalBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-    flexWrap: 'wrap',
+    gap: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
   },
-  signalWrap: {
-    width: 22,
-    height: 22,
+  signalDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  signalText: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+  },
+  chargeBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  signalTri: {
-    fontSize: 14,
-    lineHeight: 16,
-    fontWeight: '700',
+    borderWidth: 1,
   },
   modelPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 20,
-    maxWidth: 88,
+    alignSelf: 'flex-start',
   },
   modelPillText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: 'Inter_700Bold',
     letterSpacing: 0.2,
   },
   right: {
     flex: 1,
-    paddingLeft: 4,
-    paddingRight: 4,
-    gap: 8,
+    gap: 6,
     minWidth: 0,
+    paddingRight: 2,
   },
   headlineId: {
     fontSize: 22,
     fontFamily: 'Inter_700Bold',
     letterSpacing: -0.5,
   },
+  displayName: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    marginTop: -4,
+  },
   chipGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 5,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
   },
   chipText: {
-    fontSize: 12,
-    fontFamily: 'Inter_500Medium',
-    maxWidth: 120,
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    maxWidth: 110,
   },
   implementChip: {
     flexDirection: 'row',
@@ -273,14 +352,20 @@ const styles = StyleSheet.create({
     gap: 6,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 7,
     maxWidth: '100%',
   },
   arrowHit: {
     justifyContent: 'center',
-    paddingLeft: 2,
-    paddingRight: 2,
+    alignSelf: 'center',
+  },
+  chevronWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

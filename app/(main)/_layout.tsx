@@ -27,8 +27,8 @@ function NativeTabsLayout() {
         <Label>Complaints</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="runtime">
-        <Icon sf={{ default: 'clock', selected: 'clock.fill' }} />
-        <Label>Runtime</Label>
+        <Icon sf={{ default: 'building.2', selected: 'building.2.fill' }} />
+        <Label>Plants</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="reports">
         <Icon sf={{ default: 'doc.text', selected: 'doc.text.fill' }} />
@@ -50,23 +50,31 @@ function ClassicTabsLayout() {
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.mutedForeground,
           headerTintColor: colors.foreground,
-          headerTitleStyle: { fontFamily: 'Inter_600SemiBold', fontSize: 17 },
+          headerTitleStyle: { fontFamily: 'Inter_700Bold', fontSize: 17 },
           tabBarStyle: {
             position: 'absolute',
             backgroundColor: isIOS ? 'transparent' : colors.card,
             borderTopWidth: 1,
             borderTopColor: colors.border,
             elevation: 0,
+            shadowColor: colors.shadowStrong,
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 12,
             ...(isWeb ? { height: 84 } : {}),
           },
           tabBarLabelStyle: {
-            fontFamily: 'Inter_500Medium',
-            fontSize: 11,
+            fontFamily: 'Inter_600SemiBold',
+            fontSize: 10,
+            letterSpacing: 0.2,
+          },
+          tabBarItemStyle: {
+            paddingTop: 4,
           },
           tabBarBackground: () =>
             isIOS ? (
               <BlurView
-                intensity={80}
+                intensity={95}
                 tint="light"
                 style={StyleSheet.absoluteFill}
               />
@@ -116,12 +124,13 @@ function ClassicTabsLayout() {
         <Tabs.Screen
           name="runtime"
           options={{
-            title: 'Runtime',
+            title: 'Plant Analysis',
+            tabBarLabel: 'Plants',
             tabBarIcon: ({ color }) =>
               isIOS ? (
-                <SymbolView name="clock" tintColor={color} size={22} />
+                <SymbolView name="building.2" tintColor={color} size={22} />
               ) : (
-                <Feather name="clock" size={20} color={color} />
+                <Feather name="home" size={20} color={color} />
               ),
           }}
         />
@@ -141,6 +150,13 @@ function ClassicTabsLayout() {
           name="users"
           options={{
             title: 'Users',
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profile',
             href: null,
           }}
         />

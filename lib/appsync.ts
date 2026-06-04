@@ -155,11 +155,23 @@ export interface Complaint {
   description: string;
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  /** Raw GraphQL ComplaintState (PENDING, ACCEPTED, RESOLVING, …). */
+  state?: string;
   reportedBy: string;
   createdAt: string;
   resolvedAt?: string;
   plantName?: string;
   tractorModel?: string;
+  /** API problemSubType */
+  problemSubType?: string;
+  /** API breakdownType */
+  breakdownType?: string;
+  /** API MaintenanceType e.g. BREAKDOWN */
+  maintenanceType?: string;
+  /** API breakdownDate */
+  breakdownDate?: string;
+  /** Set when loaded from full getComplaint (list queries omit problemType). */
+  problemType?: string;
 }
 
 export interface ComplaintEvent {
@@ -256,6 +268,8 @@ interface RawComplaint {
   tractorVIN?: string | null;
   problemSubType?: string | null;
   breakdownType?: string | null;
+  maintenanceType?: string | null;
+  breakdownDate?: string | null;
   description?: string | null;
   priority?: string | null;
   state?: string | null;
@@ -411,11 +425,16 @@ function mapRawComplaint(
     description: c.description || title,
     severity: mapSeverity(c.priority, c.breakdownType),
     status: mapComplaintStatus(c.state),
+    state: c.state || undefined,
     reportedBy: c.driverName || c.raisedByUserID || 'Unknown',
     createdAt: c.createdAt || new Date().toISOString(),
     resolvedAt: c.closedAt || undefined,
     plantName: plant?.name,
     tractorModel: tractor?.model || tractor?.alias || c.tractorVIN || undefined,
+    problemSubType: c.problemSubType || undefined,
+    breakdownType: c.breakdownType || undefined,
+    maintenanceType: c.maintenanceType || undefined,
+    breakdownDate: c.breakdownDate || undefined,
   };
 }
 
@@ -665,6 +684,15 @@ export async function fetchTractorManualRuntime(
     ],
   ]);
   return mapRawManualRuntimeToRecords(raw, tractor.orgID, plantById, tractorByLogger);
+}
+
+/** Manual runtime rows as returned by AppSync (no mapping or derived fields). */
+export async function fetchTractorManualRuntimeRaw(
+  tractor: Pick<Tractor, 'loggerID'>
+): Promise<RawManualRuntimeEntry[]> {
+  if (!tractor.loggerID) return [];
+  const raw = await fetchManualRuntimeForLogger(tractor.loggerID);
+  return [...raw].sort((a, b) => b.date.localeCompare(a.date));
 }
 
 function mapRawManualRuntimeToRecords(
@@ -1062,6 +1090,120 @@ export async function fetchTractorAnalytics(
   return data.getAnalytics ?? null;
 }
 
+/** Same device keys as manual runtime: logger first, then VIN. */
+export function tractorDeviceKeys(
+  tractor: Pick<Tractor, 'tractorID' | 'loggerID'>
+): string[] {
+  const keys: string[] = [];
+  const logger = tractor.loggerID?.trim();
+  const vin = tractor.tractorID?.trim();
+  if (logger) keys.push(logger);
+  if (vin && vin !== logger) keys.push(vin);
+  return keys;
+}
+
+function dedupeUsageSegments(items: UsageSegment[]): UsageSegment[] {
+  const seen = new Set<string>();
+  return items.filter(s => {
+    const k = `${s.type}-${s.startTime}-${s.endTime ?? ''}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+export type TractorTripsChargeData = {
+  analytics: TractorAnalytics | null;
+  usageSegments: UsageSegment[];
+  tripSegments: UsageSegment[];
+  chargeSegments: UsageSegment[];
+  /** Primary key used (logger when present). */
+  deviceKey: string | null;
+};
+
+/**
+ * Trips/charge segments and analytics — keyed by loggerID (same as manual runtime), with VIN fallback.
+ */
+export async function fetchTractorTripsChargeData(
+  tractor: Pick<Tractor, 'tractorID' | 'loggerID'>,
+  options: {
+    startTime: string;
+    endTime: string;
+    timeSegment: string;
+  }
+): Promise<TractorTripsChargeData> {
+  const keys = tractorDeviceKeys(tractor);
+  if (keys.length === 0) {
+    return {
+      analytics: null,
+      usageSegments: [],
+      tripSegments: [],
+      chargeSegments: [],
+      deviceKey: null,
+    };
+  }
+
+  const segOpts = { limit: 80, startTime: options.startTime, endTime: options.endTime };
+  const typeOpts = { limit: 50, startTime: options.startTime, endTime: options.endTime };
+
+  let analytics: TractorAnalytics | null = null;
+  for (const key of keys) {
+    try {
+      analytics = await fetchTractorAnalytics(key, 'MONTHLY', options.timeSegment);
+      if (analytics) break;
+    } catch {
+      // try next key
+    }
+  }
+  if (!analytics) {
+    for (const key of keys) {
+      try {
+        analytics = await fetchTractorAnalytics(key, 'GLOBAL', 'GLOBAL');
+        if (analytics) break;
+      } catch {
+        // try next key
+      }
+    }
+  }
+
+  const batches = await Promise.all(
+    keys.map(async key => {
+      const [all, trips, charges] = await Promise.all([
+        fetchUsageSegments(key, segOpts).catch(() => [] as UsageSegment[]),
+        fetchUsageSegmentsByType(key, SegmentType.TRIP, typeOpts).catch(
+          () => [] as UsageSegment[]
+        ),
+        fetchUsageSegmentsByType(key, SegmentType.CHARGE, typeOpts).catch(
+          () => [] as UsageSegment[]
+        ),
+      ]);
+      return { all, trips, charges };
+    })
+  );
+
+  return {
+    analytics,
+    usageSegments: dedupeUsageSegments(batches.flatMap(b => b.all)),
+    tripSegments: dedupeUsageSegments(batches.flatMap(b => b.trips)),
+    chargeSegments: dedupeUsageSegments(batches.flatMap(b => b.charges)),
+    deviceKey: keys[0] ?? null,
+  };
+}
+
+/** Sum GLOBAL `cumulative.totalCostSavings` across tractors (AppSync getAnalytics). */
+export async function fetchFleetTotalCostSavings(
+  tractorIDs: string[],
+  concurrency = 6
+): Promise<number> {
+  const map = await fetchTractorsAnalytics(tractorIDs, concurrency);
+  let total = 0;
+  for (const a of map.values()) {
+    const v = a?.cumulative?.totalCostSavings;
+    if (v != null && !Number.isNaN(v)) total += v;
+  }
+  return Math.round(total);
+}
+
 /** Batch fetch GLOBAL analytics (trips / charges buckets) for many tractors. */
 export async function fetchTractorsAnalytics(
   tractorIDs: string[],
@@ -1110,7 +1252,7 @@ export async function fetchUsageSegments(
 export async function fetchUsageSegmentsByType(
   tractorID: string,
   type: SegmentType,
-  options?: { limit?: number }
+  options?: { limit?: number; startTime?: string; endTime?: string }
 ): Promise<UsageSegment[]> {
   const limit = options?.limit ?? 20;
   return paginate(
@@ -1120,6 +1262,8 @@ export async function fetchUsageSegmentsByType(
       }>(listUsageSegmentsByTypeQuery, {
         tractorID,
         type,
+        startTime: options?.startTime,
+        endTime: options?.endTime,
         limit,
         nextToken,
         sortOrder: 'DESC',

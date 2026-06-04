@@ -1,318 +1,131 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   FlatList,
   Platform,
   RefreshControl,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
-import { ManualRuntimeEntryCard } from '@/components/ManualRuntimeEntryCard';
-import {
-  fetchTractorsAnalytics,
-  RuntimeRecord,
-  type TractorAnalytics,
-} from '@/lib/appsync';
-import { manualRuntimeDayHours } from '@/lib/tractorRuntime';
+import { PlantAnalysisCard } from '@/components/PlantAnalysisCard';
+import { UptimeMetricCards } from '@/components/UptimeMetricCards';
+import { buildPlantSummaries } from '@/lib/plantAnalysis';
 
-function fmtDuration(seconds: number | null | undefined): string {
-  if (seconds == null || Number.isNaN(seconds) || seconds <= 0) return '—';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.round((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-}
-
-export default function RuntimeScreen() {
+export default function PlantAnalysisScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const { filteredRuntimeRecords, filteredTractors, plants, isLoading, refresh } = useApp();
-  const [analyticsByTractor, setAnalyticsByTractor] = useState<Map<string, TractorAnalytics | null>>(
-    new Map()
-  );
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const router = useRouter();
+  const { plants, tractors, complaints, runtimeRecords, isLoading, refresh, organization } = useApp();
 
   const topPad = Platform.OS === 'web' ? 67 : 0;
 
-  const tractorIds = useMemo(
-    () => filteredTractors.map(t => t.tractorID),
-    [filteredTractors]
+  const summaries = useMemo(
+    () => buildPlantSummaries(plants, tractors, complaints, runtimeRecords),
+    [plants, tractors, complaints, runtimeRecords]
   );
 
-  useEffect(() => {
-    if (tractorIds.length === 0) {
-      setAnalyticsByTractor(new Map());
-      return;
-    }
-    let cancelled = false;
-    setAnalyticsLoading(true);
-    fetchTractorsAnalytics(tractorIds)
-      .then(map => {
-        if (!cancelled) setAnalyticsByTractor(map);
-      })
-      .catch(() => {
-        if (!cancelled) setAnalyticsByTractor(new Map());
-      })
-      .finally(() => {
-        if (!cancelled) setAnalyticsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tractorIds.join('|')]);
+  const fleetTotals = useMemo(() => {
+    const totalTractors = summaries.reduce((s, p) => s + p.tractorCount, 0);
+    const maintenance = summaries.reduce((s, p) => s + p.maintenance, 0);
+    const openTickets = summaries.reduce((s, p) => s + p.openTickets, 0);
+    const uptime =
+      totalTractors > 0
+        ? Math.round(summaries.reduce((s, p) => s + p.uptimePct * p.tractorCount, 0) / totalTractors)
+        : 0;
+    const repairDays = summaries.reduce((s, p) => s + p.repairDays, 0);
+    return { totalTractors, maintenance, openTickets, uptime, repairDays, plantCount: summaries.length };
+  }, [summaries]);
 
-  const totalHours = useMemo(
-    () => filteredRuntimeRecords.reduce((s, r) => s + manualRuntimeDayHours(r), 0),
-    [filteredRuntimeRecords]
-  );
-  const totalFuel = useMemo(
-    () => filteredRuntimeRecords.reduce((s, r) => s + (r.fuelConsumed || 0), 0),
-    [filteredRuntimeRecords]
-  );
-  const totalDistance = useMemo(
-    () => filteredRuntimeRecords.reduce((s, r) => s + (r.distanceCovered || 0), 0),
-    [filteredRuntimeRecords]
-  );
+  const openPlant = (plantID: string) =>
+    router.push(`/plant/${encodeURIComponent(plantID)}`);
 
-  const fleetTrips = useMemo(() => {
-    let count = 0;
-    let duration = 0;
-    let distance = 0;
-    for (const a of analyticsByTractor.values()) {
-      const t = a?.trips;
-      count += t?.totalCount ?? 0;
-      duration += t?.totalDuration ?? 0;
-      distance += t?.totalDistance ?? 0;
-    }
-    return { count, duration, distance };
-  }, [analyticsByTractor]);
-
-  const fleetCharges = useMemo(() => {
-    let count = 0;
-    let duration = 0;
-    let kwh = 0;
-    for (const a of analyticsByTractor.values()) {
-      const ch = a?.charges;
-      count += ch?.totalCount ?? 0;
-      duration += ch?.totalDuration ?? 0;
-      kwh += ch?.totalKwhCharged ?? 0;
-    }
-    return { count, duration, kwh };
-  }, [analyticsByTractor]);
-
-  const avgHoursPerTractor = filteredTractors.length
-    ? (filteredTractors.reduce((s, t) => s + t.totalRuntime, 0) / filteredTractors.length).toFixed(0)
-    : 0;
-
-  const byTractor = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        tractorID: string;
-        model: string;
-        plant: string;
-        totalHours: number;
-        records: RuntimeRecord[];
-        tripsCount: number;
-        tripsDuration: number;
-        chargeCount: number;
-        chargeKwh: number;
-      }
-    > = {};
-    filteredRuntimeRecords.forEach(r => {
-      if (!map[r.tractorID]) {
-        const analytics = analyticsByTractor.get(r.tractorID);
-        map[r.tractorID] = {
-          tractorID: r.tractorID,
-          model: r.tractorModel || r.tractorID,
-          plant: r.plantName || '',
-          totalHours: 0,
-          records: [],
-          tripsCount: analytics?.trips?.totalCount ?? 0,
-          tripsDuration: analytics?.trips?.totalDuration ?? 0,
-          chargeCount: analytics?.charges?.totalCount ?? 0,
-          chargeKwh: analytics?.charges?.totalKwhCharged ?? 0,
-        };
-      }
-      map[r.tractorID].totalHours += manualRuntimeDayHours(r);
-      map[r.tractorID].records.push(r);
-    });
-    filteredTractors.forEach(t => {
-      if (map[t.tractorID]) return;
-      const analytics = analyticsByTractor.get(t.tractorID);
-      const trips = analytics?.trips;
-      const charges = analytics?.charges;
-      if ((trips?.totalCount ?? 0) > 0 || (charges?.totalCount ?? 0) > 0) {
-        map[t.tractorID] = {
-          tractorID: t.tractorID,
-          model: t.model || t.serialNumber,
-          plant: t.plantName || '',
-          totalHours: 0,
-          records: [],
-          tripsCount: trips?.totalCount ?? 0,
-          tripsDuration: trips?.totalDuration ?? 0,
-          chargeCount: charges?.totalCount ?? 0,
-          chargeKwh: charges?.totalKwhCharged ?? 0,
-        };
-      }
-    });
-    return Object.values(map).sort((a, b) => b.totalHours - a.totalHours);
-  }, [filteredRuntimeRecords, filteredTractors, analyticsByTractor]);
-
-  const maxHours = byTractor.length > 0 ? Math.max(...byTractor.map(x => x.totalHours), 1) : 1;
-
-  const renderTractor = ({ item }: { item: typeof byTractor[0] }) => (
-    <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
-      <View style={styles.cardHeader}>
-        <View style={[styles.tractorIconWrap, { backgroundColor: c.primary + '14' }]}>
-          <Feather name="truck" size={18} color={c.primary} />
-        </View>
-        <View style={styles.cardInfo}>
-          <Text style={[styles.tractorModel, { color: c.foreground }]}>{item.model}</Text>
-          <Text style={[styles.plantName, { color: c.mutedForeground }]}>{item.plant}</Text>
-        </View>
-        <Text style={[styles.hoursNum, { color: c.primary }]}>
-          {item.totalHours > 0 ? `${item.totalHours.toFixed(1)}h` : '—'}
-        </Text>
+  const ListHeader = (
+    <View style={[styles.header, { paddingTop: topPad + 14 }]}>
+      {/* Hero banner */}
+      <View style={[styles.heroBanner, { shadowColor: c.primary }]}>
+        <LinearGradient
+          colors={[c.primary, c.gradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.heroGradient, { borderRadius: 20 }]}
+        >
+          <View style={styles.heroLeft}>
+            <Text style={[styles.heroSuper, { color: c.primaryForeground + 'BB' }]}>
+              {organization?.name ?? 'Fleet'}
+            </Text>
+            <Text style={[styles.heroTitle, { color: c.primaryForeground }]}>Plant Analysis</Text>
+            <Text style={[styles.heroSub, { color: c.primaryForeground + '99' }]}>
+              {fleetTotals.plantCount} plant{fleetTotals.plantCount !== 1 ? 's' : ''} · {fleetTotals.totalTractors} tractors
+            </Text>
+          </View>
+          <View style={[styles.heroIconWrap, { backgroundColor: c.primaryForeground + '14' }]}>
+            <Feather name="home" size={28} color={c.primaryForeground} />
+          </View>
+        </LinearGradient>
       </View>
 
-      {(item.tripsCount > 0 || item.chargeCount > 0) && (
-        <View style={styles.usageRow}>
-          {item.tripsCount > 0 ? (
-            <View style={[styles.usageChip, { backgroundColor: c.surfaceAlt }]}>
-              <Feather name="navigation" size={12} color={c.primary} />
-              <Text style={[styles.usageChipText, { color: c.foreground }]}>
-                {item.tripsCount} trips · {fmtDuration(item.tripsDuration)}
-              </Text>
-            </View>
-          ) : null}
-          {item.chargeCount > 0 ? (
-            <View style={[styles.usageChip, { backgroundColor: c.surfaceAlt }]}>
-              <Feather name="battery-charging" size={12} color={c.blue} />
-              <Text style={[styles.usageChipText, { color: c.foreground }]}>
-                {item.chargeCount} charges
-                {item.chargeKwh > 0 ? ` · ${Math.round(item.chargeKwh)} kWh` : ''}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      )}
+      {/* Fleet KPI row */}
+      <View style={[styles.kpiRow, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
+        <KpiItem label="Tractors" value={fleetTotals.totalTractors} color={c.primary} />
+        <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
+        <KpiItem label="Maintenance" value={fleetTotals.maintenance} color={c.warning} />
+        <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
+        <KpiItem label="Open Tickets" value={fleetTotals.openTickets} color={c.red} />
+        <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
+        <KpiItem label="Uptime" value={`${fleetTotals.uptime}%`} color={c.success} />
+      </View>
 
-      {item.totalHours > 0 && (
-        <View style={[styles.barTrack, { backgroundColor: c.track }]}>
-          <View
-            style={[
-              styles.barFill,
-              {
-                backgroundColor: c.primary,
-                width: `${Math.min(100, (item.totalHours / maxHours) * 100)}%` as `${number}%`,
-              },
-            ]}
-          />
-        </View>
-      )}
+      <UptimeMetricCards
+        uptimePct={fleetTotals.uptime}
+        downtimePct={Math.max(0, 100 - fleetTotals.uptime)}
+        repairDays={fleetTotals.repairDays}
+      />
 
-      {item.records.length > 0 ? (
-        <View style={styles.entriesBlock}>
-          <Text style={[styles.entriesTitle, { color: c.mutedForeground }]}>
-            Manual runtime entries
-          </Text>
-          {item.records.slice(0, 5).map(r => (
-            <ManualRuntimeEntryCard
-              key={r.recordID}
-              record={r}
-              compact
-              plantLabel={r.plantName || plants.find(p => p.plantID === r.plantID)?.name}
-            />
-          ))}
-          {item.records.length > 5 ? (
-            <Text style={[styles.moreEntries, { color: c.mutedForeground }]}>
-              +{item.records.length - 5} more entries
-            </Text>
-          ) : null}
+      <View style={styles.sectionRow}>
+        <View style={styles.sectionTitleRow}>
+          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
+          <Text style={[styles.sectionLabel, { color: c.foreground }]}>All Plants</Text>
         </View>
-      ) : null}
+        <Text style={[styles.sectionCount, { color: c.mutedForeground }]}>
+          {summaries.length}
+        </Text>
+      </View>
     </View>
   );
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
-      <View style={[styles.summarySection, { paddingTop: topPad + 16 }]}>
-        <Text style={[styles.sectionTitle, { color: c.mutedForeground }]}>Fleet usage</Text>
-
-        <View style={[styles.kpiRow, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
-          <View style={styles.kpi}>
-            <Feather name="clock" size={20} color={c.primary} />
-            <Text style={[styles.kpiNum, { color: c.foreground }]}>{totalHours.toFixed(0)}h</Text>
-            <Text style={[styles.kpiLabel, { color: c.mutedForeground }]}>Manual Hours</Text>
-          </View>
-          <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
-          <View style={styles.kpi}>
-            <Feather name="navigation" size={20} color={c.primary} />
-            <Text style={[styles.kpiNum, { color: c.foreground }]}>
-              {analyticsLoading ? '…' : fleetTrips.count}
-            </Text>
-            <Text style={[styles.kpiLabel, { color: c.mutedForeground }]}>Trips</Text>
-          </View>
-          <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
-          <View style={styles.kpi}>
-            <Feather name="battery-charging" size={20} color={c.blue} />
-            <Text style={[styles.kpiNum, { color: c.foreground }]}>
-              {analyticsLoading ? '…' : fleetCharges.count}
-            </Text>
-            <Text style={[styles.kpiLabel, { color: c.mutedForeground }]}>Charges</Text>
-          </View>
-          <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
-          <View style={styles.kpi}>
-            <Feather name="bar-chart-2" size={20} color={c.accent} />
-            <Text style={[styles.kpiNum, { color: c.foreground }]}>{avgHoursPerTractor}h</Text>
-            <Text style={[styles.kpiLabel, { color: c.mutedForeground }]}>Avg/Tractor</Text>
-          </View>
-        </View>
-
-        {!analyticsLoading && (fleetTrips.count > 0 || fleetCharges.count > 0) && (
-          <Text style={[styles.fleetUsageSub, { color: c.mutedForeground }]}>
-            {fleetTrips.count > 0
-              ? `${fleetTrips.count} trips (${fmtDuration(fleetTrips.duration)})`
-              : ''}
-            {fleetTrips.count > 0 && fleetCharges.count > 0 ? ' · ' : ''}
-            {fleetCharges.count > 0
-              ? `${fleetCharges.count} charges (${Math.round(fleetCharges.kwh)} kWh)`
-              : ''}
-          </Text>
-        )}
-      </View>
-
       <FlatList
-        data={byTractor}
-        keyExtractor={i => i.tractorID}
-        renderItem={renderTractor}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
+        data={summaries}
+        keyExtractor={s => s.plant.plantID}
+        renderItem={({ item }) => (
+          <PlantAnalysisCard summary={item} onPress={() => openPlant(item.plant.plantID)} />
+        )}
+        ListHeaderComponent={ListHeader}
+        contentContainerStyle={[
+          styles.list,
+          { paddingBottom: insets.bottom + 100 },
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
         }
-        ListHeaderComponent={
-          <>
-            <Text style={[styles.listHeader, { color: c.mutedForeground }]}>
-              Manual runtime log
-            </Text>
-            <Text style={[styles.listSub, { color: c.mutedForeground }]}>
-              Each entry shows loggerID, plantID, orgID, date, startCumulativeRuntime, endCumulativeRuntime
-            </Text>
-          </>
-        }
+        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Feather name="clock" size={36} color={c.border} />
+          <View style={[styles.empty, { backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
+              <Feather name="home" size={32} color={c.mutedForeground} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: c.foreground }]}>No Plants Found</Text>
             <Text style={[styles.emptyText, { color: c.mutedForeground }]}>
-              {analyticsLoading
-                ? 'Loading trip, charge, and runtime data…'
-                : 'No runtime or usage data for the selected plant'}
+              {isLoading ? 'Loading plant data…' : 'No plants found for this organization'}
             </Text>
           </View>
         }
@@ -321,158 +134,143 @@ export default function RuntimeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  summarySection: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 14,
-  },
-  kpiRow: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    alignItems: 'center',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  kpi: {
+function KpiItem({ label, value, color }: { label: string; value: number | string; color: string }) {
+  return (
+    <View style={kpiStyles.item}>
+      <Text style={[kpiStyles.value, { color }]}>{value}</Text>
+      <Text style={kpiStyles.label}>{label}</Text>
+    </View>
+  );
+}
+
+const kpiStyles = StyleSheet.create({
+  item: {
     flex: 1,
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
+    paddingVertical: 4,
   },
-  kpiNum: {
-    fontSize: 18,
+  value: {
+    fontSize: 20,
     fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.4,
   },
-  kpiLabel: {
+  label: {
     fontSize: 10,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_500Medium',
+    color: '#5A6A85',
     textAlign: 'center',
   },
-  kpiDivider: {
-    width: 1,
-    height: 40,
-  },
-  fleetUsageSub: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    marginTop: 10,
-    lineHeight: 17,
-  },
+});
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
   list: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    gap: 10,
   },
-  listHeader: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 4,
+  header: {
+    gap: 14,
+    paddingBottom: 4,
   },
-  listSub: {
-    fontSize: 11,
-    fontFamily: 'Inter_400Regular',
-    lineHeight: 16,
-    marginBottom: 10,
+  heroBanner: {
+    borderRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 5,
   },
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
-    gap: 10,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  cardHeader: {
+  heroGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    padding: 20,
+    gap: 16,
   },
-  tractorIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  heroLeft: { flex: 1, gap: 4 },
+  heroSuper: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.5,
+  },
+  heroSub: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+  },
+  heroIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardInfo: { flex: 1 },
-  tractorModel: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  plantName: {
-    fontSize: 11,
-    fontFamily: 'Inter_400Regular',
-    marginTop: 1,
-  },
-  hoursNum: {
-    fontSize: 18,
-    fontFamily: 'Inter_700Bold',
-  },
-  usageRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  usageChip: {
+  kpiRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  usageChipText: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
+  kpiDivider: {
+    width: 1,
+    height: 36,
   },
-  barTrack: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  barFill: {
-    height: 6,
-    borderRadius: 3,
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  entriesBlock: {
-    gap: 8,
+  sectionAccent: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
   },
-  entriesTitle: {
-    fontSize: 11,
+  sectionLabel: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
+  },
+  sectionCount: {
+    fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  moreEntries: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    textAlign: 'center',
-    marginTop: 2,
   },
   empty: {
     alignItems: 'center',
-    paddingTop: 60,
-    gap: 12,
+    padding: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 8,
+    gap: 10,
+  },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
-    paddingHorizontal: 24,
+    lineHeight: 20,
   },
 });

@@ -12,6 +12,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -48,103 +50,177 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { backgroundColor: c.background }]}
+      style={[styles.root]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <LinearGradient
+        colors={[c.primary, c.gradientEnd, c.foreground]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+      
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 },
+          { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 40 },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Hero Header */}
         <View style={styles.header}>
-          <View style={[styles.logoWrap, { shadowColor: c.primary }]}>
-            <Image
-              source={require('../assets/images/icon.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={[styles.appName, { color: c.foreground }]}>AutoNXT Fleet</Text>
-          <Text style={[styles.subtitle, { color: c.mutedForeground }]}>Fleet Management Portal</Text>
-        </View>
-
-        {/* Card */}
-        <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
-          <Text style={[styles.cardTitle, { color: c.foreground }]}>Sign In</Text>
-          <Text style={[styles.cardSub, { color: c.mutedForeground }]}>
-            Access restricted to authorized personnel
-          </Text>
-
-          <View style={styles.fieldWrap}>
-            <Text style={[styles.label, { color: c.mutedForeground }]}>Email / Username</Text>
-            <View style={[styles.inputWrap, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
-              <Feather name="mail" size={16} color={c.mutedForeground} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: c.foreground }]}
-                placeholder="your@email.com"
-                placeholderTextColor={c.mutedForeground}
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                returnKeyType="next"
+          <View style={[styles.logoWrap, { shadowColor: c.accent }]}>
+            <View style={[styles.logoInner, { backgroundColor: c.card }]}>
+              <Image
+                source={require('../assets/images/icon.png')}
+                style={styles.logo}
+                resizeMode="contain"
               />
             </View>
           </View>
-
-          <View style={styles.fieldWrap}>
-            <Text style={[styles.label, { color: c.mutedForeground }]}>Password</Text>
-            <View style={[styles.inputWrap, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
-              <Feather name="lock" size={16} color={c.mutedForeground} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: c.foreground }]}
-                placeholder="••••••••"
-                placeholderTextColor={c.mutedForeground}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(v => !v)}
-                style={styles.eyeBtn}
-                activeOpacity={0.7}
-              >
-                <Feather name={showPassword ? 'eye-off' : 'eye'} size={16} color={c.mutedForeground} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.loginBtn, { backgroundColor: c.primary }, isLoading && styles.loginBtnDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}
-            activeOpacity={0.85}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.loginBtnText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.secureRow}>
-            <Feather name="shield" size={13} color={c.mutedForeground} />
-            <Text style={[styles.secureText, { color: c.mutedForeground }]}>Secured by AWS Cognito</Text>
+          <Text style={[styles.appName, { color: c.card }]}>AutoNXT Fleet</Text>
+          <View style={styles.subtitleRow}>
+            <View style={[styles.divider, { backgroundColor: c.accent }]} />
+            <Text style={[styles.subtitle, { color: c.card + 'DD' }]}>
+              Fleet Management Portal
+            </Text>
+            <View style={[styles.divider, { backgroundColor: c.accent }]} />
           </View>
         </View>
 
-        <Text style={[styles.accessNote, { color: c.mutedForeground }]}>
-          Only registered users and admins can access this portal.
+        {/* Glass Card */}
+        <View style={styles.cardContainer}>
+          {Platform.OS === 'ios' ? (
+            <BlurView intensity={20} tint="light" style={[styles.card, styles.glassCard]}>
+              <View style={[styles.cardInner, { backgroundColor: c.card + 'F2' }]}>
+                <CardContent
+                  c={c}
+                  username={username}
+                  password={password}
+                  showPassword={showPassword}
+                  isLoading={isLoading}
+                  setUsername={setUsername}
+                  setPassword={setPassword}
+                  setShowPassword={setShowPassword}
+                  handleLogin={handleLogin}
+                />
+              </View>
+            </BlurView>
+          ) : (
+            <View style={[styles.card, { backgroundColor: c.card }]}>
+              <CardContent
+                c={c}
+                username={username}
+                password={password}
+                showPassword={showPassword}
+                isLoading={isLoading}
+                setUsername={setUsername}
+                setPassword={setPassword}
+                setShowPassword={setShowPassword}
+                handleLogin={handleLogin}
+              />
+            </View>
+          )}
+        </View>
+
+        <Text style={[styles.accessNote, { color: c.card + 'CC' }]}>
+          <Feather name="shield" size={12} color={c.card + 'CC'} /> Secured by AWS Cognito · Authorized personnel only
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function CardContent({
+  c,
+  username,
+  password,
+  showPassword,
+  isLoading,
+  setUsername,
+  setPassword,
+  setShowPassword,
+  handleLogin,
+}: any) {
+  return (
+    <>
+      <View style={styles.cardHeader}>
+        <Text style={[styles.cardTitle, { color: c.foreground }]}>Welcome Back</Text>
+        <Text style={[styles.cardSub, { color: c.mutedForeground }]}>
+          Sign in to manage your fleet
+        </Text>
+      </View>
+
+      <View style={styles.fieldWrap}>
+        <Text style={[styles.label, { color: c.mutedForeground }]}>Email Address</Text>
+        <View style={[styles.inputWrap, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+          <Feather name="mail" size={18} color={c.primary} style={styles.inputIcon} />
+          <TextInput
+            style={[styles.input, { color: c.foreground }]}
+            placeholder="your@email.com"
+            placeholderTextColor={c.mutedForeground + '88'}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            returnKeyType="next"
+          />
+        </View>
+      </View>
+
+      <View style={styles.fieldWrap}>
+        <Text style={[styles.label, { color: c.mutedForeground }]}>Password</Text>
+        <View style={[styles.inputWrap, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+          <Feather name="lock" size={18} color={c.primary} style={styles.inputIcon} />
+          <TextInput
+            style={[styles.input, { color: c.foreground }]}
+            placeholder="••••••••••"
+            placeholderTextColor={c.mutedForeground + '88'}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
+          />
+          <TouchableOpacity
+            onPress={() => setShowPassword(v => !v)}
+            style={styles.eyeBtn}
+            activeOpacity={0.6}
+            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+          >
+            <Feather
+              name={showPassword ? 'eye-off' : 'eye'}
+              size={18}
+              color={c.mutedForeground}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={[
+          styles.loginBtn,
+          { backgroundColor: c.primary, shadowColor: c.primary },
+          isLoading && styles.loginBtnDisabled,
+        ]}
+        onPress={handleLogin}
+        disabled={isLoading}
+        activeOpacity={0.85}
+      >
+        {isLoading ? (
+          <ActivityIndicator color={c.primaryForeground} />
+        ) : (
+          <>
+            <Text style={[styles.loginBtnText, { color: c.primaryForeground }]}>
+              Sign In to Fleet
+            </Text>
+            <Feather name="arrow-right" size={20} color={c.primaryForeground} />
+          </>
+        )}
+      </TouchableOpacity>
+    </>
   );
 }
 
@@ -158,100 +234,131 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 40,
   },
   logoWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 4,
+    width: 100,
+    height: 100,
+    borderRadius: 28,
+    marginBottom: 20,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.45,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  logo: { width: 80, height: 80 },
+  logoInner: {
+    width: 100,
+    height: 100,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  logo: { width: 100, height: 100 },
   appName: {
-    fontSize: 26,
+    fontSize: 32,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.3,
-    marginBottom: 4,
+    letterSpacing: -0.8,
+    marginBottom: 10,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  divider: {
+    height: 1,
+    width: 30,
+    borderRadius: 1,
   },
   subtitle: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    letterSpacing: 0.5,
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  cardContainer: {
+    width: '100%',
+    maxWidth: 420,
   },
   card: {
     width: '100%',
-    maxWidth: 400,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    gap: 16,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 3,
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.15,
+    shadowRadius: 40,
+    elevation: 8,
+  },
+  glassCard: {
+    backgroundColor: 'transparent',
+  },
+  cardInner: {
+    padding: 28,
+    gap: 20,
+    borderRadius: 24,
+  },
+  cardHeader: {
+    gap: 6,
+    marginBottom: 4,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 26,
     fontFamily: 'Inter_700Bold',
-    marginBottom: 2,
+    letterSpacing: -0.4,
   },
   cardSub: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Inter_400Regular',
-    marginBottom: 8,
+    lineHeight: 20,
   },
-  fieldWrap: { gap: 6 },
+  fieldWrap: { gap: 8 },
   label: {
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    height: 54,
   },
-  inputIcon: { marginRight: 8 },
+  inputIcon: { marginRight: 12 },
   input: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Inter_400Regular',
+    paddingVertical: 0,
   },
   eyeBtn: { padding: 4 },
   loginBtn: {
-    borderRadius: 12,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  loginBtnDisabled: { opacity: 0.6 },
-  loginBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  secureRow: {
+    borderRadius: 14,
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 10,
+    marginTop: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  secureText: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
+  loginBtnDisabled: { opacity: 0.6 },
+  loginBtnText: {
+    fontSize: 17,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
   },
   accessNote: {
-    marginTop: 24,
+    marginTop: 28,
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
+    lineHeight: 18,
   },
 });

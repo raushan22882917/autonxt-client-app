@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { ReportCalendar } from '@/components/ReportCalendar';
@@ -106,12 +107,12 @@ export default function ReportsScreen() {
       await downloadCsvFile(name, csv);
 
       Alert.alert(
-        'Report ready',
+        'Report Ready',
         `Downloaded ${selectedDates.length} day${selectedDates.length > 1 ? 's' : ''} as CSV.`
       );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Download failed';
-      Alert.alert('Download failed', msg);
+      Alert.alert('Download Failed', msg);
     } finally {
       setDownloading(false);
     }
@@ -120,7 +121,11 @@ export default function ReportsScreen() {
   const selectionLabel =
     selectedDates.length === 0
       ? 'No dates selected'
-      : selectedDates.map(formatDisplayDate).join(', ');
+      : selectedDates.length === 1
+        ? formatDisplayDate(selectedDates[0])
+        : `${selectedDates.length} days selected`;
+
+  const canDownload = !downloading && selectedDates.length > 0;
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
@@ -131,64 +136,133 @@ export default function ReportsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.title, { color: c.foreground }]}>Daily reports</Text>
-        <Text style={[styles.subtitle, { color: c.mutedForeground }]}>
-          Select days on the calendar, then download a plant operations CSV (loader, catcher,
-          grabber, haulage, pin loader counts, breakdowns, and tickets) from live fleet data.
-        </Text>
-
-        <ReportCalendar
-          month={calendarMonth}
-          selectedDates={selectedDates}
-          datesWithData={datesWithData}
-          onMonthChange={setCalendarMonth}
-          onToggleDate={onToggleDate}
-        />
-
-        <View style={[styles.selectionCard, { backgroundColor: c.card, borderColor: c.border }]}>
-          <Feather name="calendar" size={18} color={c.primary} />
-          <View style={styles.selectionText}>
-            <Text style={[styles.selectionTitle, { color: c.foreground }]}>Selected dates</Text>
-            <Text style={[styles.selectionValue, { color: c.mutedForeground }]} numberOfLines={3}>
-              {selectionLabel}
-            </Text>
-          </View>
-          {selectedDates.length > 0 ? (
-            <TouchableOpacity onPress={() => setSelectedDates([])} hitSlop={8}>
-              <Text style={[styles.clearBtn, { color: c.primary }]}>Clear</Text>
-            </TouchableOpacity>
-          ) : null}
+        {/* Hero banner */}
+        <View style={[styles.heroBanner, { shadowColor: c.primary }]}>
+          <LinearGradient
+            colors={[c.primary, c.gradientEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.heroGradient, { borderRadius: 20 }]}
+          >
+            <View style={styles.heroLeft}>
+              <Text style={[styles.heroSuper, { color: c.primaryForeground + 'BB' }]}>
+                {selectedPlant?.name ?? organization?.name ?? 'Fleet'}
+              </Text>
+              <Text style={[styles.heroTitle, { color: c.primaryForeground }]}>Daily Reports</Text>
+              <Text style={[styles.heroSub, { color: c.primaryForeground + 'AA' }]}>
+                Select dates to export plant operations
+              </Text>
+            </View>
+            <View style={[styles.heroIconWrap, { backgroundColor: c.primaryForeground + '14' }]}>
+              <Feather name="file-text" size={28} color={c.primaryForeground} />
+            </View>
+          </LinearGradient>
         </View>
 
+        {/* Calendar */}
+        <View style={[styles.calendarCard, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
+          <View style={styles.calendarHeader}>
+            <View style={styles.calendarTitleRow}>
+              <View style={[styles.calendarAccent, { backgroundColor: c.primary }]} />
+              <Text style={[styles.calendarTitle, { color: c.foreground }]}>Select Dates</Text>
+            </View>
+            {selectedDates.length > 0 && (
+              <TouchableOpacity onPress={() => setSelectedDates([])} hitSlop={8}>
+                <Text style={[styles.clearAll, { color: c.red }]}>Clear all</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <ReportCalendar
+            month={calendarMonth}
+            selectedDates={selectedDates}
+            datesWithData={datesWithData}
+            onMonthChange={setCalendarMonth}
+            onToggleDate={onToggleDate}
+          />
+        </View>
+
+        {/* Selection summary */}
+        <View
+          style={[
+            styles.selectionCard,
+            {
+              backgroundColor: selectedDates.length > 0 ? c.blueSoft : c.card,
+              borderColor: selectedDates.length > 0 ? c.primary + '35' : c.border,
+            },
+          ]}
+        >
+          <View style={[styles.selectionIcon, { backgroundColor: c.primary + '18' }]}>
+            <Feather name="calendar" size={20} color={c.primary} />
+          </View>
+          <View style={styles.selectionText}>
+            <Text style={[styles.selectionTitle, { color: c.foreground }]}>Selected period</Text>
+            <Text style={[styles.selectionValue, { color: c.mutedForeground }]} numberOfLines={2}>
+              {selectedDates.length === 0
+                ? 'No dates selected'
+                : selectedDates.length <= 3
+                  ? selectedDates.map(formatDisplayDate).join(', ')
+                  : `${selectedDates.slice(0, 2).map(formatDisplayDate).join(', ')} +${selectedDates.length - 2} more`}
+            </Text>
+          </View>
+          {selectedDates.length > 0 && (
+            <View style={[styles.countBadge, { backgroundColor: c.primary }]}>
+              <Text style={[styles.countText, { color: c.primaryForeground }]}>
+                {selectedDates.length}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Download button */}
         <TouchableOpacity
           style={[
             styles.downloadBtn,
-            { backgroundColor: c.primary },
-            (downloading || selectedDates.length === 0) && styles.downloadBtnDisabled,
+            { backgroundColor: canDownload ? c.primary : c.muted, shadowColor: canDownload ? c.primary : 'transparent' },
           ]}
           onPress={handleDownload}
-          disabled={downloading || selectedDates.length === 0}
+          disabled={!canDownload}
           activeOpacity={0.85}
         >
           {downloading ? (
-            <ActivityIndicator color={c.primaryForeground} />
+            <>
+              <ActivityIndicator color={c.primaryForeground} />
+              <Text style={[styles.downloadLabel, { color: c.primaryForeground }]}>
+                Preparing report…
+              </Text>
+            </>
           ) : (
-            <Feather name="download" size={20} color={c.primaryForeground} />
+            <>
+              <View style={[styles.downloadIconWrap, { backgroundColor: c.primaryForeground + '20' }]}>
+                <Feather name="download" size={20} color={canDownload ? c.primaryForeground : c.mutedForeground} />
+              </View>
+              <Text
+                style={[
+                  styles.downloadLabel,
+                  { color: canDownload ? c.primaryForeground : c.mutedForeground },
+                ]}
+              >
+                {selectedDates.length === 0
+                  ? 'Select dates to download'
+                  : `Download ${selectedDates.length} day${selectedDates.length !== 1 ? 's' : ''} as CSV`}
+              </Text>
+            </>
           )}
-          <Text style={[styles.downloadLabel, { color: c.primaryForeground }]}>
-            {downloading ? 'Preparing CSV…' : 'Download report (CSV)'}
-          </Text>
         </TouchableOpacity>
 
-        <View style={[styles.infoCard, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
-          <Text style={[styles.infoTitle, { color: c.foreground }]}>CSV columns</Text>
-          <Text style={[styles.infoLine, { color: c.mutedForeground }]} numberOfLines={6}>
+        {/* Info card */}
+        <View style={[styles.infoCard, { backgroundColor: c.card, borderColor: c.border }]}>
+          <View style={styles.infoHeader}>
+            <Feather name="info" size={16} color={c.primary} />
+            <Text style={[styles.infoTitle, { color: c.foreground }]}>CSV columns</Text>
+          </View>
+          <Text style={[styles.infoLine, { color: c.mutedForeground }]} numberOfLines={4}>
             {PLANT_DAILY_REPORT_HEADERS.join(', ')}
           </Text>
-          <Text style={[styles.infoNote, { color: c.mutedForeground }]}>
-            One row per plant per selected day. Implement counts use API currentImplement and
-            serviceStatus; tickets and breakdowns use complaints for that day.
-          </Text>
+          <View style={[styles.infoNote, { backgroundColor: c.surfaceAlt, borderRadius: 10 }]}>
+            <Text style={[styles.infoNoteText, { color: c.mutedForeground }]}>
+              One row per plant per selected day. Counts use live API data; tickets from complaints log.
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -201,28 +275,97 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 16,
   },
-  title: {
+  heroBanner: {
+    borderRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  heroGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
+  },
+  heroLeft: { flex: 1, gap: 4 },
+  heroSuper: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  heroTitle: {
     fontSize: 22,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
-  subtitle: {
-    fontSize: 14,
+  heroSub: {
+    fontSize: 13,
     fontFamily: 'Inter_400Regular',
-    lineHeight: 20,
-    marginTop: -8,
+  },
+  heroIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  calendarTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  calendarAccent: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
+  },
+  calendarTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
+  },
+  clearAll: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
   },
   selectionCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    borderRadius: 14,
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 14,
+    padding: 16,
   },
-  selectionText: { flex: 1, gap: 4 },
+  selectionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  selectionText: { flex: 1, gap: 3 },
   selectionTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
   },
   selectionValue: {
@@ -230,44 +373,68 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     lineHeight: 18,
   },
-  clearBtn: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
+  countBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  countText: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
   },
   downloadBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    borderRadius: 14,
-    paddingVertical: 16,
+    gap: 12,
+    borderRadius: 16,
+    paddingVertical: 18,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 5,
   },
-  downloadBtnDisabled: {
-    opacity: 0.55,
+  downloadIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   downloadLabel: {
     fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
   },
   infoCard: {
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 14,
+    padding: 16,
+    gap: 12,
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   infoTitle: {
     fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
   },
   infoLine: {
     fontSize: 11,
     fontFamily: 'Inter_400Regular',
-    lineHeight: 16,
+    lineHeight: 17,
   },
   infoNote: {
+    padding: 12,
+  },
+  infoNoteText: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
     lineHeight: 17,
-    marginTop: 6,
   },
 });

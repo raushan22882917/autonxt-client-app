@@ -115,7 +115,42 @@ export type TractorImageFields = {
   model?: string | null;
   color?: string | null;
   currentImplement?: string | null;
+  status?: 'ACTIVE' | 'IDLE' | 'MAINTENANCE' | 'OFFLINE' | null;
 };
+
+export type TractorAccentPalette = {
+  gradient: [string, string];
+  border: string;
+  icon: string;
+};
+
+/** Colorful backdrop for tractor image (blue / red variant, maintenance override). */
+export function getTractorAccentPalette(tractor: TractorImageFields): TractorAccentPalette {
+  if (tractor.status === 'MAINTENANCE') {
+    return {
+      gradient: ['#FEE2E2', '#FCA5A5'],
+      border: '#DC2626',
+      icon: '#B91C1C',
+    };
+  }
+
+  const redColors = ['RED', 'BLAZING_RED', 'BLAZING_RED_CANOPY'];
+  const isRed = tractor.color && redColors.includes(tractor.color.toUpperCase());
+
+  if (isRed) {
+    return {
+      gradient: ['#FFE4E6', '#FDA4AF'],
+      border: '#E11D48',
+      icon: '#BE123C',
+    };
+  }
+
+  return {
+    gradient: ['#DBEAFE', '#93C5FD'],
+    border: '#2563EB',
+    icon: '#1D4ED8',
+  };
+}
 
 /** Resolve model+color asset, implement type URL, or model-key asset for list/detail rows. */
 export function getTractorListRowImageSource(tractor: TractorImageFields): ImageSourcePropType | null {
