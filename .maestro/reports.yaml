@@ -1,0 +1,23 @@
+# reports.yaml
+appId: com.softwareautonxt.mobile
+env:
+  EMAIL: "testuser@example.com"
+  PASSWORD: "Password123"
+---
+- runFlow: subflows/login_if_needed.yaml
+- tapOn: "Reports"
+- assertVisible: "Daily Reports"
+- assertVisible: "Select Dates"
+- assertVisible: "CSV columns"
+# Test month shift buttons
+- tapOn: "Previous month"
+- tapOn: "Next month"
+# Clear dates
+- tapOn: "Clear all"
+- assertVisible: "Select dates to download"
+# Select today (which is highlighted by default or we can tap the legend/cells)
+# Let's tap on standard legend item or elements to ensure we can select a day.
+# In a test, we can tap on "15" (usually mid-month) to select a day.
+- tapOn: "15"
+- assertVisible: "Selected period"
+- assertVisible: "Download 1 day as CSV"

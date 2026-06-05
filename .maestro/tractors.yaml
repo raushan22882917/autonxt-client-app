@@ -1,0 +1,35 @@
+# tractors.yaml
+appId: com.softwareautonxt.mobile
+env:
+  EMAIL: "testuser@example.com"
+  PASSWORD: "Password123"
+---
+- runFlow: subflows/login_if_needed.yaml
+- tapOn: "Tractors"
+- assertVisible: "Search by ID, model, location…"
+# Filter by status chips
+- tapOn: "Active"
+- tapOn: "Maint."
+- tapOn: "Idle"
+- tapOn: "Offline"
+- tapOn: "All"
+# Search test
+- tapOn: "Search by ID, model, location…"
+- inputText: "AutoNXT"
+- assertVisible: "AutoNXT"
+- tapOn: "x"
+# Go to Tractor Details
+- tapOn: "Open tractor details"
+- assertVisible: "Tractor Details"
+# Switch tractor detail tabs
+- tapOn: "Runtime"
+- assertVisible: "Total runtime"
+- assertVisible: "Manual runtime log"
+- tapOn: "Trips"
+- assertVisible: "Trip summary"
+- tapOn: "Charge"
+- assertVisible: "Charge summary"
+- tapOn: "Faults"
+- assertVisible: "Controller faults"
+- back
+- assertVisible: "Search by ID, model, location…"

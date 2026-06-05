@@ -1,0 +1,10 @@
+# login_if_needed.yaml
+appId: com.softwareautonxt.mobile
+---
+- launchApp
+- assertNotVisible: "Smart Fleet · Total Control"
+- runFlow:
+    file: login_action.yaml
+    when:
+      visible: "Welcome Back"
+- assertVisible: "Fleet Overview"

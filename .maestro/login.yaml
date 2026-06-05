@@ -1,0 +1,20 @@
+# login.yaml
+appId: com.softwareautonxt.mobile
+env:
+  EMAIL: "raushan@autonxt.in"
+  PASSWORD: "Raushan@2288"
+---
+- clearState
+- launchApp
+- assertVisible: "AutoNXT Fleet"
+- assertVisible: "Smart Fleet · Total Control"
+- assertVisible: "Welcome Back"
+- assertVisible: "Email Address"
+- assertVisible: "Password"
+- runFlow: subflows/login_action.yaml
+- assertVisible: "Fleet Overview"
+- tapOn: "Profile"
+- assertVisible: "Account"
+- assertVisible: "Organization"
+- tapOn: "Sign Out"
+- assertVisible: "Welcome Back"
