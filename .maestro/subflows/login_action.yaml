@@ -1,9 +1,13 @@
 # login_action.yaml
-appId: com.softwareautonxt.mobile
+appId: web
 ---
-- tapOn: "your@email.com"
-- inputText: ${EMAIL}
-- tapOn: "••••••••••"
-- inputText: ${PASSWORD}
+- inputText:
+    id: "emailInput"
+    text: ${EMAIL}
+- inputText:
+    id: "passwordInput"
+    text: ${PASSWORD}
 - hideKeyboard
-- tapOn: "Sign In to Fleet"
+- tapOn:
+    id: "signInButton"
+    

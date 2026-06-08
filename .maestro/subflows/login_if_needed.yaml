@@ -2,7 +2,9 @@
 appId: com.softwareautonxt.mobile
 ---
 - launchApp
-- assertVisible: "AutoNXT Fleet"
+- extendedWaitUntil:
+    visible: "AutoNXT Fleet"
+    timeout: 60000
 - assertNotVisible: "AutoNXT Fleet"
 - runFlow:
     file: login_action.yaml

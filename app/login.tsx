@@ -191,6 +191,7 @@ function CardContent({
             autoCorrect={false}
             keyboardType="email-address"
             returnKeyType="next"
+            testID="emailInput"
           />
         </View>
       </View>
@@ -208,6 +209,7 @@ function CardContent({
             secureTextEntry={!showPassword}
             returnKeyType="done"
             onSubmitEditing={handleLogin}
+            testID="passwordInput"
           />
           <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
@@ -233,6 +235,7 @@ function CardContent({
         onPress={handleLogin}
         disabled={isLoading}
         activeOpacity={0.85}
+        testID="signInButton"
       >
         {isLoading ? (
           <ActivityIndicator color={c.primaryForeground} />

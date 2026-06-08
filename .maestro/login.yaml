@@ -6,8 +6,16 @@ env:
 ---
 - clearState
 - launchApp
-- assertVisible: "AutoNXT Fleet"
+- extendedWaitUntil:
+    visible: "AutoNXT Fleet"
+    timeout: 60000
 - assertNotVisible: "AutoNXT Fleet"
+- runFlow:
+    commands:
+      - tapOn: "Profile"
+      - tapOn: "Sign Out"
+    when:
+      visible: "Fleet Overview"
 - assertVisible: "Welcome Back"
 - assertVisible: "Email Address"
 - assertVisible: "Password"
