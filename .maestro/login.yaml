@@ -7,7 +7,7 @@ env:
 - clearState
 - launchApp
 - assertVisible: "AutoNXT Fleet"
-- assertVisible: "Smart Fleet · Total Control"
+- assertNotVisible: "AutoNXT Fleet"
 - assertVisible: "Welcome Back"
 - assertVisible: "Email Address"
 - assertVisible: "Password"
