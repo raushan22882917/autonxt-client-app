@@ -79,7 +79,7 @@ export default function LoginScreen() {
               />
             </View>
           </View>
-          <Text style={[styles.appName, { color: c.card }]}>AutoNXT Fleet</Text>
+          <Text style={[styles.appName, { color: c.card }]}>AutoNxt Pvt Limited</Text>
           <View style={styles.subtitleRow}>
             <View style={[styles.divider, { backgroundColor: c.accent }]} />
             <Text style={[styles.subtitle, { color: c.card + 'DD' }]}>
@@ -185,7 +185,7 @@ function CardContent({
             onSubmitEditing={handleLogin}
           />
           <TouchableOpacity
-            onPress={() => setShowPassword(v => !v)}
+            onPress={() => setShowPassword(!showPassword)}
             style={styles.eyeBtn}
             activeOpacity={0.6}
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
