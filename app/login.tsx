@@ -11,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -25,6 +26,10 @@ export default function LoginScreen() {
   const { signIn } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+
+  const isDesktop = width >= 768;
+  const cardPadding = isDesktop ? 32 : 24;
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -71,9 +76,9 @@ export default function LoginScreen() {
         {/* Hero Header */}
         <View style={styles.header}>
           <View style={[styles.logoWrap, { shadowColor: c.accent }]}>
-            <View style={[styles.logoInner, { backgroundColor: c.card }]}>
+            <View style={[styles.logoInner, { backgroundColor: 'transparent' }]}>
               <Image
-                source={require('../assets/images/icon.png')}
+                source={require('../assets/images/small-logo-white.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -93,7 +98,7 @@ export default function LoginScreen() {
         <View style={styles.cardContainer}>
           {Platform.OS === 'ios' ? (
             <BlurView intensity={20} tint="light" style={[styles.card, styles.glassCard]}>
-              <View style={[styles.cardInner, { backgroundColor: c.card + 'F2' }]}>
+              <View style={[styles.cardInner, { padding: cardPadding, backgroundColor: c.card + 'F2' }]}>
                 <CardContent
                   c={c}
                   username={username}
@@ -104,22 +109,26 @@ export default function LoginScreen() {
                   setPassword={setPassword}
                   setShowPassword={setShowPassword}
                   handleLogin={handleLogin}
+                  isDesktop={isDesktop}
                 />
               </View>
             </BlurView>
           ) : (
             <View style={[styles.card, { backgroundColor: c.card }]}>
-              <CardContent
-                c={c}
-                username={username}
-                password={password}
-                showPassword={showPassword}
-                isLoading={isLoading}
-                setUsername={setUsername}
-                setPassword={setPassword}
-                setShowPassword={setShowPassword}
-                handleLogin={handleLogin}
-              />
+              <View style={[styles.cardInner, { padding: cardPadding }]}>
+                <CardContent
+                  c={c}
+                  username={username}
+                  password={password}
+                  showPassword={showPassword}
+                  isLoading={isLoading}
+                  setUsername={setUsername}
+                  setPassword={setPassword}
+                  setShowPassword={setShowPassword}
+                  handleLogin={handleLogin}
+                  isDesktop={isDesktop}
+                />
+              </View>
             </View>
           )}
         </View>
@@ -142,11 +151,27 @@ function CardContent({
   setPassword,
   setShowPassword,
   handleLogin,
+  isDesktop,
 }: any) {
+  const headingSize = isDesktop ? 32 : 24;
+  const headingLineHeight = isDesktop ? 38 : 30;
+
   return (
     <>
       <View style={styles.cardHeader}>
-        <Text style={[styles.cardTitle, { color: c.foreground }]}>Welcome Back</Text>
+        <Text
+          style={[
+            styles.cardTitle,
+            {
+              color: c.foreground,
+              fontSize: headingSize,
+              lineHeight: headingLineHeight,
+              paddingBottom: 2,
+            },
+          ]}
+        >
+          Welcome Back
+        </Text>
         <Text style={[styles.cardSub, { color: c.mutedForeground }]}>
           Sign in to manage your fleet
         </Text>

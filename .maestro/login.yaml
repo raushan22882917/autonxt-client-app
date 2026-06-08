@@ -6,7 +6,7 @@ env:
 ---
 - clearState
 - launchApp
-- assertVisible: "AutoNxt Pvt Limited"
+- assertVisible: "AutoNXT Fleet"
 - assertVisible: "Smart Fleet · Total Control"
 - assertVisible: "Welcome Back"
 - assertVisible: "Email Address"
@@ -18,3 +18,4 @@ env:
 - assertVisible: "Organization"
 - tapOn: "Sign Out"
 - assertVisible: "Welcome Back"
+- tapOn: "AutoNxt Pvt Limited"
