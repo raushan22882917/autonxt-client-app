@@ -10,6 +10,7 @@ import { useColors } from '@/hooks/useColors';
 import { FleetHeader } from '@/components/FleetHeader';
 import { FleetLoader, FleetLoadingBar } from '@/components/FleetLoader';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 
 function NativeTabsLayout() {
   return (
@@ -203,6 +204,15 @@ function MainShell({ children }: { children: React.ReactNode }) {
 }
 
 export default function MainLayout() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace('/login');
+    }
+  }, [user, isLoading, router]);
+
   const tabs = isLiquidGlassAvailable() ? <NativeTabsLayout /> : <ClassicTabsLayout />;
   return <MainShell>{tabs}</MainShell>;
 }

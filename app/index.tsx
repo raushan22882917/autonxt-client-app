@@ -72,7 +72,7 @@ export default function SplashScreen() {
       } else {
         router.replace('/login');
       }
-    }, 2400);
+    }, 100);
     return () => clearTimeout(timer);
   }, [isLoading, user, router]);
 

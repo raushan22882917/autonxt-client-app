@@ -169,9 +169,7 @@ function CardContent({
               paddingBottom: 2,
             },
           ]}
-        >
-          Welcome Back
-        </Text>
+        >Welcome Back</Text>
         <Text style={[styles.cardSub, { color: c.mutedForeground }]}>
           Sign in to manage your fleet
         </Text>
@@ -241,9 +239,7 @@ function CardContent({
           <ActivityIndicator color={c.primaryForeground} />
         ) : (
           <>
-            <Text style={[styles.loginBtnText, { color: c.primaryForeground }]}>
-              Sign In to Fleet
-            </Text>
+            <Text style={[styles.loginBtnText, { color: c.primaryForeground }]}>Sign In to Fleet</Text>
             <Feather name="arrow-right" size={20} color={c.primaryForeground} />
           </>
         )}

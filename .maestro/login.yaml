@@ -1,29 +1,54 @@
-# login.yaml
 appId: com.softwareautonxt.mobile
 env:
   EMAIL: "raushan@autonxt.in"
   PASSWORD: "Raushan@2288"
+
 ---
+# 1. Clean Setup
 - clearState
 - launchApp
+
+# 2. Wait for Splash Screen to disappear and Login Screen to load
 - extendedWaitUntil:
-    visible: "AutoNXT Fleet"
-    timeout: 60000
-- assertNotVisible: "AutoNXT Fleet"
-- runFlow:
-    commands:
-      - tapOn: "Profile"
-      - tapOn: "Sign Out"
-    when:
-      visible: "Fleet Overview"
+    visible: "Welcome Back"
+    timeout: 20000
+
+# 3. Assert Login Screen Elements are present and correct
 - assertVisible: "Welcome Back"
-- assertVisible: "Email Address"
-- assertVisible: "Password"
+- assertVisible:
+    id: "emailInput"
+- assertVisible:
+    id: "passwordInput"
+- assertVisible:
+    id: "signInButton"
+
+# 4. Perform Login using subflow (inputs credentials and taps sign-in)
 - runFlow: subflows/login_action.yaml
+
+# 5. Wait for Dashboard / Home screen to fetch data and load
+- extendedWaitUntil:
+    visible: "Fleet Overview"
+    timeout: 60000
+
 - assertVisible: "Fleet Overview"
+
+# 6. Navigate to Profile Screen
 - tapOn: "Profile"
+
+# 7. Wait and verify Profile Screen details
+- extendedWaitUntil:
+    visible: "Account"
+    timeout: 15000
+
 - assertVisible: "Account"
 - assertVisible: "Organization"
+
+# 8. Perform Logout
 - tapOn: "Sign Out"
+
+# 9. Wait and verify redirection back to Login Screen (successful logout)
+- extendedWaitUntil:
+    visible: "Welcome Back"
+    timeout: 20000
+
 - assertVisible: "Welcome Back"
-- tapOn: "AutoNxt Pvt Limited"
