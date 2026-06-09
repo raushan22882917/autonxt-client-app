@@ -72,12 +72,12 @@ export function StatCard({ title, value, icon, iconColor, subtitle, loading }: P
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    borderRadius: 18,
+    borderRadius: 8,             // lg per design system (0.5rem = 8px for large components)
     borderWidth: 1,
     padding: 16,
     gap: 2,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,         // very soft shadow per design system
     shadowRadius: 12,
     elevation: 2,
   },
@@ -106,14 +106,15 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 28,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.8,
+    fontFamily: 'SpaceMono_700Bold',   // data-mono per design system
+    letterSpacing: -0.5,
     marginBottom: 2,
   },
   title: {
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
-    letterSpacing: -0.1,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',         // label-caps per design system
   },
   subtitle: {
     fontSize: 11,

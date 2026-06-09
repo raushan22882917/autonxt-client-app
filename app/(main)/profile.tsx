@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Platform,
   ScrollView,
@@ -66,6 +66,13 @@ export default function ProfileScreen() {
 
   const topPad = Platform.OS === 'web' ? 67 : 0;
   const roleLabel = isAdmin ? 'Administrator' : user?.role?.trim() || 'User';
+
+  // Redirect to login when user signs out
+  useEffect(() => {
+    if (!user) {
+      router.replace('/login');
+    }
+  }, [user]);
   const displayName = user?.name?.trim() || user?.email || 'User';
   const initials = displayName
     .split(' ')
@@ -123,7 +130,7 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero card */}
@@ -266,6 +273,7 @@ export default function ProfileScreen() {
           style={[styles.logoutBtn, { backgroundColor: c.redSoft, borderColor: c.redBorder }]}
           onPress={signOut}
           activeOpacity={0.85}
+          testID="signOutButton"
         >
           <Feather name="log-out" size={20} color={c.red} />
           <Text style={[styles.logoutText, { color: c.red }]}>Sign Out</Text>
@@ -498,7 +506,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     paddingVertical: 18,
-    marginTop: 14,
+    marginTop: 24,
+    marginBottom: 8,
   },
   logoutText: {
     fontSize: 16,

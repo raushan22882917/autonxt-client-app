@@ -60,6 +60,7 @@
   "dependencies": {
     "@aws-amplify/react-native": "^1.3.3",
     "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
+    "@expo-google-fonts/space-mono": "^0.4.2",
     "@react-native-community/netinfo": "11.4.1",
     "aws-amplify": "^6.17.0",
     "babel-preset-expo": "~54.0.10",

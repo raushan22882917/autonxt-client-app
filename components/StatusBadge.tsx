@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 24,
+    borderRadius: 4,              // Soft/industrial — 4px per design system
     alignSelf: 'flex-start',
   },
   dot: {
@@ -69,9 +69,10 @@ const styles = StyleSheet.create({
     height: 5,
   },
   text: {
-    fontSize: 12,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 0.1,
+    fontSize: 11,
+    fontFamily: 'SpaceMono_400Regular',  // Space Mono for technical readouts
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   small: {
     paddingHorizontal: 8,
@@ -79,6 +80,6 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   smallText: {
-    fontSize: 11,
+    fontSize: 10,
   },
 });

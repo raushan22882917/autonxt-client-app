@@ -1,74 +1,97 @@
+/**
+ * VoltStrat — Institutional High-Tech Color Palette
+ *
+ * Primary:   Volt Blue    #1A44F2
+ * Secondary: Coral Energy #E63946
+ * Canvas:    Off-White    #F8FAFF
+ * Text:      Technical Navy #0F172A
+ */
+
 const palette = {
-  // Base
-  text: "#0B1220",
-  tint: "#1456E0",
+  // ── Base ─────────────────────────────────────────────────────────────────
+  text:               '#0F172A',
+  background:         '#F8FAFF',
+  foreground:         '#0F172A',
 
-  background: "#F0F4FA",
-  foreground: "#0B1220",
+  card:               '#FFFFFF',
+  cardForeground:     '#0F172A',
 
-  card: "#FFFFFF",
-  cardForeground: "#0B1220",
+  // ── Primary — Volt Blue ──────────────────────────────────────────────────
+  primary:            '#1A44F2',
+  primaryForeground:  '#FFFFFF',
 
-  // Brand blue — richer, deeper
-  primary: "#1246C8",
-  primaryForeground: "#FFFFFF",
+  // ── Secondary — Coral Energy ─────────────────────────────────────────────
+  secondary:          '#E63946',
+  secondaryForeground:'#FFFFFF',
 
-  // Secondary surfaces
-  secondary: "#EEF3FB",
-  secondaryForeground: "#0B1220",
+  // ── Muted surfaces ───────────────────────────────────────────────────────
+  muted:              '#F0F4F8',
+  mutedForeground:    '#94A3B8',
 
-  muted: "#EEF3FB",
-  mutedForeground: "#5A6A85",
+  // ── Accent (primary tint) ────────────────────────────────────────────────
+  accent:             '#3D64F5',
+  accentForeground:   '#FFFFFF',
 
-  // Metallic red accent — AutoNXT brand
-  accent: "#C1121F",
-  accentForeground: "#FFFFFF",
+  // ── Destructive — Rose ───────────────────────────────────────────────────
+  destructive:        '#F43F5E',
+  destructiveForeground: '#FFFFFF',
 
-  destructive: "#C1121F",
-  destructiveForeground: "#FFFFFF",
+  // ── Borders & Inputs ─────────────────────────────────────────────────────
+  border:             '#E2E8F0',
+  input:              '#F0F4F8',
 
-  border: "#DDE3EF",
-  input: "#DDE3EF",
+  // ── Extended surface tokens ───────────────────────────────────────────────
+  surface:            '#FFFFFF',
+  surfaceAlt:         '#F0F4F8',       // Surface High
+  surfaceElevated:    '#FFFFFF',
+  chip:               '#E8EDFE',       // Primary Muted — for chips/tags
+  track:              '#E2E8F0',
+  hairline:           '#E2E8F0',
 
-  // Extended tokens
-  surface: "#FFFFFF",
-  surfaceAlt: "#F5F8FE",
-  surfaceElevated: "#FAFCFF",
-  chip: "#EEF3FB",
-  track: "#E4EAF4",
-  hairline: "#EBF0F8",
+  // ── Semantic — Red / Coral (critical / error) ────────────────────────────
+  red:                '#E63946',
+  redSoft:            '#FCEBEB',       // Secondary Muted
+  redBorder:          '#F9C0C4',
 
-  // Semantic colors
-  red: "#C1121F",
-  redSoft: "#FDECED",
-  redBorder: "#F4B8BB",
-  blue: "#1246C8",
-  blueSoft: "#E8EFFD",
-  blueBorder: "#B4C8F4",
-  black: "#0B1220",
+  // ── Semantic — Blue (nav / info) ─────────────────────────────────────────
+  blue:               '#1A44F2',
+  blueSoft:           '#E8EDFE',       // Primary Muted
+  blueBorder:         '#A8BAFB',
 
-  success: "#0A9040",
-  successSoft: "#E4F7EC",
-  successBorder: "#86CEAB",
-  warning: "#CA7000",
-  warningSoft: "#FDF0E0",
-  warningBorder: "#F5C97E",
-  info: "#0B7599",
-  infoSoft: "#E0F2F8",
-  infoBorder: "#7ECCE8",
+  // ── Semantic — Black ─────────────────────────────────────────────────────
+  black:              '#0F172A',
 
-  // Gradient stops
-  gradientStart: "#1246C8",
-  gradientEnd: "#1E3A8A",
-  gradientAccent: "#C1121F",
+  // ── Semantic — Success — Emerald ─────────────────────────────────────────
+  success:            '#10B981',
+  successSoft:        '#D1FAE5',
+  successBorder:      '#6EE7B7',
 
-  shadow: "#0B1220",
-  shadowStrong: "#08102B",
+  // ── Semantic — Warning ───────────────────────────────────────────────────
+  warning:            '#F59E0B',
+  warningSoft:        '#FEF3C7',
+  warningBorder:      '#FCD34D',
+
+  // ── Semantic — Info ──────────────────────────────────────────────────────
+  info:               '#0EA5E9',
+  infoSoft:           '#E0F2FE',
+  infoBorder:         '#7DD3FC',
+
+  // ── Gradient stops ───────────────────────────────────────────────────────
+  gradientStart:      '#1A44F2',       // Volt Blue
+  gradientEnd:        '#102DBF',       // Primary Shade
+  gradientAccent:     '#E63946',       // Coral Energy
+
+  // ── Shadows ──────────────────────────────────────────────────────────────
+  shadow:             '#0F172A',
+  shadowStrong:       '#0F172A',
+
+  // ── Tint ─────────────────────────────────────────────────────────────────
+  tint:               '#1A44F2',
 };
 
 const colors = {
   light: palette,
-  radius: 16,
+  radius: 8,               // 8px — clean institutional feel
 };
 
 export default colors;
