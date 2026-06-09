@@ -59,3 +59,6 @@ android/local.properties
 *.keystore
 .env
 .env.*
+
+# Maestro E2E tests
+.maestro/

@@ -82,6 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(
     async (username: string, password: string) => {
+      // Clear any stale session before signing in (e.g. after Maestro clearState)
+      try { await amplifySignOut(); } catch { /* no-op if not signed in */ }
       const result = await amplifySignIn({ username, password });
       if (result.isSignedIn) {
         const session = await fetchAuthSession();
