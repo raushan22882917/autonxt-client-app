@@ -8,9 +8,10 @@ interface Props {
   inOperation: number;
   inMaintenance: number;
   loading?: boolean;
+  style?: any;
 }
 
-export function FleetStatusCard({ inOperation, inMaintenance, loading }: Props) {
+export function FleetStatusCard({ inOperation, inMaintenance, loading, style }: Props) {
   const c = useColors();
 
   return (
@@ -18,6 +19,7 @@ export function FleetStatusCard({ inOperation, inMaintenance, loading }: Props) 
       style={[
         styles.card,
         { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadowStrong },
+        style,
       ]}
     >
       {/* Header */}

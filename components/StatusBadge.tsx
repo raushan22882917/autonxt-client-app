@@ -16,18 +16,21 @@ type Status =
   | 'CRITICAL';
 
 const STATUS_CONFIG: Record<Status, { label: string; bg: string; text: string; dot: string }> = {
-  ACTIVE:      { label: 'Active',      bg: '#E4F7EC', text: '#0A7032', dot: '#0A9040' },
-  IDLE:        { label: 'Idle',        bg: '#FDF0E0', text: '#8A5200', dot: '#CA7000' },
-  MAINTENANCE: { label: 'Maintenance', bg: '#E8EFFD', text: '#1040A8', dot: '#1246C8' },
-  OFFLINE:     { label: 'Offline',     bg: '#EEF1F6', text: '#526070', dot: '#7A8FA6' },
-  OPEN:        { label: 'Open',        bg: '#FDECED', text: '#98080F', dot: '#C1121F' },
-  IN_PROGRESS: { label: 'In Progress', bg: '#E8EFFD', text: '#1040A8', dot: '#1246C8' },
-  RESOLVED:    { label: 'Resolved',    bg: '#E4F7EC', text: '#0A7032', dot: '#0A9040' },
-  CLOSED:      { label: 'Closed',      bg: '#EEF1F6', text: '#526070', dot: '#7A8FA6' },
-  LOW:         { label: 'Low',         bg: '#E4F7EC', text: '#0A7032', dot: '#0A9040' },
-  MEDIUM:      { label: 'Medium',      bg: '#FDF0E0', text: '#8A5200', dot: '#CA7000' },
-  HIGH:        { label: 'High',        bg: '#FDE8DA', text: '#8A3400', dot: '#C44E00' },
-  CRITICAL:    { label: 'Critical',    bg: '#FDECED', text: '#98080F', dot: '#C1121F' },
+  // ── Operational states ────────────────────────────────────────────────────
+  ACTIVE:      { label: 'Active',      bg: '#D1FAE5', text: '#065F46', dot: '#10B981' },  // Emerald — success
+  IDLE:        { label: 'Idle',        bg: '#FEF3C7', text: '#92400E', dot: '#F59E0B' },  // Amber — warning
+  MAINTENANCE: { label: 'Maintenance', bg: '#DBEAFE', text: '#1E40AF', dot: '#0B78B3' },  // Electric Blue
+  OFFLINE:     { label: 'Offline',     bg: '#F1F5F9', text: '#475569', dot: '#94A3B8' },  // Slate neutral
+  // ── Ticket states ────────────────────────────────────────────────────────
+  OPEN:        { label: 'Open',        bg: '#FDE8E5', text: '#9B2213', dot: '#D73220' },  // Bold Red
+  IN_PROGRESS: { label: 'In Progress', bg: '#DBEAFE', text: '#1E40AF', dot: '#0B78B3' },  // Electric Blue
+  RESOLVED:    { label: 'Resolved',    bg: '#D1FAE5', text: '#065F46', dot: '#10B981' },  // Emerald
+  CLOSED:      { label: 'Closed',      bg: '#F1F5F9', text: '#475569', dot: '#94A3B8' },  // Slate neutral
+  // ── Severity levels ──────────────────────────────────────────────────────
+  LOW:         { label: 'Low',         bg: '#D1FAE5', text: '#065F46', dot: '#10B981' },  // Emerald
+  MEDIUM:      { label: 'Medium',      bg: '#FEF3C7', text: '#92400E', dot: '#F59E0B' },  // Amber
+  HIGH:        { label: 'High',        bg: '#FEE2E2', text: '#991B1B', dot: '#EF4444' },  // Red-orange
+  CRITICAL:    { label: 'Critical',    bg: '#FDE8E5', text: '#9B2213', dot: '#D73220' },  // Bold Red
 };
 
 const FALLBACK = { label: '—', bg: '#EEF1F6', text: '#526070', dot: '#7A8FA6' };

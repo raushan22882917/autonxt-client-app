@@ -13,10 +13,13 @@ import {
 } from '@/lib/tractorFormat';
 import {
   getAnalytics as getAnalyticsQuery,
+  getComplaint as getComplaintSafe,
   getOrganization as getOrganizationQuery,
   getTelemetryByTractor as getTelemetryByTractorQuery,
   getTractor as getTractorQuery,
   listAllUsers as listAllUsersQuery,
+  listComplaintsByOrg as listComplaintsByOrgSafe,
+  listComplaintsByPlant as listComplaintsByPlantSafe,
   listManualRuntimeEntries as listManualRuntimeEntriesQuery,
   listOrganizations as listOrganizationsQuery,
   listPlantsByOrganization as listPlantsByOrganizationQuery,
@@ -27,11 +30,6 @@ import {
   listUsageSegmentsByType as listUsageSegmentsByTypeQuery,
   listUsersByOrg as listUsersByOrgQuery,
 } from '@/graphql/queries';
-import {
-  getComplaintSafe,
-  listComplaintsByOrgSafe,
-  listComplaintsByPlantSafe,
-} from '@/graphql/safe-queries';
 import { configureAmplify } from '@/lib/amplify';
 import {
   cumulativeRuntimeToHours,

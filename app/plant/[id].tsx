@@ -189,18 +189,31 @@ export default function PlantDetailScreen() {
   const openTractor  = (id: string) => router.push(`/tractor/${encodeURIComponent(id)}`);
   const openComplaint = (id: string) => router.push(`/complaint/${id}`);
 
+  const Header = (
+    <View style={styles.headerContainer}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
+        <TouchableOpacity
+          style={styles.circleBackBtn}
+          onPress={goBack}
+          activeOpacity={0.75}
+        >
+          <Feather name="arrow-left" size={18} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.topTitle}>Plant Details</Text>
+        <View style={{ width: 44 }} />
+      </View>
+    </View>
+  );
+
   if (!plant || !summary) {
     return (
       <View style={[styles.root, { backgroundColor: c.background }]}>
+        {Header}
         <View style={[styles.centered]}>
           <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
             <Feather name="home" size={32} color={c.mutedForeground} />
           </View>
           <Text style={[styles.missingTitle, { color: c.foreground }]}>Plant not found</Text>
-          <TouchableOpacity style={[styles.goBackBtn, { backgroundColor: c.primary }]} onPress={goBack}>
-            <Feather name="arrow-left" size={16} color={c.primaryForeground} />
-            <Text style={[styles.goBackText, { color: c.primaryForeground }]}>Go back</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -267,23 +280,17 @@ export default function PlantDetailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
+      {Header}
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }} showsVerticalScrollIndicator={false}>
 
         {/* Hero */}
-        <View style={[styles.hero, { paddingTop: topPad + 8 }]}>
+        <View style={[styles.hero, { paddingTop: 8 }]}>
           <LinearGradient
             colors={[theme.accent + '22', theme.accent + '08', c.background]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFillObject}
           />
-
-          {/* Back nav */}
-          <TouchableOpacity style={styles.backLink} onPress={goBack} hitSlop={12}>
-            <View style={[styles.backCircle, { backgroundColor: c.card, shadowColor: theme.accent }]}>
-              <Feather name="arrow-left" size={20} color={theme.accent} />
-            </View>
-          </TouchableOpacity>
 
           {/* Plant header card */}
           <View style={[styles.heroCard, { backgroundColor: c.card, borderColor: theme.border, shadowColor: theme.accent }]}>
@@ -473,6 +480,38 @@ export default function PlantDetailScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  headerContainer: {
+    backgroundColor: 'transparent',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    backgroundColor: '#7E152F',
+  },
+  circleBackBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  topTitle: {
+    fontSize: 17,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+  },
   centered: {
     flex: 1,
     alignItems: 'center',

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Dimensions,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,12 +11,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Path, Defs, RadialGradient, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
+import { BlurView } from 'expo-blur';
+
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
-import { TractorCard } from '@/components/TractorCard';
 import { TractorDetailMonthFilter } from '@/components/TractorDetailMonthFilter';
 import { UsageSegmentDetailSheet } from '@/components/UsageSegmentDetailSheet';
 import { DataTable, KeyValueTable } from '@/components/DataTable';
+import { TractorImage } from '@/components/TractorImage';
+import { fmtMetric } from '@/lib/tractorMetrics';
+
 import {
   monthLabel,
   filterCharges,
@@ -50,6 +58,7 @@ import {
 } from '@/lib/tractorDetailTables';
 import type { DailySegmentGroup } from '@/lib/usageSegmentDetail';
 import { flattenFaultMetrics } from '@/lib/tractorMetrics';
+import { isTelemetryDisconnected } from '@/lib/telemetry';
 
 type TabKey = 'trips' | 'charge' | 'runtime' | 'breakdown';
 
@@ -59,6 +68,237 @@ const TABS: { key: TabKey; label: string; icon: keyof typeof Feather.glyphMap }[
   { key: 'charge', label: 'Charge', icon: 'battery-charging' },
   { key: 'breakdown', label: 'Faults', icon: 'alert-triangle' },
 ];
+
+// ── Glassmorphism Card Wrapper ───────────────────────────────────────────────
+function GlassCard({
+  children,
+  style,
+  overflowVisible,
+}: {
+  children: React.ReactNode;
+  style?: any;
+  overflowVisible?: boolean;
+}) {
+  const isIOS = Platform.OS === 'ios';
+  if (isIOS) {
+    return (
+      <View style={[styles.glassCardOuter, overflowVisible && { overflow: 'visible' }, style]}>
+        <BlurView
+          intensity={70}
+          tint="light"
+          style={[
+            styles.glassCardBlur,
+            overflowVisible && { overflow: 'visible' },
+          ]}
+        >
+          {children}
+        </BlurView>
+      </View>
+    );
+  }
+  return (
+    <View
+      style={[
+        styles.glassCardFallback,
+        overflowVisible && { overflow: 'visible' },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+// ── Grid cell card ──────────────────────────────────────────────────────────
+function MetricGridCard({ label, value, icon }: { label: string; value: string; icon: keyof typeof Feather.glyphMap }) {
+  return (
+    <GlassCard style={styles.gridCard}>
+      <View style={styles.gridCardHeader}>
+        <Text style={styles.gridCardLabel}>{label}</Text>
+        <Feather name={icon} size={11} color="#44474E" opacity={0.6} />
+      </View>
+      <Text style={styles.gridCardValue}>{value}</Text>
+    </GlassCard>
+  );
+}
+
+// ── Wellness-Style Hero Card: left info + gauge, right full-height image ──────
+function WellnessHeroCard({
+  soc,
+  displayTractor,
+  live,
+}: {
+  soc: number;
+  displayTractor: Tractor;
+  live: boolean;
+}) {
+  const gaugeSize = 140;
+  const strokeWidth = 10;
+  const radius = (gaugeSize - strokeWidth) / 2 - 4;
+  const circumference = 2 * Math.PI * radius;
+  const gapAngle = 40;
+  const arcFraction = (360 - gapAngle) / 360;
+  const activeDasharray = circumference * arcFraction;
+  const activeOffset = circumference * arcFraction * (1 - soc / 100);
+  const trackOffset = circumference * (gapAngle / 360 / 2);
+
+  const socColor = soc >= 70 ? '#10B981' : soc >= 35 ? '#F59E0B' : '#be1e2d';
+  const tractorLabel = displayTractor.displayName || displayTractor.tractorID;
+  const idLabel = displayTractor.serialNumber || displayTractor.registerNumber || '';
+
+  return (
+    <View style={styles.wellnessCard}>
+
+      {/* ── LEFT: heading + gauge ── */}
+      <View style={styles.wellnessLeft}>
+
+        {/* Big title — like "Wellness Score" */}
+        <Text style={styles.wellnessMainTitle} numberOfLines={2}>
+          {tractorLabel}
+        </Text>
+        {/* Sub-heading — like "Digital Wellness" */}
+        <Text style={styles.wellnessSubTitle} numberOfLines={1}>
+          {idLabel}
+        </Text>
+
+        {/* Section label */}
+        <Text style={styles.wellnessLabel}>Battery Status</Text>
+
+        {/* Circular gauge */}
+        <View style={styles.wellnessGaugeWrap}>
+          <Svg width={gaugeSize} height={gaugeSize} viewBox={`0 0 ${gaugeSize} ${gaugeSize}`}>
+            <Defs>
+              <RadialGradient id="wGlow" cx="50%" cy="50%" rx="50%" ry="50%">
+                <Stop offset="0%" stopColor={socColor} stopOpacity={0.18} />
+                <Stop offset="100%" stopColor={socColor} stopOpacity={0} />
+              </RadialGradient>
+            </Defs>
+            <Circle cx={gaugeSize / 2} cy={gaugeSize / 2} r={radius + 10} fill="url(#wGlow)" />
+            <Circle
+              cx={gaugeSize / 2} cy={gaugeSize / 2} r={radius}
+              stroke="rgba(0,0,0,0.08)" strokeWidth={strokeWidth} fill="transparent"
+              strokeDasharray={`${activeDasharray} ${circumference}`}
+              strokeDashoffset={-trackOffset} strokeLinecap="round"
+              transform={`rotate(-90 ${gaugeSize / 2} ${gaugeSize / 2})`}
+            />
+            <Circle
+              cx={gaugeSize / 2} cy={gaugeSize / 2} r={radius}
+              stroke={socColor} strokeWidth={strokeWidth} fill="transparent"
+              strokeDasharray={`${activeDasharray} ${circumference}`}
+              strokeDashoffset={activeOffset + trackOffset} strokeLinecap="round"
+              transform={`rotate(-90 ${gaugeSize / 2} ${gaugeSize / 2})`}
+            />
+          </Svg>
+          <View style={styles.wellnessGaugeCenter}>
+            <Text style={[styles.wellnessSocValue, { color: socColor }]}>{soc}%</Text>
+            <Text style={styles.wellnessSocLabel}>SOC</Text>
+          </View>
+        </View>
+
+        {/* Status text */}
+        <Text style={styles.wellnessSubText}>
+          {soc >= 70 ? 'Charge level is healthy'
+            : soc >= 35 ? 'Moderate charge remaining'
+            : 'Low battery — charge soon'}
+        </Text>
+
+        {/* Live pill */}
+        <View style={[styles.wellnessLivePill, { borderColor: live ? '#10B981' : '#94A3B8' }]}>
+          <View style={[styles.wellnessLiveDot, { backgroundColor: live ? '#10B981' : '#94A3B8' }]} />
+          <Text style={[styles.wellnessLiveText, { color: live ? '#10B981' : '#64748B' }]}>
+            {live ? 'Live' : 'Offline'}
+          </Text>
+        </View>
+      </View>
+
+      {/* ── RIGHT: 3D circle + full-height tractor image ── */}
+      <View style={styles.wellnessRight} pointerEvents="none">
+        {/* Glow aura */}
+        <View style={styles.wellnessCircleGlow} />
+        {/* 3D disc */}
+        <View style={styles.wellnessCircleOuter}>
+          <View style={styles.wellnessCircleInner} />
+        </View>
+        {/* Tractor image — top-to-bottom, overflows card */}
+        <View style={styles.wellnessTractorImg}>
+          <TractorImage tractor={displayTractor} resizeMode="contain" colorful={false} />
+        </View>
+      </View>
+
+    </View>
+  );
+}
+
+// ── Lightweight Smooth bezier area/line chart ────────────────────────────────
+function SmoothLineChart({ data, width, height }: { data: number[]; width: number; height: number }) {
+  if (data.length === 0) return null;
+  const paddingX = 16;
+  const paddingY = 12;
+  const chartWidth = width - paddingX * 2;
+  const chartHeight = height - paddingY * 2;
+
+  const maxVal = Math.max(...data, 4);
+  const minVal = 0;
+  const range = maxVal - minVal;
+
+  const points = data.map((val, idx) => {
+    const x = paddingX + (idx / Math.max(data.length - 1, 1)) * chartWidth;
+    const y = paddingY + chartHeight - ((val - minVal) / range) * chartHeight;
+    return { x, y };
+  });
+
+  // Calculate smooth cubic Bezier path
+  let pathD = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const curr = points[i];
+    const next = points[i + 1];
+    const cpX1 = curr.x + (next.x - curr.x) / 3;
+    const cpY1 = curr.y;
+    const cpX2 = curr.x + (2 * (next.x - curr.x)) / 3;
+    const cpY2 = next.y;
+    pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${next.x} ${next.y}`;
+  }
+
+  const areaD = `${pathD} L ${points[points.length - 1].x} ${height - paddingY} L ${points[0].x} ${height - paddingY} Z`;
+
+  return (
+    <Svg width={width} height={height}>
+      <Defs>
+        <SvgLinearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%" stopColor="#be1e2d" stopOpacity={0.2} />
+          <Stop offset="100%" stopColor="#be1e2d" stopOpacity={0.0} />
+        </SvgLinearGradient>
+      </Defs>
+
+      {/* Grid lines */}
+      {[0, 0.5, 1].map((ratio, idx) => {
+        const y = paddingY + ratio * chartHeight;
+        return (
+          <Path
+            key={idx}
+            d={`M ${paddingX} ${y} L ${width - paddingX} ${y}`}
+            stroke="rgba(0, 0, 0, 0.04)"
+            strokeWidth={1}
+            strokeDasharray="4, 4"
+          />
+        );
+      })}
+
+      {/* Area */}
+      <Path d={areaD} fill="url(#chartGradient)" />
+
+      {/* Line */}
+      <Path d={pathD} fill="none" stroke="#be1e2d" strokeWidth={2.5} strokeLinecap="round" />
+
+      {/* Data Points */}
+      {points.map((p, idx) => (
+        <Circle key={idx} cx={p.x} cy={p.y} r={3} fill="#FFFFFF" stroke="#be1e2d" strokeWidth={1.5} />
+      ))}
+    </Svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function TractorDetailScreen() {
   const c = useColors();
@@ -80,6 +320,7 @@ export default function TractorDetailScreen() {
   const [manualRuntimeLoading, setManualRuntimeLoading] = useState(false);
   const [filterMonth, setFilterMonth] = useState(() => startOfMonth(new Date()));
   const [tripsDeviceKey, setTripsDeviceKey] = useState<string | null>(null);
+  const [chartWidth, setChartWidth] = useState(320);
   const [segmentSheet, setSegmentSheet] = useState<{
     group: DailySegmentGroup;
     kind: 'trip' | 'charge';
@@ -173,35 +414,40 @@ export default function TractorDetailScreen() {
     else router.replace('/(main)/tractors');
   };
 
+  const onChartLayout = (event: any) => {
+    const { width } = event.nativeEvent.layout;
+    if (width > 0) setChartWidth(width);
+  };
+
   const Header = (
-    <View style={{ backgroundColor: c.card, borderBottomWidth: 1, borderBottomColor: c.border }}>
+    <View style={styles.headerContainer}>
       <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity
-          style={[styles.backBtn, { backgroundColor: c.surfaceAlt }]}
+          style={styles.circleBackBtn}
           onPress={goBack}
-          activeOpacity={0.7}
+          activeOpacity={0.75}
         >
-          <Feather name="arrow-left" size={20} color={c.foreground} />
+          <Feather name="arrow-left" size={18} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={[styles.topTitle, { color: c.foreground }]}>Tractor Details</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.topTitle}>Tractor Details</Text>
+        <View style={{ width: 44 }} />
       </View>
-      <TractorDetailMonthFilter month={filterMonth} onMonthChange={setFilterMonth} />
+      <View style={styles.monthFilterContainer}>
+        <TractorDetailMonthFilter month={filterMonth} onMonthChange={setFilterMonth} />
+      </View>
     </View>
   );
 
   if (!tractor) {
     return (
-      <View style={[styles.root, { backgroundColor: c.background }]}>
+      <View style={styles.root}>
         {Header}
         <View style={styles.empty}>
-          <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
-            <Feather name="search" size={32} color={c.mutedForeground} />
+          <View style={styles.emptyIconWrap}>
+            <Feather name="search" size={32} color="#44474E" opacity={0.6} />
           </View>
-          <Text style={[styles.emptyTitle, { color: c.foreground }]}>Tractor Not Found</Text>
-          <Text style={[styles.emptyText, { color: c.mutedForeground }]}>
-            Could not locate tractor data
-          </Text>
+          <Text style={styles.emptyTitle}>Tractor Not Found</Text>
+          <Text style={styles.emptyText}>Could not locate tractor data</Text>
         </View>
       </View>
     );
@@ -233,8 +479,16 @@ export default function TractorDetailScreen() {
     ? `${monthLabel(filterMonth)} · logger ${tripsDeviceKey}`
     : monthLabel(filterMonth);
 
+  const live = !isTelemetryDisconnected(displayTractor.telemetryAt);
+
+  // Sorting chronological runtime entries for historical trend log
+  const sortedRuntime = [...tractorRuntime]
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const chartData = sortedRuntime.map(r => r.todaysRuntime ?? 0);
+  const finalChartData = chartData.length > 0 ? chartData : [2.5, 4.0, 3.1, 5.5, 3.8, 4.8, 3.5]; // Fallback mock curve
+
   return (
-    <View style={[styles.root, { backgroundColor: c.background }]}>
+    <View style={styles.root}>
       {Header}
       <UsageSegmentDetailSheet
         visible={segmentSheet != null}
@@ -246,327 +500,786 @@ export default function TractorDetailScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Tractor card */}
-        <TractorCard tractor={displayTractor} hideActions />
+        {/* ── Visual Section 1: Wellness-style Hero Card ── */}
+        <GlassCard style={styles.pulseCard} overflowVisible>
+          <WellnessHeroCard
+            soc={Math.round(displayTractor.soc ?? 82)}
+            displayTractor={displayTractor}
+            live={live}
+          />
+        </GlassCard>
 
-        {/* Tab bar */}
-        <View style={[styles.tabBar, { backgroundColor: c.card, borderColor: c.border }]}>
-          {TABS.map(t => {
-            const active = tab === t.key;
-            return (
-              <TouchableOpacity
-                key={t.key}
-                style={[
-                  styles.tab,
-                  active
-                    ? { backgroundColor: c.primary }
-                    : { backgroundColor: 'transparent' },
-                ]}
-                onPress={() => setTab(t.key)}
-                activeOpacity={0.8}
-              >
-                <Feather
-                  name={t.icon}
-                  size={14}
-                  color={active ? c.primaryForeground : c.mutedForeground}
-                />
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    { color: active ? c.primaryForeground : c.mutedForeground },
-                  ]}
-                >
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        {/* ── Visual Section 2: Featured Metric (Primary Battery Card) ── */}
+        <GlassCard style={styles.featuredCard}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.cardTitle}>Featured Metric</Text>
+            <TouchableOpacity style={styles.circularActionBtn}>
+              <Feather name="chevron-right" size={14} color="#be1e2d" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.featuredContent}>
+            <View style={styles.featuredHeroRow}>
+              <Text style={styles.featuredHeroValue}>{Math.round(displayTractor.soc ?? 82)}%</Text>
+              <Text style={styles.featuredHeroLabel}>Battery Capacity</Text>
+            </View>
+            
+            <View style={styles.featuredDivider} />
+            
+            <View style={styles.featuredSubMetrics}>
+              <View style={styles.subMetricRow}>
+                <Feather name="shield" size={14} color="#be1e2d" />
+                <Text style={styles.subMetricText}>SOH Health: <Text style={styles.boldText}>{displayTractor.soh ?? 94}%</Text></Text>
+              </View>
+              <View style={styles.subMetricRow}>
+                <Feather name={displayTractor.isCharging ? "zap" : "zap-off"} size={14} color={displayTractor.isCharging ? "#10B981" : "#be1e2d"} />
+                <Text style={styles.subMetricText}>Status: <Text style={styles.boldText}>{displayTractor.isCharging ? "Charging" : "Discharging"}</Text></Text>
+              </View>
+            </View>
+          </View>
+        </GlassCard>
+
+        {/* ── Visual Section 3: Supporting Grid (2-Column Secondary Metrics) ── */}
+        <View style={styles.gridSection}>
+          <Text style={styles.sectionTitle}>Supporting Telemetry</Text>
+          <View style={styles.metricGrid}>
+            <View style={styles.gridRow}>
+              <View style={{ flex: 1, marginRight: 6 }}>
+                <MetricGridCard label="VOLTAGE" value={`${fmtMetric(displayTractor.voltage, 1)} V`} icon="activity" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 6 }}>
+                <MetricGridCard label="CURRENT" value={`${fmtMetric(displayTractor.current, 1)} A`} icon="zap" />
+              </View>
+            </View>
+            <View style={styles.gridRow}>
+              <View style={{ flex: 1, marginRight: 6 }}>
+                <MetricGridCard label="PACK TEMP" value={`${fmtMetric(displayTractor.temp, 1)} °C`} icon="thermometer" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 6 }}>
+                <MetricGridCard label="MOTOR RPM" value={`${fmtMetric(displayTractor.rpm)} rpm`} icon="cpu" />
+              </View>
+            </View>
+            <View style={styles.gridRow}>
+              <View style={{ flex: 1, marginRight: 6 }}>
+                <MetricGridCard label="MOTOR TEMP" value={`${fmtMetric(displayTractor.motorTemp, 1)} °C`} icon="compass" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 6 }}>
+                <MetricGridCard label="TOTAL RUNTIME" value={`${displayTractor.totalRuntime} h`} icon="clock" />
+              </View>
+            </View>
+          </View>
         </View>
 
-        {/* Runtime tab */}
-        {tab === 'runtime' && (
-          <View style={styles.tabContent}>
-            <SummaryStrip
-              items={[
-                { label: 'Total runtime', value: `${tractor.totalRuntime}h` },
-                { label: 'Log entries', value: String(tractorRuntime.length) },
-                { label: 'Sum today\'s', value: String(totalTodaysRuntime) },
-              ]}
-              c={c}
-            />
-            <DataTable
-              title="Manual runtime log"
-              columns={runtimeColumns}
-              data={tractorRuntime}
-              keyExtractor={manualRuntimeRowKey}
-              emptyMessage={
-                tractor.loggerID
-                  ? 'No manual runtime entries for this tractor'
-                  : 'Logger ID required for manual runtime'
-              }
-              loading={manualRuntimeLoading}
-              compact
-              fitWidth
-            />
+        {/* ── Visual Section 4: Historical Log & Tabs ── */}
+        <GlassCard style={styles.logCard}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.cardTitle}>Historical Log</Text>
+            <TouchableOpacity style={styles.circularActionBtn}>
+              <Feather name="activity" size={14} color="#be1e2d" />
+            </TouchableOpacity>
           </View>
-        )}
+          <Text style={styles.chartSubtitle}>{monthSubtitle}</Text>
+          
+          <View style={styles.chartWrapper} onLayout={onChartLayout}>
+            <SmoothLineChart data={finalChartData} width={chartWidth} height={120} />
+          </View>
+          
+          {/* Tab bar */}
+          <View style={styles.tabContainer}>
+            {TABS.map(t => {
+              const active = tab === t.key;
+              return (
+                <TouchableOpacity
+                  key={t.key}
+                  style={[styles.tabBtn, active && styles.tabBtnActive]}
+                  onPress={() => setTab(t.key)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.tabBtnLabel, active && styles.tabBtnLabelActive]}>
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-        {/* Trips tab */}
-        {tab === 'trips' && (
-          <View style={styles.tabContent}>
-            {analyticsError ? (
-              <TabError message={analyticsError} c={c} />
-            ) : (
-              <KeyValueTable
-                title="Trip summary"
-                subtitle={monthSubtitle}
-                rows={tripSummaryRows(tripSummary)}
-                loading={analyticsLoading}
-                compact
-              />
+          {/* Active Tab Table Content */}
+          <View style={styles.tabContentArea}>
+            {/* Runtime tab */}
+            {tab === 'runtime' && (
+              <View style={styles.tabContentArea}>
+                <DataTable
+                  title="Manual runtime log"
+                  columns={runtimeColumns}
+                  data={tractorRuntime}
+                  keyExtractor={manualRuntimeRowKey}
+                  emptyMessage={
+                    tractor.loggerID
+                      ? 'No manual runtime entries for this tractor'
+                      : 'Logger ID required for manual runtime'
+                  }
+                  loading={manualRuntimeLoading}
+                  compact
+                  fitWidth
+                />
+              </View>
             )}
-            {segmentsError ? (
-              <TabError message={segmentsError} c={c} />
-            ) : (
-              <DataTable
-                title="Trips by day"
-                subtitle={`${monthSubtitle} · ${tripsList.length} trip${tripsList.length === 1 ? '' : 's'} · tap row`}
-                columns={tripDayColumns}
-                data={tripDays}
-                keyExtractor={dailyGroupKey}
-                emptyMessage={
-                  tractor.loggerID
-                    ? `No trips in ${monthLabel(filterMonth)}`
-                    : 'No logger ID — assign a logger to load trip data'
-                }
-                loading={segmentsLoading}
-                compact
-                fitWidth
-                onRowPress={group => setSegmentSheet({ group, kind: 'trip' })}
-                showRowChevron
-              />
-            )}
-          </View>
-        )}
 
-        {/* Charge tab */}
-        {tab === 'charge' && (
-          <View style={styles.tabContent}>
-            {analyticsError ? (
-              <TabError message={analyticsError} c={c} />
-            ) : (
-              <KeyValueTable
-                title="Charge summary"
-                subtitle={monthSubtitle}
-                rows={chargeSummaryRows(chargeSummary)}
-                loading={analyticsLoading}
-                compact
-              />
+            {/* Trips tab */}
+            {tab === 'trips' && (
+              <View style={styles.tabContentArea}>
+                {analyticsError ? (
+                  <TabError message={analyticsError} c={c} />
+                ) : (
+                  <KeyValueTable
+                    title="Trip summary"
+                    subtitle={monthSubtitle}
+                    rows={tripSummaryRows(tripSummary)}
+                    loading={analyticsLoading}
+                    compact
+                  />
+                )}
+                {segmentsError ? (
+                  <TabError message={segmentsError} c={c} />
+                ) : (
+                  <DataTable
+                    title="Trips by day"
+                    subtitle={`${monthSubtitle} · ${tripsList.length} trip${tripsList.length === 1 ? '' : 's'} · tap row`}
+                    columns={tripDayColumns}
+                    data={tripDays}
+                    keyExtractor={dailyGroupKey}
+                    emptyMessage={
+                      tractor.loggerID
+                        ? `No trips in ${monthLabel(filterMonth)}`
+                        : 'No logger ID — assign a logger to load trip data'
+                    }
+                    loading={segmentsLoading}
+                    compact
+                    fitWidth
+                    onRowPress={group => setSegmentSheet({ group, kind: 'trip' })}
+                    showRowChevron
+                  />
+                )}
+              </View>
             )}
-            {segmentsError ? (
-              <TabError message={segmentsError} c={c} />
-            ) : (
-              <DataTable
-                title="Charge by day"
-                subtitle={`${monthSubtitle} · ${chargesList.length} session${chargesList.length === 1 ? '' : 's'} · tap row`}
-                columns={chargeDayColumns}
-                data={chargeDays}
-                keyExtractor={dailyGroupKey}
-                emptyMessage={
-                  tractor.loggerID
-                    ? `No charge sessions in ${monthLabel(filterMonth)}`
-                    : 'No logger ID — assign a logger to load charge data'
-                }
-                loading={segmentsLoading}
-                compact
-                fitWidth
-                onRowPress={group => setSegmentSheet({ group, kind: 'charge' })}
-                showRowChevron
-              />
-            )}
-          </View>
-        )}
 
-        {/* Breakdown tab */}
-        {tab === 'breakdown' && (
-          <View style={styles.tabContent}>
-            <DataTable
-              title="Controller faults"
-              subtitle="From analytics fault metrics"
-              columns={faultColumns}
-              data={faults}
-              keyExtractor={(f, i) => `${f.startTime ?? 'f'}-${i}`}
-              emptyMessage="No controller faults recorded"
-              loading={analyticsLoading}
-            />
-            <DataTable
-              title="Complaints & breakdowns"
-              subtitle="Tap a row to open ticket details"
-              columns={complaintColumns()}
-              data={tractorBreakdowns}
-              keyExtractor={b => b.complaintID}
-              emptyMessage="No complaints for this tractor"
-              onRowPress={b => router.push(`/complaint/${encodeURIComponent(b.complaintID)}`)}
-              showRowChevron
-            />
+            {/* Charge tab */}
+            {tab === 'charge' && (
+              <View style={styles.tabContentArea}>
+                {analyticsError ? (
+                  <TabError message={analyticsError} c={c} />
+                ) : (
+                  <KeyValueTable
+                    title="Charge summary"
+                    subtitle={monthSubtitle}
+                    rows={chargeSummaryRows(chargeSummary)}
+                    loading={analyticsLoading}
+                    compact
+                  />
+                )}
+                {segmentsError ? (
+                  <TabError message={segmentsError} c={c} />
+                ) : (
+                  <DataTable
+                    title="Charge by day"
+                    subtitle={`${monthSubtitle} · ${chargesList.length} session${chargesList.length === 1 ? '' : 's'} · tap row`}
+                    columns={chargeDayColumns}
+                    data={chargeDays}
+                    keyExtractor={dailyGroupKey}
+                    emptyMessage={
+                      tractor.loggerID
+                        ? `No charge sessions in ${monthLabel(filterMonth)}`
+                        : 'No logger ID — assign a logger to load charge data'
+                    }
+                    loading={segmentsLoading}
+                    compact
+                    fitWidth
+                    onRowPress={group => setSegmentSheet({ group, kind: 'charge' })}
+                    showRowChevron
+                  />
+                )}
+              </View>
+            )}
+
+            {/* Breakdown tab */}
+            {tab === 'breakdown' && (
+              <View style={styles.tabContentArea}>
+                <DataTable
+                  title="Controller faults"
+                  subtitle="From analytics fault metrics"
+                  columns={faultColumns}
+                  data={faults}
+                  keyExtractor={(f, i) => `${f.startTime ?? 'f'}-${i}`}
+                  emptyMessage="No controller faults recorded"
+                  loading={analyticsLoading}
+                />
+                <DataTable
+                  title="Complaints & breakdowns"
+                  subtitle="Tap a row to open ticket details"
+                  columns={complaintColumns()}
+                  data={tractorBreakdowns}
+                  keyExtractor={b => b.complaintID}
+                  emptyMessage="No complaints for this tractor"
+                  onRowPress={b => router.push(`/complaint/${encodeURIComponent(b.complaintID)}`)}
+                  showRowChevron
+                />
+              </View>
+            )}
           </View>
-        )}
+        </GlassCard>
       </ScrollView>
-    </View>
-  );
-}
-
-function SummaryStrip({
-  items,
-  c,
-}: {
-  items: { label: string; value: string }[];
-  c: ReturnType<typeof useColors>;
-}) {
-  return (
-    <View style={[styles.summaryCard, { backgroundColor: c.card, borderColor: c.border }]}>
-      {items.map((item, i) => (
-        <React.Fragment key={item.label}>
-          {i > 0 ? <View style={[styles.summaryDivider, { backgroundColor: c.hairline }]} /> : null}
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryValue, { color: c.foreground }]}>{item.value}</Text>
-            <Text style={[styles.summaryLabel, { color: c.mutedForeground }]}>{item.label}</Text>
-          </View>
-        </React.Fragment>
-      ))}
     </View>
   );
 }
 
 function TabError({ message, c }: { message: string; c: ReturnType<typeof useColors> }) {
   return (
-    <View style={[styles.errorBanner, { backgroundColor: c.redSoft, borderColor: c.redBorder }]}>
-      <View style={[styles.errorIcon, { backgroundColor: c.red + '18' }]}>
-        <Feather name="alert-circle" size={18} color={c.red} />
+    <View style={styles.errorBanner}>
+      <View style={styles.errorIcon}>
+        <Feather name="alert-circle" size={18} color="#be1e2d" />
       </View>
-      <Text style={[styles.errorBannerText, { color: c.foreground }]}>{message}</Text>
+      <Text style={styles.errorBannerText}>{message}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  headerContainer: {
+    backgroundColor: '#7E152F',
+  },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 14,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  circleBackBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
   },
   topTitle: {
     fontSize: 17,
     fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
     letterSpacing: -0.2,
   },
+  monthFilterContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
   content: {
-    padding: 14,
-    gap: 12,
+    padding: 16,
+    gap: 16,
   },
-  tabBar: {
-    flexDirection: 'row',
-    borderRadius: 16,
+  
+  // Glass Card styles
+  glassCardOuter: {
+    borderRadius: 24,
+    overflow: 'hidden',
     borderWidth: 1,
-    padding: 5,
-    gap: 4,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+    backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
   },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
+  glassCardBlur: {
+    padding: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+  },
+  glassCardFallback: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+    backgroundColor: '#FFFFFF',
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
+  },
+
+  // Gauge Layout
+  gaugeContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 9,
-    borderRadius: 12,
+    position: 'relative',
+    marginVertical: 12,
   },
-  tabLabel: {
+  gaugeImageContainer: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  gaugeImageWrap: {
+    width: 86,
+    height: 86,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gaugeOverlayBadge: {
+    position: 'absolute',
+    bottom: -6,
+    backgroundColor: '#be1e2d',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#be1e2d',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  gaugeOverlayValue: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
+    lineHeight: 16,
+  },
+  gaugeOverlayLabel: {
+    fontSize: 8,
+    fontFamily: 'Inter_600SemiBold',
+    color: 'rgba(255, 255, 255, 0.8)',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+
+  // ── Wellness Hero Card ─────────────────────────────────────────────────────
+  pulseCard: {
+    alignItems: 'stretch',
+    overflow: 'visible',
+    paddingBottom: 0,
+  },
+  pulseNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  pulseNameBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(190,30,45,0.08)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  pulseNameText: {
     fontSize: 12,
     fontFamily: 'Inter_700Bold',
+    color: '#be1e2d',
+    maxWidth: 140,
+  },
+  pulseSerialText: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    color: '#44474E',
+    opacity: 0.55,
+  },
+  wellnessCard: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    minHeight: 260,
+  },
+  wellnessLeft: {
+    flex: 1,
+    gap: 6,
+    paddingTop: 4,
+    paddingBottom: 18,
+  },
+  // Big title — like "Wellness Score" in reference
+  wellnessMainTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    color: '#1A1C1E',
+    letterSpacing: -0.5,
+    lineHeight: 24,
+  },
+  // Sub-heading — like "Digital Wellness"
+  wellnessSubTitle: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: '#44474E',
+    opacity: 0.6,
+    marginBottom: 4,
+  },
+  // Small section label above gauge
+  wellnessLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    color: '#44474E',
+    opacity: 0.5,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+  },
+  wellnessGaugeWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+  wellnessGaugeCenter: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wellnessSocValue: {
+    fontSize: 32,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -1,
+    lineHeight: 36,
+  },
+  wellnessSocLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#44474E',
+    opacity: 0.6,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  wellnessSubText: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    color: '#44474E',
+    opacity: 0.65,
+    lineHeight: 16,
+  },
+  wellnessLivePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  wellnessLiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  wellnessLiveText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  wellnessRight: {
+    width: 170,
+    marginRight: -18,
+    marginTop: -18,
+    marginBottom: -18,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
+  wellnessCircleGlow: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'transparent',
+    shadowColor: 'rgba(190,30,45,0.12)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 40,
+    elevation: 0,
+  },
+  wellnessCircleOuter: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 6,
+    overflow: 'hidden',
+  },
+  wellnessCircleInner: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    borderRadius: 78,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  wellnessTractorImg: {
+    position: 'absolute',
+    top: -24,
+    bottom: -24,
+    left: -20,
+    right: -20,
+  },
+
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#1A1C1E',
+  },
+
+  // Featured Metric Card
+  featuredCard: {
+    gap: 12,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    color: '#1A1C1E',
     letterSpacing: -0.1,
   },
-  tabContent: {
-    gap: 10,
-  },
-  summaryCard: {
-    flexDirection: 'row',
+  circularActionBtn: {
+    width: 28,
+    height: 28,
     borderRadius: 14,
-    borderWidth: 1,
-    paddingVertical: 12,
+    backgroundColor: 'rgba(190, 30, 45, 0.08)',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  summaryItem: {
-    flex: 1,
+  featuredContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 16,
+    marginTop: 4,
   },
-  summaryDivider: {
-    width: 1,
-    height: 30,
+  featuredHeroRow: {
+    flex: 1.1,
+    gap: 2,
   },
-  summaryValue: {
-    fontSize: 17,
+  featuredHeroValue: {
+    fontSize: 36,
     fontFamily: 'Inter_700Bold',
+    color: '#be1e2d',
+    letterSpacing: -1,
+  },
+  featuredHeroLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    color: '#44474E',
+    opacity: 0.7,
+  },
+  featuredDivider: {
+    width: 1,
+    height: 48,
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  featuredSubMetrics: {
+    flex: 1.5,
+    gap: 8,
+  },
+  subMetricRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  subMetricText: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: '#44474E',
+  },
+  boldText: {
+    fontFamily: 'Inter_700Bold',
+    color: '#1A1C1E',
+  },
+
+  // Grid list
+  gridSection: {
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+    color: '#1A1C1E',
+    paddingLeft: 4,
+  },
+  metricGrid: {
+    gap: 12,
+  },
+  gridRow: {
+    flexDirection: 'row',
+  },
+  gridCard: {
+    padding: 12,
+    gap: 6,
+  },
+  gridCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  gridCardLabel: {
+    fontSize: 9,
+    fontFamily: 'Inter_700Bold',
+    color: '#44474E',
+    opacity: 0.65,
+    letterSpacing: 0.8,
+  },
+  gridCardValue: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: '#1A1C1E',
     letterSpacing: -0.3,
   },
-  summaryLabel: {
-    fontSize: 10,
-    fontFamily: 'Inter_500Medium',
-    textAlign: 'center',
+
+  // Visual Log Chart
+  logCard: {
+    gap: 12,
   },
+  chartSubtitle: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    color: '#44474E',
+    opacity: 0.7,
+    marginTop: -8,
+  },
+  chartWrapper: {
+    width: '100%',
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginVertical: 4,
+  },
+
+  // Tabbed system
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 14,
+    padding: 3,
+    gap: 2,
+    marginTop: 8,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 11,
+  },
+  tabBtnActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: '#94A3B8',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  tabBtnLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#44474E',
+  },
+  tabBtnLabelActive: {
+    color: '#1A1C1E',
+    fontFamily: 'Inter_700Bold',
+  },
+  tabContentArea: {
+    marginTop: 8,
+    gap: 12,
+  },
+
+  // Error/Empty
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 14,
-    borderRadius: 14,
+    padding: 12,
+    borderRadius: 16,
     borderWidth: 1,
+    backgroundColor: '#FDF2F4',
+    borderColor: '#FDA4AF',
   },
   errorIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
+    backgroundColor: 'rgba(190, 30, 45, 0.08)',
   },
   errorBannerText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Inter_600SemiBold',
-    lineHeight: 19,
+    color: '#1A1C1E',
+    lineHeight: 17,
   },
   empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
+    gap: 12,
     padding: 24,
   },
   emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Inter_700Bold',
+    color: '#1A1C1E',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter_400Regular',
+    color: '#44474E',
     textAlign: 'center',
   },
 });

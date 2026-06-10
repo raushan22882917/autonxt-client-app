@@ -66,20 +66,19 @@ export default function ComplaintDetailScreen() {
       style={[
         styles.topBar,
         {
-          paddingTop: insets.top + 8,
-          backgroundColor: c.card,
-          borderBottomColor: c.border,
+          paddingTop: insets.top + 10,
+          backgroundColor: '#7E152F',
         },
       ]}
     >
       <TouchableOpacity
-        style={[styles.backBtn, { backgroundColor: c.surfaceAlt }]}
+        style={[styles.backBtn, { backgroundColor: 'rgba(255, 255, 255, 0.18)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.3)' }]}
         onPress={goBack}
         activeOpacity={0.7}
       >
-        <Feather name="arrow-left" size={20} color={c.foreground} />
+        <Feather name="arrow-left" size={20} color="#FFFFFF" />
       </TouchableOpacity>
-      <Text style={[styles.topTitle, { color: c.foreground }]}>Ticket Details</Text>
+      <Text style={[styles.topTitle, { color: '#FFFFFF' }]}>Ticket Details</Text>
       <View style={{ width: 40 }} />
     </View>
   );
@@ -304,8 +303,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 13,
-    borderBottomWidth: 1,
+    paddingBottom: 14,
   },
   backBtn: {
     width: 40,

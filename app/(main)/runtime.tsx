@@ -18,6 +18,31 @@ import { PlantAnalysisCard } from '@/components/PlantAnalysisCard';
 import { UptimeMetricCards } from '@/components/UptimeMetricCards';
 import { buildPlantSummaries } from '@/lib/plantAnalysis';
 
+// ── Icon KPI item ────────────────────────────────────────────────────────────
+function KpiItem({
+  label,
+  value,
+  color,
+  icon,
+  bg,
+}: {
+  label: string;
+  value: number | string;
+  color: string;
+  icon: string;
+  bg: string;
+}) {
+  return (
+    <View style={kpiStyles.item}>
+      <View style={[kpiStyles.iconWrap, { backgroundColor: bg }]}>
+        <Feather name={icon as any} size={15} color={color} />
+      </View>
+      <Text style={[kpiStyles.value, { color }]}>{value}</Text>
+      <Text style={kpiStyles.label}>{label}</Text>
+    </View>
+  );
+}
+
 export default function PlantAnalysisScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
@@ -48,38 +73,75 @@ export default function PlantAnalysisScreen() {
 
   const ListHeader = (
     <View style={[styles.header, { paddingTop: topPad + 14 }]}>
-      {/* Hero banner */}
+      {/* ── Mission Control Hero Banner ── */}
       <View style={[styles.heroBanner, { shadowColor: c.primary }]}>
         <LinearGradient
-          colors={[c.primary, c.gradientEnd]}
+          colors={[c.gradientStart, c.gradientEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.heroGradient, { borderRadius: 20 }]}
+          style={[styles.heroGradient, { borderRadius: 22 }]}
         >
+          {/* Geometric overlays */}
+          <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+            <View style={styles.heroArcTR} />
+            <View style={styles.heroArcBL} />
+            <View style={styles.heroGridH} />
+            <View style={styles.heroGridV} />
+            <View style={styles.heroAccentDot1} />
+            <View style={styles.heroAccentDot2} />
+          </View>
+
           <View style={styles.heroLeft}>
-            <Text style={[styles.heroSuper, { color: c.primaryForeground + 'BB' }]}>
-              {organization?.name ?? 'Fleet'}
-            </Text>
-            <Text style={[styles.heroTitle, { color: c.primaryForeground }]}>Plant Analysis</Text>
-            <Text style={[styles.heroSub, { color: c.primaryForeground + '99' }]}>
+            <View style={styles.missionRow}>
+              <View style={[styles.missionBadge, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                <Feather name="radio" size={10} color="#FFFFFF" />
+                <Text style={styles.missionBadgeText}>MISSION CONTROL</Text>
+              </View>
+            </View>
+            <Text style={[styles.heroTitle, { color: '#FFFFFF' }]}>Plant Analysis</Text>
+            <Text style={[styles.heroSub, { color: 'rgba(255,255,255,0.65)' }]}>
               {fleetTotals.plantCount} plant{fleetTotals.plantCount !== 1 ? 's' : ''} · {fleetTotals.totalTractors} tractors
             </Text>
           </View>
-          <View style={[styles.heroIconWrap, { backgroundColor: c.primaryForeground + '14' }]}>
-            <Feather name="home" size={28} color={c.primaryForeground} />
+          <View style={[styles.heroIconWrap, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+            <Feather name="home" size={26} color="#FFFFFF" />
           </View>
         </LinearGradient>
       </View>
 
-      {/* Fleet KPI row */}
+      {/* ── Fleet KPI Row ── */}
       <View style={[styles.kpiRow, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}>
-        <KpiItem label="Tractors" value={fleetTotals.totalTractors} color={c.primary} />
+        <KpiItem
+          label="Tractors"
+          value={fleetTotals.totalTractors}
+          color={c.primary}
+          icon="truck"
+          bg={c.primary + '14'}
+        />
         <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
-        <KpiItem label="Maintenance" value={fleetTotals.maintenance} color={c.warning} />
+        <KpiItem
+          label="Maintenance"
+          value={fleetTotals.maintenance}
+          color={c.warning}
+          icon="tool"
+          bg={c.warning + '14'}
+        />
         <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
-        <KpiItem label="Open Tickets" value={fleetTotals.openTickets} color={c.red} />
+        <KpiItem
+          label="Open Tickets"
+          value={fleetTotals.openTickets}
+          color={c.red}
+          icon="alert-circle"
+          bg={c.red + '14'}
+        />
         <View style={[styles.kpiDivider, { backgroundColor: c.border }]} />
-        <KpiItem label="Uptime" value={`${fleetTotals.uptime}%`} color={c.success} />
+        <KpiItem
+          label="Uptime"
+          value={`${fleetTotals.uptime}%`}
+          color={fleetTotals.uptime >= 80 ? c.success : c.warning}
+          icon="activity"
+          bg={fleetTotals.uptime >= 80 ? c.success + '14' : c.warning + '14'}
+        />
       </View>
 
       <UptimeMetricCards
@@ -88,14 +150,15 @@ export default function PlantAnalysisScreen() {
         repairDays={fleetTotals.repairDays}
       />
 
+      {/* Section header */}
       <View style={styles.sectionRow}>
         <View style={styles.sectionTitleRow}>
           <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
           <Text style={[styles.sectionLabel, { color: c.foreground }]}>All Plants</Text>
         </View>
-        <Text style={[styles.sectionCount, { color: c.mutedForeground }]}>
-          {summaries.length}
-        </Text>
+        <View style={[styles.countChip, { backgroundColor: c.primary + '14', borderColor: c.primary + '30' }]}>
+          <Text style={[styles.countChipText, { color: c.primary }]}>{summaries.length}</Text>
+        </View>
       </View>
     </View>
   );
@@ -134,63 +197,134 @@ export default function PlantAnalysisScreen() {
   );
 }
 
-function KpiItem({ label, value, color }: { label: string; value: number | string; color: string }) {
-  return (
-    <View style={kpiStyles.item}>
-      <Text style={[kpiStyles.value, { color }]}>{value}</Text>
-      <Text style={kpiStyles.label}>{label}</Text>
-    </View>
-  );
-}
-
 const kpiStyles = StyleSheet.create({
   item: {
     flex: 1,
     alignItems: 'center',
-    gap: 3,
-    paddingVertical: 4,
+    gap: 4,
+    paddingVertical: 6,
+  },
+  iconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
   },
   value: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Inter_700Bold',
     letterSpacing: -0.4,
   },
   label: {
-    fontSize: 10,
-    fontFamily: 'Inter_500Medium',
+    fontSize: 9,
+    fontFamily: 'Inter_600SemiBold',
     color: '#5A6A85',
     textAlign: 'center',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
 });
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  list: {
-    paddingHorizontal: 16,
-  },
+  list: { paddingHorizontal: 16 },
   header: {
     gap: 14,
     paddingBottom: 4,
+    paddingHorizontal: 16,
   },
+
+  // ── Hero banner ──
   heroBanner: {
-    borderRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 5,
+    borderRadius: 22,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 7,
   },
   heroGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
     gap: 16,
+    overflow: 'hidden',
   },
-  heroLeft: { flex: 1, gap: 4 },
-  heroSuper: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+  // Geometric overlays
+  heroArcTR: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    top: -50,
+    right: -30,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  heroArcBL: {
+    position: 'absolute',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    bottom: -20,
+    left: 80,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  heroGridH: {
+    position: 'absolute',
+    left: '10%',
+    right: '10%',
+    top: '60%',
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  heroGridV: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '60%',
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  heroAccentDot1: {
+    position: 'absolute',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    bottom: 16,
+    left: 24,
+  },
+  heroAccentDot2: {
+    position: 'absolute',
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    bottom: 28,
+    left: 40,
+  },
+
+  heroLeft: { flex: 1, gap: 5 },
+  missionRow: { flexDirection: 'row' },
+  missionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+  },
+  missionBadgeText: {
+    fontSize: 9,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
+    letterSpacing: 1.2,
   },
   heroTitle: {
     fontSize: 22,
@@ -202,27 +336,31 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
   },
   heroIconWrap: {
-    width: 60,
-    height: 60,
+    width: 58,
+    height: 58,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // ── KPI row ──
   kpiRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 14,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   kpiDivider: {
     width: 1,
-    height: 36,
+    height: 44,
   },
+
+  // ── Section header ──
   sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -235,7 +373,7 @@ const styles = StyleSheet.create({
   },
   sectionAccent: {
     width: 4,
-    height: 18,
+    height: 20,
     borderRadius: 2,
   },
   sectionLabel: {
@@ -243,10 +381,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
     letterSpacing: -0.2,
   },
-  sectionCount: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
+  countChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
   },
+  countChipText: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+  },
+
+  // ── Empty ──
   empty: {
     alignItems: 'center',
     padding: 40,

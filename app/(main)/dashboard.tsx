@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Image,
   Platform,
   RefreshControl,
   ScrollView,
@@ -24,6 +25,37 @@ import {
 import { FleetStatusCard } from '@/components/FleetStatusCard';
 import { LoadingRing } from '@/components/LoadingRing';
 import { StatCard } from '@/components/StatCard';
+
+// ── Background Ambient Glows ─────────────────────────────────────────────────
+function BackgroundAmbientGlows() {
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      {/* Top-right Burgundy ambient glow */}
+      <LinearGradient
+        colors={['rgba(126, 21, 47, 0.06)', 'rgba(126, 21, 47, 0)']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.ambientGlowTR}
+      />
+      {/* Mid-left Gold ambient glow */}
+      <LinearGradient
+        colors={['rgba(226, 169, 62, 0.06)', 'rgba(226, 169, 62, 0)']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.ambientGlowML}
+      />
+      {/* Bottom-right Burgundy ambient glow */}
+      <LinearGradient
+        colors={['rgba(126, 21, 47, 0.04)', 'rgba(126, 21, 47, 0)']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.ambientGlowBR}
+      />
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function DashboardScreen() {
   const c = useColors();
@@ -114,126 +146,214 @@ export default function DashboardScreen() {
   }
 
   return (
-    <ScrollView
-      style={[styles.root, { backgroundColor: c.background }]}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: topPad + 16, paddingBottom: insets.bottom + 100 },
-      ]}
-      refreshControl={
-        <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
-      }
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Welcome Banner */}
-      <View style={[styles.welcomeBanner, { shadowColor: c.primary }]}>
-        <LinearGradient
-          colors={[c.primary, c.gradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.welcomeGradient, { borderRadius: 20 }]}
-        >
-          <View style={styles.welcomeLeft}>
-            <Text style={[styles.welcomeOrg, { color: c.primaryForeground + 'CC' }]}>
-              {organization?.name ?? 'Fleet Dashboard'}
+    <View style={{ flex: 1, backgroundColor: c.background }}>
+      <BackgroundAmbientGlows />
+      <ScrollView
+        style={[styles.root, { backgroundColor: 'transparent' }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: topPad + 16, paddingBottom: insets.bottom + 100 },
+        ]}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Volt Hero Banner ── */}
+        <View style={[styles.voltHeroContainer, { backgroundColor: c.card }]}>
+          <View style={styles.voltHeroContentRow}>
+            <View style={styles.voltHeroContent}>
+              <View style={styles.voltHeroHeader}>
+                <View style={styles.voltLogoCircle}>
+                  <Feather name="zap" size={12} color={c.primary} />
+                </View>
+                <Text style={[styles.voltBrandText, { color: c.primary }]}>VOLT PRECISION</Text>
+              </View>
+
+              <Text style={styles.voltHeroTitle}>THE FUTURE OF PERFORMANCE</Text>
+
+              <Text style={styles.voltHeroSubtitle}>
+                Engineered with precision. Driven by electricity. Experience the pinnacle of automotive innovation.
+              </Text>
+
+              <TouchableOpacity
+                style={[styles.voltHeroButton, { backgroundColor: c.primary, shadowColor: c.primary }]}
+                activeOpacity={0.8}
+                onPress={() => {
+                  router.push('/(main)/tractors');
+                }}
+              >
+                <Text style={styles.voltHeroButtonText}>Experience Volt</Text>
+                <Feather name="arrow-right" size={14} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.voltHeroImageWrap}>
+              <Image
+                source={require('../../assets/images/small-logo-black.png')}
+                style={styles.voltHeroImage}
+                resizeMode="contain"
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* ── Syncing indicator ── */}
+        {statsSyncing ? (
+          <View style={[styles.syncPill, { backgroundColor: c.blueSoft, borderColor: c.blue + '40' }]}>
+            <LoadingRing size="sm" color={c.blue} dual />
+            <Text style={[styles.syncText, { color: c.blue }]}>
+              {costCardLoading ? 'Loading analytics…' : 'Syncing fleet data…'}
             </Text>
-            <Text style={[styles.welcomeTitle, { color: c.primaryForeground }]}>
-              Fleet Overview
-            </Text>
-            <Text style={[styles.welcomeSub, { color: c.primaryForeground + 'AA' }]}>
-              {totalFleet} tractors · {organization?.location ?? 'Live telemetry'}
+            <View style={[styles.syncDot, { backgroundColor: c.blue }]} />
+          </View>
+        ) : null}
+
+        {/* ── Stats Grid (Retainable Card-on-Card Layout) ── */}
+        <View style={styles.statsGrid}>
+          {/* Section 1: Cost Savings & Impact (Full Width) */}
+          <View style={[styles.mainSectionCard, { backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIconWrap, { backgroundColor: c.accent + '15' }]}>
+                <Feather name="trending-up" size={18} color={c.accent} />
+              </View>
+              <View style={styles.sectionHeaderText}>
+                <Text style={styles.sectionTitle}>Cost Savings & Impact</Text>
+                <Text style={styles.sectionSubtitle}>Cumulative financial benefits and sustainability metrics</Text>
+              </View>
+            </View>
+
+            <View style={styles.floatingSubCardsRow}>
+              <View style={styles.floatingSubCard}>
+                <Text style={styles.subCardLabel}>Cumulative Saved</Text>
+                <Text style={styles.subCardValue}>{costLabel}</Text>
+              </View>
+              <View style={styles.floatingSubCard}>
+                <Text style={styles.subCardLabel}>Average per Tractor</Text>
+                <Text style={styles.subCardValue}>
+                  {costSavings ? formatInr(costSavings / (totalFleet || 1)) : '—'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Section 2: Fleet Overview (Split Cards) */}
+          <View style={styles.statsRow}>
+            {/* Split Card 1: Total Fleet */}
+            <View style={[styles.mainSectionCard, { flex: 1, backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionIconWrap, { backgroundColor: c.secondary + '15' }]}>
+                  <Feather name="truck" size={18} color={c.secondary} />
+                </View>
+                <View style={styles.sectionHeaderText}>
+                  <Text style={styles.sectionTitle}>Total Fleet</Text>
+                  <Text style={styles.sectionSubtitle}>Registered assets</Text>
+                </View>
+              </View>
+
+              <View style={styles.floatingSubCardsRow}>
+                <View style={styles.floatingSubCard}>
+                  <Text style={styles.subCardLabel}>In Service</Text>
+                  <Text style={styles.subCardValue}>{totalFleet}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Split Card 2: Operations Status */}
+            <View style={[styles.mainSectionCard, { flex: 1, backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionIconWrap, { backgroundColor: c.warning + '15' }]}>
+                  <Feather name="activity" size={18} color={c.warning} />
+                </View>
+                <View style={styles.sectionHeaderText}>
+                  <Text style={styles.sectionTitle}>Status</Text>
+                  <Text style={styles.sectionSubtitle}>Fleet overview</Text>
+                </View>
+              </View>
+
+              <View style={styles.floatingSubCardsRow}>
+                <View style={[styles.floatingSubCard, { borderLeftWidth: 3, borderLeftColor: c.success }]}>
+                  <Text style={styles.subCardLabel}>Active</Text>
+                  <Text style={[styles.subCardValue, { color: c.success }]}>{inOperation}</Text>
+                </View>
+                <View style={[styles.floatingSubCard, { borderLeftWidth: 3, borderLeftColor: inMaintenance > 0 ? c.warning : c.border }]}>
+                  <Text style={styles.subCardLabel}>Maint</Text>
+                  <Text style={[styles.subCardValue, { color: inMaintenance > 0 ? c.warning : c.foreground }]}>{inMaintenance}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Section 3: Task Collaboration & Support (Full Width) */}
+          <View style={[styles.mainSectionCard, { backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIconWrap, { backgroundColor: c.primary + '15' }]}>
+                <Feather name="alert-circle" size={18} color={c.primary} />
+              </View>
+              <View style={styles.sectionHeaderText}>
+                <Text style={styles.sectionTitle}>Task Collaboration</Text>
+                <Text style={styles.sectionSubtitle}>Recent complaints and active operator tickets</Text>
+              </View>
+            </View>
+
+            <View style={styles.floatingSubCardsRow}>
+              <View style={styles.floatingSubCard}>
+                <Text style={styles.subCardLabel}>Open Tickets</Text>
+                <Text style={[styles.subCardValue, { color: openTickets > 0 ? c.primary : c.success }]}>
+                  {openTickets}
+                </Text>
+              </View>
+              <View style={styles.floatingSubCard}>
+                <Text style={styles.subCardLabel}>System Alert</Text>
+                <Text style={[styles.subCardValue, { fontSize: 13, color: openTickets > 0 ? c.primary : c.success, fontFamily: 'Inter_700Bold' }]}>
+                  {openTickets > 0 ? 'Requires Action' : 'All Systems Clear'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Recent Activity Section ── */}
+        <View style={styles.recentActivityHeader}>
+          <View style={styles.sectionTitleRow}>
+            <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
+            <Text style={[styles.sectionLabel, { color: c.foreground }]}>Recent Activity</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.seeAllBtn, { backgroundColor: c.primary + '12', borderColor: c.primary + '30' }]}
+            onPress={() => router.push('/(main)/complaints')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.seeAll, { color: c.primary }]}>All Tickets</Text>
+            <Feather name="arrow-right" size={13} color={c.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {activity.length === 0 ? (
+          <View style={[styles.emptyActivity, { backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
+              <Feather name="inbox" size={28} color={c.mutedForeground} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: c.foreground }]}>All Quiet</Text>
+            <Text style={[styles.emptySub, { color: c.mutedForeground }]}>
+              No recent alerts or tickets. Fleet is operating normally.
             </Text>
           </View>
-          <View style={[styles.welcomeIconWrap, { backgroundColor: c.primaryForeground + '14' }]}>
-            <Feather name="truck" size={28} color={c.primaryForeground} />
+        ) : (
+          <View style={[styles.activityContainer, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadowStrong }]}>
+            {activity.map((item, idx) => (
+              <ActivityRow
+                key={item.id}
+                item={item}
+                c={c}
+                isLast={idx === activity.length - 1}
+                onPress={onActivityPress(item, router)}
+              />
+            ))}
           </View>
-        </LinearGradient>
-      </View>
-
-      {/* Syncing indicator */}
-      {statsSyncing ? (
-        <View style={[styles.syncBanner, { backgroundColor: c.blueSoft, borderColor: c.primary + '30' }]}>
-          <LoadingRing size="sm" color={c.primary} dual />
-          <Text style={[styles.syncText, { color: c.primary }]}>
-            {costCardLoading ? 'Loading analytics…' : 'Syncing fleet data…'}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* Stats Grid */}
-      <View style={styles.statsGrid}>
-        <View style={styles.statsRow}>
-          <StatCard
-            title="Total Fleet"
-            value={totalFleet}
-            icon="truck"
-            iconColor={c.primary}
-            loading={statsSyncing}
-          />
-          <StatCard
-            title="Open Tickets"
-            value={openTickets}
-            icon="alert-circle"
-            iconColor={openTickets > 0 ? c.warning : c.success}
-            subtitle={openTickets === 0 ? 'All clear' : 'OPEN & IN_PROGRESS'}
-            loading={statsSyncing}
-          />
-        </View>
-        <View style={styles.statsRow}>
-          <FleetStatusCard
-            inOperation={inOperation}
-            inMaintenance={inMaintenance}
-            loading={statsSyncing}
-          />
-          <StatCard
-            title="Cost Saved"
-            value={costLabel}
-            icon="trending-up"
-            iconColor={c.success}
-            subtitle={costCardLoading ? 'Calculating…' : 'Fleet cumulative'}
-            loading={costCardLoading}
-          />
-        </View>
-      </View>
-
-      {/* Section Header */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleRow}>
-          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
-          <Text style={[styles.sectionLabel, { color: c.foreground }]}>Recent Activity</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.seeAllBtn, { backgroundColor: c.primary + '12', borderColor: c.primary + '30' }]}
-          onPress={() => router.push('/(main)/complaints')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.seeAll, { color: c.primary }]}>All Tickets</Text>
-          <Feather name="arrow-right" size={13} color={c.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {activity.length === 0 ? (
-        <View style={[styles.emptyActivity, { backgroundColor: c.card, borderColor: c.border }]}>
-          <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
-            <Feather name="inbox" size={28} color={c.mutedForeground} />
-          </View>
-          <Text style={[styles.emptyTitle, { color: c.foreground }]}>All Quiet</Text>
-          <Text style={[styles.emptySub, { color: c.mutedForeground }]}>
-            No recent alerts or tickets. Fleet is operating normally.
-          </Text>
-        </View>
-      ) : (
-        activity.map((item, idx) => (
-          <ActivityRow
-            key={item.id}
-            item={item}
-            c={c}
-            isLast={idx === activity.length - 1}
-            onPress={onActivityPress(item, router)}
-          />
-        ))
-      )}
-    </ScrollView>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -266,6 +386,7 @@ function ActivityRow({
           : c.mutedForeground;
 
   const isTicket = item.kind === 'ticket';
+  const isCritical = item.severity === 'critical';
 
   return (
     <TouchableOpacity
@@ -273,8 +394,8 @@ function ActivityRow({
         styles.activityRow,
         {
           backgroundColor: c.card,
-          borderColor: item.severity === 'critical' ? c.red + '33' : c.border,
-          shadowColor: c.shadowStrong,
+          borderColor: isCritical ? c.red + '40' : c.border,
+          shadowColor: isCritical ? c.red : c.shadowStrong,
           marginBottom: isLast ? 0 : 10,
         },
       ]}
@@ -282,10 +403,10 @@ function ActivityRow({
       activeOpacity={item.complaintID ? 0.75 : 1}
       disabled={!item.complaintID}
     >
-      {/* Severity stripe */}
+      {/* Severity stripe — 5px thick */}
       <View style={[styles.activityStripe, { backgroundColor: iconColor }]} />
 
-      <View style={[styles.activityIcon, { backgroundColor: iconColor + '18' }]}>
+      <View style={[styles.activityIcon, { backgroundColor: iconColor + '18', borderColor: iconColor + '25', borderWidth: 1 }]}>
         <Feather name={item.icon} size={19} color={iconColor} />
       </View>
 
@@ -335,7 +456,7 @@ function ActivityRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { paddingHorizontal: 16, gap: 0 },
+  content: { paddingHorizontal: 16, gap: 20 },
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -379,70 +500,242 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
   },
-  welcomeBanner: {
-    marginBottom: 16,
-    borderRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 5,
+
+  // ── Ambient glows ──
+  ambientGlowTR: {
+    position: 'absolute',
+    top: -50,
+    right: -100,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
   },
-  welcomeGradient: {
+  ambientGlowML: {
+    position: 'absolute',
+    top: 380,
+    left: -100,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+  },
+  ambientGlowBR: {
+    position: 'absolute',
+    bottom: 50,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+  },
+
+  // ── Volt Hero Banner ──
+  voltHeroContainer: {
+    width: '100%',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 4,
+    marginBottom: 4,
+    overflow: 'hidden',
+  },
+  voltHeroContentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
-    gap: 16,
   },
-  welcomeLeft: { flex: 1, gap: 4 },
-  welcomeOrg: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+  voltHeroContent: {
+    flex: 1,
+    gap: 6,
   },
-  welcomeTitle: {
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.5,
-  },
-  welcomeSub: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-  },
-  welcomeIconWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  syncBanner: {
+  voltHeroHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+    marginBottom: 4,
+  },
+  voltLogoCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#F2F3F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#D73220',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  voltBrandText: {
+    fontSize: 11,
+    fontFamily: 'Inter_700Bold',
+    color: '#D73220',
+    letterSpacing: 1.5,
+  },
+  voltHeroTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    color: '#0F172A',
+    letterSpacing: -0.5,
+    lineHeight: 24,
+  },
+  voltHeroSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: '#475569',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  voltHeroButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#BE185D',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    shadowColor: '#BE185D',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  voltHeroButtonText: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
+  },
+  voltHeroImageWrap: {
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  voltHeroImage: {
+    width: 90,
+    height: 90,
+  },
+
+  // ── Sync pill ──
+  syncPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderRadius: 14,
+    paddingVertical: 10,
+    borderRadius: 24,
     borderWidth: 1,
-    marginBottom: 12,
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFFFFF',
   },
   syncText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Inter_600SemiBold',
+    flex: 1,
   },
+  syncDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    opacity: 0.6,
+  },
+
+  // ── Stats Grid ──
   statsGrid: {
-    gap: 10,
-    marginBottom: 24,
+    gap: 16,
+    width: '100%',
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 16,
+    width: '100%',
+  },
+
+  // ── Main Section Canvas Cards (Mockup Style) ──
+  mainSectionCard: {
+    width: '100%',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    padding: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 4,
+    overflow: 'hidden',
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  sectionIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeaderText: {
+    flex: 1,
+    gap: 1,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    color: '#0F172A',
+  },
+  sectionSubtitle: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    color: '#64748B',
+  },
+  floatingSubCardsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 10,
+  },
+  floatingSubCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    padding: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  subCardLabel: {
+    fontSize: 9,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  subCardValue: {
+    fontSize: 18,
+    fontFamily: 'SpaceMono_700Bold',
+    color: '#0F172A',
+  },
+
+  // ── Recent Activity Section Header ──
+  recentActivityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginTop: 10,
+    marginBottom: 6,
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -451,7 +744,7 @@ const styles = StyleSheet.create({
   },
   sectionAccent: {
     width: 4,
-    height: 18,
+    height: 20,
     borderRadius: 2,
   },
   sectionLabel: {
@@ -472,27 +765,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter_600SemiBold',
   },
+
+  // ── Activity Feed Container ──
+  activityContainer: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 4,
+  },
   activityRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
+    padding: 16,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 1,
+    position: 'relative',
   },
   activityStripe: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 3,
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
+    width: 5,
   },
   activityIcon: {
     width: 44,
@@ -501,7 +800,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    marginLeft: 3,
+    marginLeft: 5,
   },
   activityBody: {
     flex: 1,
@@ -553,6 +852,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+
+  // ── Empty activity ──
   emptyActivity: {
     alignItems: 'center',
     padding: 36,

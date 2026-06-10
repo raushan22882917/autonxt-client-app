@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { ComplaintFilterSheet } from '@/components/ComplaintFilterSheet';
@@ -42,6 +43,33 @@ function activeFilterSummary(filters: ComplaintFilterValues): string {
   if (filters.severity !== 'ALL') parts.push(filters.severity);
   if (filters.breakdownOnly) parts.push('Breakdown');
   return parts.join(' · ');
+}
+
+// ── Icon-enhanced summary box ─────────────────────────────────────────────
+function SummaryBox({
+  value,
+  label,
+  color,
+  bg,
+  border,
+  icon,
+}: {
+  value: number;
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+  icon: string;
+}) {
+  return (
+    <View style={[summaryStyles.box, { backgroundColor: bg, borderColor: border }]}>
+      <View style={[summaryStyles.iconWrap, { backgroundColor: color + '20' }]}>
+        <Feather name={icon as any} size={15} color={color} />
+      </View>
+      <Text style={[summaryStyles.num, { color }]}>{value}</Text>
+      <Text style={[summaryStyles.label, { color: color + 'BB' }]}>{label}</Text>
+    </View>
+  );
 }
 
 export default function ComplaintsScreen() {
@@ -97,21 +125,22 @@ export default function ComplaintsScreen() {
           styles.card,
           {
             backgroundColor: c.card,
-            borderColor: isCritical ? sev + '44' : c.border,
-            shadowColor: c.shadowStrong,
+            borderColor: isCritical ? sev + '55' : c.border,
+            shadowColor: isCritical ? sev : c.shadowStrong,
+            shadowOpacity: isCritical ? 0.18 : 0.06,
           },
         ]}
         activeOpacity={0.75}
         onPress={() => router.push(`/complaint/${item.complaintID}`)}
         accessibilityRole="button"
       >
-        {/* Severity stripe */}
+        {/* Severity stripe — 5px */}
         <View style={[styles.sevStripe, { backgroundColor: sev }]} />
 
         <View style={styles.cardBody}>
           {/* Header row */}
           <View style={styles.cardTop}>
-            <View style={[styles.iconWrap, { backgroundColor: sev + '15' }]}>
+            <View style={[styles.iconWrap, { backgroundColor: sev + '18', borderColor: sev + '30', borderWidth: 1 }]}>
               <Feather name={isBreakdown ? 'alert-octagon' : 'alert-triangle'} size={19} color={sev} />
             </View>
             <View style={styles.info}>
@@ -155,93 +184,137 @@ export default function ComplaintsScreen() {
   };
 
   const ListHeader = (
-    <View style={[styles.header, { paddingTop: topPad + 14 }]}>
-      {/* Search + Filter row */}
-      <View style={styles.searchRow}>
-        <View style={[styles.searchBox, { backgroundColor: c.card, borderColor: c.border }]}>
-          <Feather name="search" size={17} color={c.mutedForeground} />
-          <TextInput
-            style={[styles.searchInput, { color: c.foreground }]}
-            placeholder="Search tickets…"
-            placeholderTextColor={c.mutedForeground + '88'}
-            value={search}
-            onChangeText={setSearch}
-          />
-          {search.length > 0 ? (
-            <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
-              <View style={[styles.clearBtn, { backgroundColor: c.border }]}>
-                <Feather name="x" size={12} color={c.mutedForeground} />
+    <View style={{ paddingTop: topPad }}>
+      {/* ── Operator Support Hero Strip ── */}
+      <View style={[styles.heroStrip, { shadowColor: c.primary }]}>
+        <LinearGradient
+          colors={[c.gradientStart, c.gradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.heroGradient}
+        >
+          <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+            <View style={styles.heroDotTR} />
+            <View style={styles.heroGridH} />
+          </View>
+
+          <View style={styles.heroLeft}>
+            <Text style={styles.heroSuper}>OPERATOR SUPPORT</Text>
+            <Text style={styles.heroTitle}>Tickets & Complaints</Text>
+          </View>
+
+          <View style={styles.heroStats}>
+            <View style={[styles.heroStatItem, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+              <Text style={styles.heroStatNum}>{openCount}</Text>
+              <Text style={styles.heroStatLabel}>OPEN</Text>
+            </View>
+            {critCount > 0 && (
+              <View style={[styles.heroStatItem, { backgroundColor: 'rgba(255,200,0,0.25)' }]}>
+                <Text style={styles.heroStatNum}>{critCount}</Text>
+                <Text style={styles.heroStatLabel}>CRIT</Text>
               </View>
-            </TouchableOpacity>
-          ) : null}
+            )}
+          </View>
+        </LinearGradient>
+      </View>
+
+      {/* ── Search + Filter ── */}
+      <View style={styles.controlArea}>
+        <View style={styles.searchRow}>
+          <View style={[styles.searchBox, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Feather name="search" size={17} color={c.mutedForeground} />
+            <TextInput
+              style={[styles.searchInput, { color: c.foreground }]}
+              placeholder="Search tickets…"
+              placeholderTextColor={c.mutedForeground + '88'}
+              value={search}
+              onChangeText={setSearch}
+            />
+            {search.length > 0 ? (
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+                <View style={[styles.clearBtn, { backgroundColor: c.border }]}>
+                  <Feather name="x" size={12} color={c.mutedForeground} />
+                </View>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.filterBtn,
+              {
+                backgroundColor: activeFilterCount > 0 ? c.primary : c.card,
+                borderColor: activeFilterCount > 0 ? c.primary : c.border,
+                shadowColor: activeFilterCount > 0 ? c.primary : 'transparent',
+                shadowOpacity: activeFilterCount > 0 ? 0.3 : 0,
+              },
+            ]}
+            onPress={() => setFilterSheetOpen(true)}
+            activeOpacity={0.8}
+          >
+            <Feather
+              name="sliders"
+              size={19}
+              color={activeFilterCount > 0 ? c.primaryForeground : c.foreground}
+            />
+            {activeFilterCount > 0 ? (
+              <View style={[styles.filterBadge, { backgroundColor: c.primaryForeground }]}>
+                <Text style={[styles.filterBadgeText, { color: c.primary }]}>{activeFilterCount}</Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.filterBtn,
-            {
-              backgroundColor: activeFilterCount > 0 ? c.primary : c.card,
-              borderColor: activeFilterCount > 0 ? c.primary : c.border,
-              shadowColor: activeFilterCount > 0 ? c.primary : 'transparent',
-            },
-          ]}
-          onPress={() => setFilterSheetOpen(true)}
-          activeOpacity={0.8}
-        >
-          <Feather
-            name="sliders"
-            size={19}
-            color={activeFilterCount > 0 ? c.primaryForeground : c.foreground}
+        {/* Active filter summary */}
+        <Text style={[styles.activeFilters, { color: c.mutedForeground }]} numberOfLines={1}>
+          {activeFilterSummary(filters)}
+        </Text>
+
+        {/* Icon-enhanced Summary Boxes */}
+        <View style={styles.summaryRow}>
+          <SummaryBox
+            value={raisedCount}
+            label="Raised"
+            color={c.blue}
+            bg={c.blueSoft}
+            border={c.blue + '30'}
+            icon="inbox"
           />
-          {activeFilterCount > 0 ? (
-            <View style={[styles.filterBadge, { backgroundColor: c.primaryForeground }]}>
-              <Text style={[styles.filterBadgeText, { color: c.primary }]}>{activeFilterCount}</Text>
-            </View>
-          ) : null}
-        </TouchableOpacity>
+          <SummaryBox
+            value={critCount}
+            label="Critical"
+            color={c.red}
+            bg={c.redSoft}
+            border={c.redBorder}
+            icon="alert-octagon"
+          />
+          <SummaryBox
+            value={openCount}
+            label="Open"
+            color={c.warning}
+            bg={c.warningSoft}
+            border={c.warningBorder}
+            icon="clock"
+          />
+          <SummaryBox
+            value={breakdownRaised}
+            label="Breakdown"
+            color={c.foreground}
+            bg={c.surfaceAlt}
+            border={c.border}
+            icon="tool"
+          />
+        </View>
+
+        {/* Results count + period */}
+        <View style={styles.resultsRow}>
+          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
+          <Text style={[styles.periodHint, { color: c.mutedForeground }]}>
+            Showing <Text style={{ color: c.foreground, fontFamily: 'Inter_700Bold' }}>{displayed.length}</Text>
+            {' '}of {raisedCount} · {periodLabel}
+          </Text>
+        </View>
       </View>
-
-      {/* Active filter summary */}
-      <Text style={[styles.activeFilters, { color: c.mutedForeground }]} numberOfLines={1}>
-        {activeFilterSummary(filters)}
-      </Text>
-
-      {/* Stats row */}
-      <View style={styles.summaryRow}>
-        <SummaryBox
-          value={raisedCount}
-          label="Raised"
-          color={c.primary}
-          bg={c.blueSoft}
-          border={c.primary + '25'}
-        />
-        <SummaryBox
-          value={critCount}
-          label="Critical"
-          color={c.red}
-          bg={c.redSoft}
-          border={c.redBorder}
-        />
-        <SummaryBox
-          value={openCount}
-          label="Open"
-          color={c.warning}
-          bg={c.warningSoft}
-          border={c.warningBorder}
-        />
-        <SummaryBox
-          value={breakdownRaised}
-          label="Breakdown"
-          color={c.foreground}
-          bg={c.surfaceAlt}
-          border={c.border}
-        />
-      </View>
-
-      {/* Results count */}
-      <Text style={[styles.periodHint, { color: c.mutedForeground }]}>
-        Showing {displayed.length} of {raisedCount} · {periodLabel}
-      </Text>
     </View>
   );
 
@@ -290,54 +363,120 @@ export default function ComplaintsScreen() {
   );
 }
 
-function SummaryBox({
-  value,
-  label,
-  color,
-  bg,
-  border,
-}: {
-  value: number;
-  label: string;
-  color: string;
-  bg: string;
-  border: string;
-}) {
-  return (
-    <View style={[summaryStyles.box, { backgroundColor: bg, borderColor: border }]}>
-      <Text style={[summaryStyles.num, { color }]}>{value}</Text>
-      <Text style={[summaryStyles.label, { color: color + 'CC' }]}>{label}</Text>
-    </View>
-  );
-}
-
 const summaryStyles = StyleSheet.create({
   box: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  iconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
   },
   num: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: 'Inter_700Bold',
     letterSpacing: -0.5,
   },
   label: {
-    fontSize: 10,
-    fontFamily: 'Inter_600SemiBold',
+    fontSize: 9,
+    fontFamily: 'Inter_700Bold',
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
 });
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: {
+
+  // ── Hero strip ──
+  heroStrip: {
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  heroGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+    overflow: 'hidden',
+  },
+  heroDotTR: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    top: -35,
+    right: -20,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  heroGridH: {
+    position: 'absolute',
+    left: '35%',
+    right: 0,
+    top: '65%',
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  heroLeft: { flex: 1, gap: 3 },
+  heroSuper: {
+    fontSize: 9,
+    fontFamily: 'Inter_700Bold',
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 1.6,
+  },
+  heroTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  heroStats: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  heroStatItem: {
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    minWidth: 48,
+  },
+  heroStatNum: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
+    lineHeight: 22,
+  },
+  heroStatLabel: {
+    fontSize: 8,
+    fontFamily: 'Inter_700Bold',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.8,
+  },
+
+  // ── Control area ──
+  controlArea: {
     paddingHorizontal: 16,
+    paddingTop: 14,
     paddingBottom: 8,
     gap: 10,
   },
@@ -373,13 +512,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 10,
+    elevation: 4,
   },
   filterBadge: {
     position: 'absolute',
@@ -405,10 +543,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  resultsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionAccent: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
+  },
   periodHint: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
   },
+
+  // ── Complaint card ──
   list: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -418,14 +568,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 3,
   },
-  sevStripe: {
-    width: 4,
-  },
+  sevStripe: { width: 5 },
   cardBody: {
     flex: 1,
     padding: 14,
@@ -437,9 +584,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   iconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -498,6 +645,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Inter_500Medium',
   },
+
+  // ── Empty ──
   empty: {
     alignItems: 'center',
     padding: 40,

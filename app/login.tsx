@@ -125,14 +125,13 @@ export default function LoginScreen() {
       await signIn(username.trim(), password);
       router.replace('/(main)/dashboard');
     } catch (e: unknown) {
-      console.error('Login error:', JSON.stringify(e));
-      let msg = 'Login failed. Please try again.';
-      if (e instanceof Error) {
-        msg = e.message;
-      } else if (typeof e === 'object' && e !== null) {
-        // Amplify throws plain objects with a 'message' field
-        msg = (e as any).message ?? (e as any).code ?? JSON.stringify(e);
-      }
+      // JSON.stringify(Error) always produces {} — log message explicitly
+      const errMsg = e instanceof Error ? e.message : JSON.stringify(e);
+      console.error('Login error:', errMsg);
+      const msg =
+        e instanceof Error
+          ? e.message
+          : 'Login failed. Please check your credentials and try again.';
       Alert.alert('Login Failed', msg);
     } finally {
       setIsLoading(false);

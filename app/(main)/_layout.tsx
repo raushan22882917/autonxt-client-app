@@ -1,5 +1,5 @@
-import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs, useRouter } from 'expo-router';
@@ -11,6 +11,8 @@ import { FleetHeader } from '@/components/FleetHeader';
 import { FleetLoader, FleetLoadingBar } from '@/components/FleetLoader';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
+import { DrawerProvider, useDrawer } from '@/context/DrawerContext';
+import { NavigationDrawerContent } from '@/components/NavigationDrawerContent';
 
 function NativeTabsLayout() {
   return (
@@ -165,6 +167,8 @@ function ClassicTabsLayout() {
   );
 }
 
+const { width: screenWidth } = Dimensions.get('window');
+
 function MainShell({ children }: { children: React.ReactNode }) {
   const colors = useColors();
   const {
@@ -176,18 +180,100 @@ function MainShell({ children }: { children: React.ReactNode }) {
     organization,
   } = useApp();
 
+  const { isDrawerOpen, closeDrawer } = useDrawer();
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: isDrawerOpen ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false, // Set to false to support borderRadius/scale animations on all devices
+    }).start();
+  }, [isDrawerOpen]);
+
+  const drawerWidth = Math.min(320, screenWidth * 0.78);
+
+  const drawerTranslateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [drawerWidth, 0],
+  });
+
+  const contentTranslateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -drawerWidth],
+  });
+
+  const contentScale = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.88],
+  });
+
+  const contentBorderRadius = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 24],
+  });
+
+  const dimOpacity = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.45],
+  });
+
   const plantProgress =
     plants.length > 0 ? loadedPlantIDs.length / plants.length : undefined;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <FleetHeader />
-      <FleetLoadingBar
-        visible={isLoadingMorePlants && !isLoading}
-        loaded={loadedPlantIDs.length}
-        total={plants.length}
-      />
-      <View style={{ flex: 1 }}>{children}</View>
+    <View style={{ flex: 1, backgroundColor: '#2A1A1D' }}>
+      {/* ── Side Drawer Panel ── */}
+      <Animated.View
+        style={[
+          styles.drawerContainer,
+          {
+            width: drawerWidth,
+            transform: [{ translateX: drawerTranslateX }],
+          },
+        ]}
+      >
+        <NavigationDrawerContent />
+      </Animated.View>
+
+      {/* ── Main Shiftable & Scalable Content View ── */}
+      <Animated.View
+        style={[
+          styles.mainContentContainer,
+          {
+            transform: [{ translateX: contentTranslateX }, { scale: contentScale }],
+            borderRadius: contentBorderRadius,
+            backgroundColor: colors.background,
+          },
+        ]}
+      >
+        <FleetHeader />
+        <FleetLoadingBar
+          visible={isLoadingMorePlants && !isLoading}
+          loaded={loadedPlantIDs.length}
+          total={plants.length}
+        />
+        <View style={{ flex: 1 }}>{children}</View>
+
+        {/* Dimming overlay when drawer is open */}
+        {isDrawerOpen && (
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={closeDrawer}
+          >
+            <Animated.View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: '#000000',
+                  opacity: dimOpacity,
+                },
+              ]}
+            />
+          </Pressable>
+        )}
+      </Animated.View>
+
       <FleetLoader
         visible={isLoading}
         title={organization?.name ? `Loading ${organization.name}` : 'Loading fleet'}
@@ -207,12 +293,36 @@ export default function MainLayout() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/login');
     }
   }, [user, isLoading, router]);
 
   const tabs = isLiquidGlassAvailable() ? <NativeTabsLayout /> : <ClassicTabsLayout />;
-  return <MainShell>{tabs}</MainShell>;
+  return (
+    <DrawerProvider>
+      <MainShell>{tabs}</MainShell>
+    </DrawerProvider>
+  );
 }
+
+const styles = StyleSheet.create({
+  drawerContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    zIndex: 1,
+    backgroundColor: '#2A1A1D',
+  },
+  mainContentContainer: {
+    flex: 1,
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 10, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+});
