@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Animated,
   Dimensions,
+  Easing,
   Platform,
   ScrollView,
   StyleSheet,
@@ -100,8 +102,8 @@ function GlassCard({
     <View
       style={[
         styles.glassCardFallback,
-        overflowVisible && { overflow: 'visible' },
         style,
+        overflowVisible ? { overflow: 'visible' } : { overflow: 'hidden' },
       ]}
     >
       {children}
@@ -122,6 +124,79 @@ function MetricGridCard({ label, value, icon }: { label: string; value: string; 
   );
 }
 
+
+
+// ── Reflection Glow Component ────────────────────────────────────────────────
+function ReflectionGlow({ size }: { size: number }) {
+  const anim = React.useRef(new Animated.Value(0)).current;
+  const { width: screenWidth } = Dimensions.get('window');
+  const scale = Math.max(0.75, Math.min(1.2, screenWidth / 412));
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [anim]);
+
+  const opacity = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.4, 0.7], // beautiful glowing base
+  });
+
+  const scaleX = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.95, 1.05],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        bottom: -size * 0.27, // shifted further downwards by another 0.20 cm to form a realistic floor reflection shadow
+        width: size,
+        height: size,
+        opacity,
+        transform: [{ scaleY: 0.26 }, { scaleX }, { translateX: -20 * scale }], // squashes and shifts the plate left
+      }}
+    >
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <Defs>
+          <RadialGradient
+            id="tireGlow"
+            cx="50%"
+            cy="50%"
+            rx="50%"
+            ry="50%"
+            fx="50%"
+            fy="50%"
+          >
+            {/* App brand color scheme: red (#be1e2d) and header maroon (#7E152F) with increased spread and opacity for the darker shade */}
+            <Stop offset="0%" stopColor="#be1e2d" stopOpacity={0.9} />
+            <Stop offset="30%" stopColor="#be1e2d" stopOpacity={0.65} />
+            <Stop offset="55%" stopColor="#7E152F" stopOpacity={0.45} />
+            <Stop offset="80%" stopColor="#7E152F" stopOpacity={0.25} />
+            <Stop offset="100%" stopColor="#7E152F" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill="url(#tireGlow)" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
 // ── Wellness-Style Hero Card: left info + gauge, right full-height image ──────
 function WellnessHeroCard({
   soc,
@@ -132,8 +207,15 @@ function WellnessHeroCard({
   displayTractor: Tractor;
   live: boolean;
 }) {
-  const gaugeSize = 140;
-  const strokeWidth = 10;
+  const { width: screenWidth } = Dimensions.get('window');
+  // Card margins: 16 on each side. Card padding: 18 on each side.
+  const cardContentWidth = screenWidth - 32 - 36;
+
+  // Smooth scale factor based on screenWidth relative to standard 412
+  const scale = Math.max(0.75, Math.min(1.2, screenWidth / 412));
+
+  const gaugeSize = Math.round(140 * scale);
+  const strokeWidth = Math.round(10 * scale);
   const radius = (gaugeSize - strokeWidth) / 2 - 4;
   const circumference = 2 * Math.PI * radius;
   const gapAngle = 40;
@@ -146,19 +228,30 @@ function WellnessHeroCard({
   const tractorLabel = displayTractor.displayName || displayTractor.tractorID;
   const idLabel = displayTractor.serialNumber || displayTractor.registerNumber || '';
 
+  // Responsive sizes for the right section
+  const rightWidth = Math.round(170 * scale);
+  const discSize = Math.round(210 * scale);
+  const tractorImgSize = Math.round(210 * scale);
+  const tractorImgHeight = Math.round(195 * scale); // taller vertically!
+
+  // Spacing helper to guarantee a uniform gap of exactly 14px between gauge and disc
+  const desiredGap = 14;
+  const rightShift = desiredGap + gaugeSize + (rightWidth + discSize) / 2 - cardContentWidth - 10 * scale;
+  const isSmallScreen = screenWidth < 380;
+
   return (
     <View style={styles.wellnessCard}>
 
       {/* ── LEFT: heading + gauge ── */}
       <View style={styles.wellnessLeft}>
 
-        {/* Big title — like "Wellness Score" */}
-        <Text style={styles.wellnessMainTitle} numberOfLines={2}>
-          {tractorLabel}
-        </Text>
-        {/* Sub-heading — like "Digital Wellness" */}
-        <Text style={styles.wellnessSubTitle} numberOfLines={1}>
+        {/* Big title — register number / serial number */}
+        <Text style={[styles.wellnessMainTitle, { fontSize: isSmallScreen ? 16 : 20 }]} numberOfLines={2}>
           {idLabel}
+        </Text>
+        {/* Sub-heading — tractor display name / ID */}
+        <Text style={styles.wellnessSubTitle} numberOfLines={1}>
+          {tractorLabel}
         </Text>
 
         {/* Section label */}
@@ -190,7 +283,7 @@ function WellnessHeroCard({
             />
           </Svg>
           <View style={styles.wellnessGaugeCenter}>
-            <Text style={[styles.wellnessSocValue, { color: socColor }]}>{soc}%</Text>
+            <Text style={[styles.wellnessSocValue, { color: socColor, fontSize: isSmallScreen ? 24 : 32 }]}>{soc}%</Text>
             <Text style={styles.wellnessSocLabel}>SOC</Text>
           </View>
         </View>
@@ -211,16 +304,10 @@ function WellnessHeroCard({
         </View>
       </View>
 
-      {/* ── RIGHT: 3D circle + full-height tractor image ── */}
-      <View style={styles.wellnessRight} pointerEvents="none">
-        {/* Glow aura */}
-        <View style={styles.wellnessCircleGlow} />
-        {/* 3D disc */}
-        <View style={styles.wellnessCircleOuter}>
-          <View style={styles.wellnessCircleInner} />
-        </View>
-        {/* Tractor image — top-to-bottom, overflows card */}
-        <View style={styles.wellnessTractorImg}>
+      {/* ── RIGHT: Tractor image with nested reflection glow ── */}
+      <View style={[styles.wellnessRight, { width: rightWidth, transform: [{ translateX: rightShift }] }]} pointerEvents="none">
+        {/* Tractor image */}
+        <View style={[styles.wellnessTractorImg, { width: tractorImgSize, height: tractorImgHeight, transform: [{ translateY: -30 * scale }] }]}>
           <TractorImage tractor={displayTractor} resizeMode="contain" colorful={false} />
         </View>
       </View>
@@ -501,7 +588,7 @@ export default function TractorDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Visual Section 1: Wellness-style Hero Card ── */}
-        <GlassCard style={styles.pulseCard} overflowVisible>
+        <GlassCard style={styles.pulseCard}>
           <WellnessHeroCard
             soc={Math.round(displayTractor.soc ?? 82)}
             displayTractor={displayTractor}
@@ -621,6 +708,14 @@ export default function TractorDetailScreen() {
                   loading={manualRuntimeLoading}
                   compact
                   fitWidth
+                  titleColor="#FFFFFF"
+                  titleBgGradient={[c.gradientEnd, '#be1e2d']}
+                  headerBgColor={c.redSoft}
+                  headerTextColor={c.primary}
+                  rowBgColorOdd={c.redSoft + '40'}
+                  rowBgColorEven={c.card}
+                  borderColor={c.redBorder}
+                  outerBorderColor={c.redBorder}
                 />
               </View>
             )}
@@ -637,6 +732,14 @@ export default function TractorDetailScreen() {
                     rows={tripSummaryRows(tripSummary)}
                     loading={analyticsLoading}
                     compact
+                    titleColor="#FFFFFF"
+                    titleBgGradient={[c.gradientEnd, '#be1e2d']}
+                    headerBgColor={c.redSoft}
+                    headerTextColor={c.primary}
+                    rowBgColorOdd={c.redSoft + '40'}
+                    rowBgColorEven={c.card}
+                    borderColor={c.redBorder}
+                    outerBorderColor={c.redBorder}
                   />
                 )}
                 {segmentsError ? (
@@ -658,6 +761,14 @@ export default function TractorDetailScreen() {
                     fitWidth
                     onRowPress={group => setSegmentSheet({ group, kind: 'trip' })}
                     showRowChevron
+                    titleColor="#FFFFFF"
+                    titleBgGradient={[c.gradientEnd, '#be1e2d']}
+                    headerBgColor={c.redSoft}
+                    headerTextColor={c.primary}
+                    rowBgColorOdd={c.redSoft + '40'}
+                    rowBgColorEven={c.card}
+                    borderColor={c.redBorder}
+                    outerBorderColor={c.redBorder}
                   />
                 )}
               </View>
@@ -675,6 +786,14 @@ export default function TractorDetailScreen() {
                     rows={chargeSummaryRows(chargeSummary)}
                     loading={analyticsLoading}
                     compact
+                    titleColor="#FFFFFF"
+                    titleBgGradient={[c.gradientEnd, '#be1e2d']}
+                    headerBgColor={c.redSoft}
+                    headerTextColor={c.primary}
+                    rowBgColorOdd={c.redSoft + '40'}
+                    rowBgColorEven={c.card}
+                    borderColor={c.redBorder}
+                    outerBorderColor={c.redBorder}
                   />
                 )}
                 {segmentsError ? (
@@ -696,6 +815,14 @@ export default function TractorDetailScreen() {
                     fitWidth
                     onRowPress={group => setSegmentSheet({ group, kind: 'charge' })}
                     showRowChevron
+                    titleColor="#FFFFFF"
+                    titleBgGradient={[c.gradientEnd, '#be1e2d']}
+                    headerBgColor={c.redSoft}
+                    headerTextColor={c.primary}
+                    rowBgColorOdd={c.redSoft + '40'}
+                    rowBgColorEven={c.card}
+                    borderColor={c.redBorder}
+                    outerBorderColor={c.redBorder}
                   />
                 )}
               </View>
@@ -712,6 +839,14 @@ export default function TractorDetailScreen() {
                   keyExtractor={(f, i) => `${f.startTime ?? 'f'}-${i}`}
                   emptyMessage="No controller faults recorded"
                   loading={analyticsLoading}
+                  titleColor="#FFFFFF"
+                  titleBgGradient={[c.gradientEnd, '#be1e2d']}
+                  headerBgColor={c.redSoft}
+                  headerTextColor={c.primary}
+                  rowBgColorOdd={c.redSoft + '40'}
+                  rowBgColorEven={c.card}
+                  borderColor={c.redBorder}
+                  outerBorderColor={c.redBorder}
                 />
                 <DataTable
                   title="Complaints & breakdowns"
@@ -722,6 +857,14 @@ export default function TractorDetailScreen() {
                   emptyMessage="No complaints for this tractor"
                   onRowPress={b => router.push(`/complaint/${encodeURIComponent(b.complaintID)}`)}
                   showRowChevron
+                  titleColor="#FFFFFF"
+                  titleBgGradient={[c.gradientEnd, '#be1e2d']}
+                  headerBgColor={c.redSoft}
+                  headerTextColor={c.primary}
+                  rowBgColorOdd={c.redSoft + '40'}
+                  rowBgColorEven={c.card}
+                  borderColor={c.redBorder}
+                  outerBorderColor={c.redBorder}
                 />
               </View>
             )}
@@ -875,7 +1018,7 @@ const styles = StyleSheet.create({
   // ── Wellness Hero Card ─────────────────────────────────────────────────────
   pulseCard: {
     alignItems: 'stretch',
-    overflow: 'visible',
+    overflow: 'hidden',
     paddingBottom: 0,
   },
   pulseNameRow: {
@@ -995,13 +1138,14 @@ const styles = StyleSheet.create({
   },
   wellnessRight: {
     width: 170,
-    marginRight: -18,
-    marginTop: -18,
-    marginBottom: -18,
+    marginRight: -6,
+    marginTop: 0,
+    marginBottom: 0,
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'visible',
+    transform: [{ translateX: -20 }],
   },
   wellnessCircleGlow: {
     position: 'absolute',
@@ -1043,10 +1187,8 @@ const styles = StyleSheet.create({
   },
   wellnessTractorImg: {
     position: 'absolute',
-    top: -24,
-    bottom: -24,
-    left: -20,
-    right: -20,
+    width: 160,
+    height: 160,
   },
 
   statusDot: {

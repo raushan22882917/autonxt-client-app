@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { LoadingRing } from '@/components/LoadingRing';
 import { useColors } from '@/hooks/useColors';
 
@@ -34,6 +35,15 @@ interface Props<T> {
   showRowChevron?: boolean;
   compact?: boolean;
   fitWidth?: boolean;
+  titleColor?: string;
+  headerBgColor?: string;
+  headerTextColor?: string;
+  rowBgColorEven?: string;
+  rowBgColorOdd?: string;
+  borderColor?: string;
+  outerBorderColor?: string;
+  titleBgGradient?: string[];
+  headerBgGradient?: string[];
 }
 
 export function DataTable<T>({
@@ -48,6 +58,15 @@ export function DataTable<T>({
   showRowChevron,
   compact = false,
   fitWidth = false,
+  titleColor,
+  headerBgColor,
+  headerTextColor,
+  rowBgColorEven,
+  rowBgColorOdd,
+  borderColor,
+  outerBorderColor,
+  titleBgGradient,
+  headerBgGradient,
 }: Props<T>) {
   const c = useColors();
 
@@ -86,32 +105,64 @@ export function DataTable<T>({
   const tableBody = (
     <View style={fitWidth ? styles.fitTable : undefined}>
       {/* Header row */}
-      <View
-        style={[
-          styles.headRow,
-          compact && styles.headRowCompact,
-          { backgroundColor: c.surfaceAlt, borderBottomColor: c.border },
-        ]}
-      >
-        {columns.map(col => (
-          <View
-            key={col.key}
-            style={[styles.headCell, compact && styles.headCellCompact, colStyle(col)]}
-          >
-            <Text
-              style={[
-                styles.headText,
-                compact && styles.headTextCompact,
-                { color: c.mutedForeground, textAlign: cellAlign(col.align) },
-              ]}
-              numberOfLines={1}
+      {headerBgGradient ? (
+        <LinearGradient
+          colors={headerBgGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[
+            styles.headRow,
+            compact && styles.headRowCompact,
+            { borderBottomColor: borderColor || c.border },
+          ]}
+        >
+          {columns.map(col => (
+            <View
+              key={col.key}
+              style={[styles.headCell, compact && styles.headCellCompact, colStyle(col)]}
             >
-              {col.label}
-            </Text>
-          </View>
-        ))}
-        {showRowChevron ? <View style={styles.chevronCol} /> : null}
-      </View>
+              <Text
+                style={[
+                  styles.headText,
+                  compact && styles.headTextCompact,
+                  { color: headerTextColor || c.mutedForeground, textAlign: cellAlign(col.align) },
+                ]}
+                numberOfLines={1}
+              >
+                {col.label}
+              </Text>
+            </View>
+          ))}
+          {showRowChevron ? <View style={styles.chevronCol} /> : null}
+        </LinearGradient>
+      ) : (
+        <View
+          style={[
+            styles.headRow,
+            compact && styles.headRowCompact,
+            { backgroundColor: headerBgColor || c.surfaceAlt, borderBottomColor: borderColor || c.border },
+          ]}
+        >
+          {columns.map(col => (
+            <View
+              key={col.key}
+              style={[styles.headCell, compact && styles.headCellCompact, colStyle(col)]}
+            >
+              <Text
+                style={[
+                  styles.headText,
+                  compact && styles.headTextCompact,
+                  { color: headerTextColor || c.mutedForeground, textAlign: cellAlign(col.align) },
+                ]}
+                numberOfLines={1}
+              >
+                {col.label}
+              </Text>
+            </View>
+          ))}
+          {showRowChevron ? <View style={styles.chevronCol} /> : null}
+        </View>
+      )}
 
       {/* Body rows */}
       {data.map((row, rowIndex) => {
@@ -122,6 +173,11 @@ export function DataTable<T>({
           ? { onPress: () => onRowPress(row, rowIndex), activeOpacity: 0.72 }
           : {};
 
+        const defaultRowBg = rowIndex % 2 === 1 ? c.surfaceAlt + '66' : c.card;
+        const customRowBg = rowIndex % 2 === 1 
+          ? (rowBgColorOdd || defaultRowBg) 
+          : (rowBgColorEven || defaultRowBg);
+
         return (
           <RowWrap
             key={key}
@@ -129,9 +185,9 @@ export function DataTable<T>({
               styles.bodyRow,
               compact && styles.bodyRowCompact,
               {
-                backgroundColor: rowIndex % 2 === 1 ? c.surfaceAlt + '66' : c.card,
+                backgroundColor: customRowBg,
                 borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
-                borderBottomColor: c.hairline,
+                borderBottomColor: borderColor || c.hairline,
               },
             ]}
             {...(rowProps as any)}
@@ -158,30 +214,58 @@ export function DataTable<T>({
   );
 
   return (
-    <View style={[styles.wrap, { backgroundColor: c.card, borderColor: c.border }]}>
+    <View style={[styles.wrap, { backgroundColor: c.card, borderColor: outerBorderColor || c.border }]}>
       {title ? (
-        <View
-          style={[
-            styles.headerBlock,
-            compact && styles.headerBlockCompact,
-            { borderBottomColor: c.hairline },
-          ]}
-        >
-          <Text style={[styles.title, compact && styles.titleCompact, { color: c.foreground }]}>
-            {title}
-          </Text>
-          {subtitle ? (
-            <Text
-              style={[
-                styles.subtitle,
-                compact && styles.subtitleCompact,
-                { color: c.mutedForeground },
-              ]}
-            >
-              {subtitle}
+        titleBgGradient ? (
+          <LinearGradient
+            colors={titleBgGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[
+              styles.headerBlock,
+              compact && styles.headerBlockCompact,
+              { borderBottomColor: borderColor || c.hairline },
+            ]}
+          >
+            <Text style={[styles.title, compact && styles.titleCompact, { color: titleColor || c.foreground }]}>
+              {title}
             </Text>
-          ) : null}
-        </View>
+            {subtitle ? (
+              <Text
+                style={[
+                  styles.subtitle,
+                  compact && styles.subtitleCompact,
+                  { color: titleColor ? titleColor + 'cc' : c.mutedForeground },
+                ]}
+              >
+                {subtitle}
+              </Text>
+            ) : null}
+          </LinearGradient>
+        ) : (
+          <View
+            style={[
+              styles.headerBlock,
+              compact && styles.headerBlockCompact,
+              { borderBottomColor: borderColor || c.hairline },
+            ]}
+          >
+            <Text style={[styles.title, compact && styles.titleCompact, { color: titleColor || c.foreground }]}>
+              {title}
+            </Text>
+            {subtitle ? (
+              <Text
+                style={[
+                  styles.subtitle,
+                  compact && styles.subtitleCompact,
+                  { color: c.mutedForeground },
+                ]}
+              >
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+        )
       ) : null}
 
       {loading ? (
@@ -214,12 +298,30 @@ export function KeyValueTable({
   rows,
   loading,
   compact,
+  titleColor,
+  headerBgColor,
+  headerTextColor,
+  rowBgColorEven,
+  rowBgColorOdd,
+  borderColor,
+  outerBorderColor,
+  titleBgGradient,
+  headerBgGradient,
 }: {
   title?: string;
   subtitle?: string;
   rows: { label: string; value: string }[];
   loading?: boolean;
   compact?: boolean;
+  titleColor?: string;
+  headerBgColor?: string;
+  headerTextColor?: string;
+  rowBgColorEven?: string;
+  rowBgColorOdd?: string;
+  borderColor?: string;
+  outerBorderColor?: string;
+  titleBgGradient?: string[];
+  headerBgGradient?: string[];
 }) {
   return (
     <DataTable
@@ -235,6 +337,15 @@ export function KeyValueTable({
       loading={loading}
       compact={compact}
       fitWidth
+      titleColor={titleColor}
+      headerBgColor={headerBgColor}
+      headerTextColor={headerTextColor}
+      rowBgColorEven={rowBgColorEven}
+      rowBgColorOdd={rowBgColorOdd}
+      borderColor={borderColor}
+      outerBorderColor={outerBorderColor}
+      titleBgGradient={titleBgGradient}
+      headerBgGradient={headerBgGradient}
     />
   );
 }
