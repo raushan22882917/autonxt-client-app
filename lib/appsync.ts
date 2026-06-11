@@ -851,20 +851,76 @@ export async function fetchReportFleetData(
   plants: Plant[],
   plantID?: string | null
 ): Promise<{ tractors: Tractor[]; complaints: Complaint[] }> {
-  const targetPlants = plantID ? plants.filter(p => p.plantID === plantID) : plants;
-  const slices = await Promise.all(
-    targetPlants.map(p => fetchPlantFleetBasic(orgID, plants, p.plantID))
-  );
-  const tractorMap = new Map<string, Tractor>();
-  const complaintMap = new Map<string, Complaint>();
-  for (const slice of slices) {
-    for (const t of slice.tractors) tractorMap.set(t.tractorID, t);
-    for (const c of slice.complaints) complaintMap.set(c.complaintID, c);
+  if (!plantID) {
+    const slices = await fetchOrgFleetBasic(orgID, plants);
+    const tractorMap = new Map<string, Tractor>();
+    const complaintMap = new Map<string, Complaint>();
+    for (const slice of slices) {
+      for (const t of slice.tractors) tractorMap.set(t.tractorID, t);
+      for (const c of slice.complaints) complaintMap.set(c.complaintID, c);
+    }
+    return {
+      tractors: Array.from(tractorMap.values()),
+      complaints: Array.from(complaintMap.values()),
+    };
   }
+
+  const slice = await fetchPlantFleetBasic(orgID, plants, plantID);
   return {
-    tractors: Array.from(tractorMap.values()),
-    complaints: Array.from(complaintMap.values()),
+    tractors: slice.tractors,
+    complaints: slice.complaints,
   };
+}
+
+export async function fetchOrgFleetBasic(
+  orgID: string,
+  plants: Plant[]
+): Promise<PlantFleetSlice[]> {
+  const [rawTractors, rawComplaints] = await Promise.all([
+    fetchTractorsByOrg(orgID),
+    fetchComplaintsByOrg(orgID),
+  ]);
+
+  const tractorsByPlant = new Map<string, RawTractor[]>();
+  const complaintsByPlant = new Map<string, RawComplaint[]>();
+
+  for (const plant of plants) {
+    tractorsByPlant.set(plant.plantID, []);
+    complaintsByPlant.set(plant.plantID, []);
+  }
+
+  for (const t of rawTractors) {
+    if (t.plantID) {
+      if (!tractorsByPlant.has(t.plantID)) {
+        tractorsByPlant.set(t.plantID, []);
+      }
+      tractorsByPlant.get(t.plantID)!.push(t);
+    }
+  }
+
+  for (const c of rawComplaints) {
+    if (c.plantID) {
+      if (!complaintsByPlant.has(c.plantID)) {
+        complaintsByPlant.set(c.plantID, []);
+      }
+      complaintsByPlant.get(c.plantID)!.push(c);
+    }
+  }
+
+  return plants.map(plant => {
+    const slice = buildFleetSlice(
+      orgID,
+      plants,
+      tractorsByPlant.get(plant.plantID) || [],
+      complaintsByPlant.get(plant.plantID) || [],
+      [],
+      new Map()
+    );
+    return {
+      plantID: plant.plantID,
+      ...slice,
+    };
+  });
 }
 
 /** Fast path: tractors + complaints for one plant (no telemetry/runtime fan-out). */
@@ -1075,17 +1131,28 @@ export async function fetchTractorById(
   );
 }
 
+const analyticsCache = new Map<string, TractorAnalytics>();
+
 export async function fetchTractorAnalytics(
   tractorID: string,
   period: AnalyticsPeriod = 'GLOBAL',
-  timeSegment = 'GLOBAL'
+  timeSegment = 'GLOBAL',
+  forceRefresh = false
 ): Promise<TractorAnalytics | null> {
+  const cacheKey = `${tractorID}-${period}-${timeSegment}`;
+  if (!forceRefresh && analyticsCache.has(cacheKey)) {
+    return analyticsCache.get(cacheKey)!;
+  }
   const data = await gqlQuery<GetAnalyticsQuery>(getAnalyticsQuery, {
     tractorID,
     PeriodType: period as PeriodType,
     timeSegment,
   });
-  return data.getAnalytics ?? null;
+  const res = data.getAnalytics ?? null;
+  if (res) {
+    analyticsCache.set(cacheKey, res);
+  }
+  return res;
 }
 
 /** Same device keys as manual runtime: logger first, then VIN. */
@@ -1189,23 +1256,43 @@ export async function fetchTractorTripsChargeData(
 }
 
 /** Sum GLOBAL `cumulative.totalCostSavings` across tractors (AppSync getAnalytics). */
+/** Sum GLOBAL `cumulative.totalCostSavings` and `cumulative.totalTreesSaved` across tractors (AppSync getAnalytics). */
+export async function fetchFleetImpactMetrics(
+  tractorIDs: string[],
+  concurrency = 6,
+  forceRefresh = false
+): Promise<{ costSavings: number; treesSaved: number }> {
+  const map = await fetchTractorsAnalytics(tractorIDs, concurrency, forceRefresh);
+  let costSavings = 0;
+  let treesSaved = 0;
+  for (const a of map.values()) {
+    const cost = a?.cumulative?.totalCostSavings;
+    if (cost != null && !Number.isNaN(cost)) costSavings += cost;
+
+    const trees = a?.cumulative?.totalTreesSaved;
+    if (trees != null && !Number.isNaN(trees)) treesSaved += trees;
+  }
+  return {
+    costSavings: Math.round(costSavings),
+    treesSaved: Math.round(treesSaved * 10) / 10,
+  };
+}
+
+/** Sum GLOBAL `cumulative.totalCostSavings` across tractors (AppSync getAnalytics). */
 export async function fetchFleetTotalCostSavings(
   tractorIDs: string[],
-  concurrency = 6
+  concurrency = 6,
+  forceRefresh = false
 ): Promise<number> {
-  const map = await fetchTractorsAnalytics(tractorIDs, concurrency);
-  let total = 0;
-  for (const a of map.values()) {
-    const v = a?.cumulative?.totalCostSavings;
-    if (v != null && !Number.isNaN(v)) total += v;
-  }
-  return Math.round(total);
+  const metrics = await fetchFleetImpactMetrics(tractorIDs, concurrency, forceRefresh);
+  return metrics.costSavings;
 }
 
 /** Batch fetch GLOBAL analytics (trips / charges buckets) for many tractors. */
 export async function fetchTractorsAnalytics(
   tractorIDs: string[],
-  concurrency = 6
+  concurrency = 6,
+  forceRefresh = false
 ): Promise<Map<string, TractorAnalytics | null>> {
   const unique = [...new Set(tractorIDs.filter(Boolean))];
   const result = new Map<string, TractorAnalytics | null>();
@@ -1213,7 +1300,7 @@ export async function fetchTractorsAnalytics(
 
   await runPool(unique, concurrency, async tractorID => {
     try {
-      result.set(tractorID, await fetchTractorAnalytics(tractorID));
+      result.set(tractorID, await fetchTractorAnalytics(tractorID, 'GLOBAL', 'GLOBAL', forceRefresh));
     } catch {
       result.set(tractorID, null);
     }

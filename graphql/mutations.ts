@@ -258,71 +258,6 @@ export const notifyPlantTechnicalSupervisor =
     APITypes.NotifyPlantTechnicalSupervisorMutationVariables,
     APITypes.NotifyPlantTechnicalSupervisorMutation
   >;
-export const connectToUSBDevice =
-  /* GraphQL */ `mutation ConnectToUSBDevice($deviceName: String!, $baudRate: Int) {
-  connectToUSBDevice(deviceName: $deviceName, baudRate: $baudRate) {
-    success
-    message
-    deviceName
-    __typename
-  }
-}
-` as GeneratedMutation<
-    APITypes.ConnectToUSBDeviceMutationVariables,
-    APITypes.ConnectToUSBDeviceMutation
-  >;
-export const disconnectFromUSBDevice =
-  /* GraphQL */ `mutation DisconnectFromUSBDevice($deviceName: String!) {
-  disconnectFromUSBDevice(deviceName: $deviceName) {
-    success
-    message
-    deviceName
-    __typename
-  }
-}
-` as GeneratedMutation<
-    APITypes.DisconnectFromUSBDeviceMutationVariables,
-    APITypes.DisconnectFromUSBDeviceMutation
-  >;
-export const writeToUSBDevice =
-  /* GraphQL */ `mutation WriteToUSBDevice($deviceName: String!, $data: String!) {
-  writeToUSBDevice(deviceName: $deviceName, data: $data) {
-    success
-    message
-    deviceName
-    __typename
-  }
-}
-` as GeneratedMutation<
-    APITypes.WriteToUSBDeviceMutationVariables,
-    APITypes.WriteToUSBDeviceMutation
-  >;
-export const connectAllUSBDevices =
-  /* GraphQL */ `mutation ConnectAllUSBDevices($baudRate: Int) {
-  connectAllUSBDevices(baudRate: $baudRate) {
-    success
-    message
-    deviceName
-    __typename
-  }
-}
-` as GeneratedMutation<
-    APITypes.ConnectAllUSBDevicesMutationVariables,
-    APITypes.ConnectAllUSBDevicesMutation
-  >;
-export const disconnectAllUSBDevices =
-  /* GraphQL */ `mutation DisconnectAllUSBDevices {
-  disconnectAllUSBDevices {
-    success
-    message
-    deviceName
-    __typename
-  }
-}
-` as GeneratedMutation<
-    APITypes.DisconnectAllUSBDevicesMutationVariables,
-    APITypes.DisconnectAllUSBDevicesMutation
-  >;
 export const createERPItem =
   /* GraphQL */ `mutation CreateERPItem($input: CreateERPItemInput!) {
   createERPItem(input: $input) {
@@ -7446,4 +7381,191 @@ export const universalManageGroupMembership =
 ` as GeneratedMutation<
     APITypes.UniversalManageGroupMembershipMutationVariables,
     APITypes.UniversalManageGroupMembershipMutation
+  >;
+export const createBooking =
+  /* GraphQL */ `mutation CreateBooking($input: CreateBookingInput!) {
+  createBooking(input: $input) {
+    bookingID
+    firstName
+    lastName
+    email
+    phoneNumber
+    city
+    country
+    state
+    subject
+    message
+    visitType
+    preferredDate
+    preferredTime
+    status
+    createdAt
+    updatedAt
+    assignedTo
+    notes
+    orgID
+    plantID
+    __typename
+  }
+}
+` as GeneratedMutation<
+    APITypes.CreateBookingMutationVariables,
+    APITypes.CreateBookingMutation
+  >;
+export const updateBooking =
+  /* GraphQL */ `mutation UpdateBooking($input: UpdateBookingInput!) {
+  updateBooking(input: $input) {
+    bookingID
+    firstName
+    lastName
+    email
+    phoneNumber
+    city
+    country
+    state
+    subject
+    message
+    visitType
+    preferredDate
+    preferredTime
+    status
+    createdAt
+    updatedAt
+    assignedTo
+    notes
+    orgID
+    plantID
+    __typename
+  }
+}
+` as GeneratedMutation<
+    APITypes.UpdateBookingMutationVariables,
+    APITypes.UpdateBookingMutation
+  >;
+export const deleteBooking =
+  /* GraphQL */ `mutation DeleteBooking($bookingID: ID!) {
+  deleteBooking(bookingID: $bookingID) {
+    bookingID
+    firstName
+    lastName
+    email
+    phoneNumber
+    city
+    country
+    state
+    subject
+    message
+    visitType
+    preferredDate
+    preferredTime
+    status
+    createdAt
+    updatedAt
+    assignedTo
+    notes
+    orgID
+    plantID
+    __typename
+  }
+}
+` as GeneratedMutation<
+    APITypes.DeleteBookingMutationVariables,
+    APITypes.DeleteBookingMutation
+  >;
+export const cancelBooking =
+  /* GraphQL */ `mutation CancelBooking($bookingID: ID!, $reason: String) {
+  cancelBooking(bookingID: $bookingID, reason: $reason) {
+    bookingID
+    firstName
+    lastName
+    email
+    phoneNumber
+    city
+    country
+    state
+    subject
+    message
+    visitType
+    preferredDate
+    preferredTime
+    status
+    createdAt
+    updatedAt
+    assignedTo
+    notes
+    orgID
+    plantID
+    __typename
+  }
+}
+` as GeneratedMutation<
+    APITypes.CancelBookingMutationVariables,
+    APITypes.CancelBookingMutation
+  >;
+export const rescheduleBooking = /* GraphQL */ `mutation RescheduleBooking(
+  $bookingID: ID!
+  $newDate: AWSDate!
+  $newTime: String
+) {
+  rescheduleBooking(
+    bookingID: $bookingID
+    newDate: $newDate
+    newTime: $newTime
+  ) {
+    bookingID
+    firstName
+    lastName
+    email
+    phoneNumber
+    city
+    country
+    state
+    subject
+    message
+    visitType
+    preferredDate
+    preferredTime
+    status
+    createdAt
+    updatedAt
+    assignedTo
+    notes
+    orgID
+    plantID
+    __typename
+  }
+}
+` as GeneratedMutation<
+  APITypes.RescheduleBookingMutationVariables,
+  APITypes.RescheduleBookingMutation
+>;
+export const assignBooking =
+  /* GraphQL */ `mutation AssignBooking($bookingID: ID!, $assignedTo: ID!) {
+  assignBooking(bookingID: $bookingID, assignedTo: $assignedTo) {
+    bookingID
+    firstName
+    lastName
+    email
+    phoneNumber
+    city
+    country
+    state
+    subject
+    message
+    visitType
+    preferredDate
+    preferredTime
+    status
+    createdAt
+    updatedAt
+    assignedTo
+    notes
+    orgID
+    plantID
+    __typename
+  }
+}
+` as GeneratedMutation<
+    APITypes.AssignBookingMutationVariables,
+    APITypes.AssignBookingMutation
   >;

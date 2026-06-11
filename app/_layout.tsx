@@ -28,10 +28,10 @@ import { AuthProvider } from "@/context/AuthContext";
 import { AppProvider } from "@/context/AppContext";
 import { LogBox } from 'react-native';
 
-import { configureAmplify } from '@/lib/amplify';
+import { initAuth } from '@/features/auth/initAuth';
 
 LogBox.ignoreAllLogs();
-configureAmplify();
+initAuth();
 
 SplashScreen.preventAutoHideAsync();
 

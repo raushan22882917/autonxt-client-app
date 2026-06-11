@@ -15,6 +15,7 @@ import {
   fetchAllUsers,
   fetchPlantFleetData,
   fetchPlantFleetBasic,
+  fetchOrgFleetBasic,
   enrichPlantFleet,
   refreshTractorsTelemetry,
   isCommissionedTractor,
@@ -171,45 +172,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const loadRemainingPlants = useCallback(
-    async (org: Organization, plantList: Plant[], remaining: Plant[]) => {
-      if (remaining.length === 0) return;
 
-      setIsLoadingMorePlants(true);
-      setLoadingMessage(`Loading ${remaining.length} plants…`);
-
-      try {
-        const basics = await Promise.all(
-          remaining.map(p => fetchPlantFleetBasic(org.orgID, plantList, p.plantID))
-        );
-        if (cancelledRef.current) return;
-
-        for (const slice of basics) {
-          applySlice(slice);
-        }
-
-        const tractorsToEnrich = basics
-          .flatMap(s => s.tractors)
-          .filter(isCommissionedTractor);
-        if (tractorsToEnrich.length === 0) return;
-
-        setLoadingMessage('Syncing live telemetry…');
-        const enriched = await enrichPlantFleet(org.orgID, plantList, tractorsToEnrich);
-        if (cancelledRef.current) return;
-        applyEnrichment(enriched);
-      } catch (e: unknown) {
-        if (!cancelledRef.current) {
-          console.warn('Failed to load remaining plants:', e);
-        }
-      } finally {
-        if (!cancelledRef.current) {
-          setIsLoadingMorePlants(false);
-          setLoadingMessage('');
-        }
-      }
-    },
-    [applySlice, applyEnrichment]
-  );
 
   const loadPlant = useCallback(
     async (plantID: string, options?: { priority?: boolean }) => {
@@ -302,23 +265,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const firstPlant = fetchedPlants[0];
-        setLoadingMessage(`Loading tractors for ${firstPlant.name}…`);
+        setLoadingMessage('Loading fleet data…');
         setIsLoadingMorePlants(true);
-        const firstSlice = await fetchPlantFleetData(org.orgID, fetchedPlants, firstPlant.plantID);
+        const slices = await fetchOrgFleetBasic(org.orgID, fetchedPlants);
         if (cancelledRef.current) return;
 
-        applySlice(firstSlice);
+        for (const slice of slices) {
+          applySlice(slice);
+        }
         setIsLoading(false);
 
-        const remainingPlants = fetchedPlants.slice(1);
-        if (remainingPlants.length > 0 && !cancelledRef.current) {
-          await loadRemainingPlants(org, fetchedPlants, remainingPlants);
-        } else if (!cancelledRef.current) {
-          setIsLoadingMorePlants(false);
+        const allTractorsToEnrich = slices
+          .flatMap(s => s.tractors)
+          .filter(isCommissionedTractor);
+
+        if (allTractorsToEnrich.length > 0) {
+          setLoadingMessage('Syncing live telemetry…');
+          const enriched = await enrichPlantFleet(org.orgID, fetchedPlants, allTractorsToEnrich);
+          if (cancelledRef.current) return;
+          applyEnrichment(enriched);
         }
+
+        setIsLoadingMorePlants(false);
+        setLoadingMessage('');
       } catch (e: unknown) {
         if (!cancelledRef.current) {
+          console.error('AppContext run failed:', e);
           const msg = e instanceof Error ? e.message : 'Failed to load data';
           setError(msg);
           setIsLoading(false);
@@ -332,7 +304,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelledRef.current = true;
     };
-  }, [user, isAdmin, tick, applySlice, loadRemainingPlants]);
+  }, [user, isAdmin, tick, applySlice]);
 
   // When user picks a plant that is not loaded yet, fetch it next.
   useEffect(() => {

@@ -23,9 +23,9 @@ export const getOrganization =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetOrganizationQueryVariables,
-    APITypes.GetOrganizationQuery
-  >;
+  APITypes.GetOrganizationQueryVariables,
+  APITypes.GetOrganizationQuery
+>;
 export const listOrganizations = /* GraphQL */ `query ListOrganizations {
   listOrganizations {
     orgID
@@ -84,9 +84,9 @@ export const listPlantsByOrganization =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListPlantsByOrganizationQueryVariables,
-    APITypes.ListPlantsByOrganizationQuery
-  >;
+  APITypes.ListPlantsByOrganizationQueryVariables,
+  APITypes.ListPlantsByOrganizationQuery
+>;
 export const getUser = /* GraphQL */ `query GetUser($id: ID!) {
   getUser(id: $id) {
     id
@@ -151,9 +151,9 @@ export const listUsersByType =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListUsersByTypeQueryVariables,
-    APITypes.ListUsersByTypeQuery
-  >;
+  APITypes.ListUsersByTypeQueryVariables,
+  APITypes.ListUsersByTypeQuery
+>;
 export const listUsersByTypeAndGroup =
   /* GraphQL */ `query ListUsersByTypeAndGroup($userType: UserType!, $groupName: String!) {
   listUsersByTypeAndGroup(userType: $userType, groupName: $groupName) {
@@ -175,9 +175,9 @@ export const listUsersByTypeAndGroup =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListUsersByTypeAndGroupQueryVariables,
-    APITypes.ListUsersByTypeAndGroupQuery
-  >;
+  APITypes.ListUsersByTypeAndGroupQueryVariables,
+  APITypes.ListUsersByTypeAndGroupQuery
+>;
 export const listAllUsers = /* GraphQL */ `query ListAllUsers {
   listAllUsers {
     id
@@ -222,9 +222,9 @@ export const getCognitoUser =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetCognitoUserQueryVariables,
-    APITypes.GetCognitoUserQuery
-  >;
+  APITypes.GetCognitoUserQueryVariables,
+  APITypes.GetCognitoUserQuery
+>;
 export const listCognitoUsers =
   /* GraphQL */ `query ListCognitoUsers($limit: Int, $nextToken: String) {
   listCognitoUsers(limit: $limit, nextToken: $nextToken) {
@@ -245,9 +245,9 @@ export const listCognitoUsers =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListCognitoUsersQueryVariables,
-    APITypes.ListCognitoUsersQuery
-  >;
+  APITypes.ListCognitoUsersQueryVariables,
+  APITypes.ListCognitoUsersQuery
+>;
 export const searchCognitoUsers =
   /* GraphQL */ `query SearchCognitoUsers($filter: String!, $limit: Int, $nextToken: String) {
   searchCognitoUsers(filter: $filter, limit: $limit, nextToken: $nextToken) {
@@ -268,9 +268,9 @@ export const searchCognitoUsers =
   }
 }
 ` as GeneratedQuery<
-    APITypes.SearchCognitoUsersQueryVariables,
-    APITypes.SearchCognitoUsersQuery
-  >;
+  APITypes.SearchCognitoUsersQueryVariables,
+  APITypes.SearchCognitoUsersQuery
+>;
 export const listAvailableUsers =
   /* GraphQL */ `query ListAvailableUsers($limit: Int, $nextToken: String) {
   listAvailableUsers(limit: $limit, nextToken: $nextToken) {
@@ -291,9 +291,9 @@ export const listAvailableUsers =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAvailableUsersQueryVariables,
-    APITypes.ListAvailableUsersQuery
-  >;
+  APITypes.ListAvailableUsersQueryVariables,
+  APITypes.ListAvailableUsersQuery
+>;
 export const listUsersByStatus =
   /* GraphQL */ `query ListUsersByStatus($status: String!, $limit: Int, $nextToken: String) {
   listUsersByStatus(status: $status, limit: $limit, nextToken: $nextToken) {
@@ -314,9 +314,9 @@ export const listUsersByStatus =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListUsersByStatusQueryVariables,
-    APITypes.ListUsersByStatusQuery
-  >;
+  APITypes.ListUsersByStatusQueryVariables,
+  APITypes.ListUsersByStatusQuery
+>;
 export const getCognitoGroup =
   /* GraphQL */ `query GetCognitoGroup($groupName: String!) {
   getCognitoGroup(groupName: $groupName) {
@@ -331,9 +331,9 @@ export const getCognitoGroup =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetCognitoGroupQueryVariables,
-    APITypes.GetCognitoGroupQuery
-  >;
+  APITypes.GetCognitoGroupQueryVariables,
+  APITypes.GetCognitoGroupQuery
+>;
 export const listCognitoGroups = /* GraphQL */ `query ListCognitoGroups {
   listCognitoGroups {
     groupName
@@ -378,9 +378,9 @@ export const listUsersInCognitoGroup =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListUsersInCognitoGroupQueryVariables,
-    APITypes.ListUsersInCognitoGroupQuery
-  >;
+  APITypes.ListUsersInCognitoGroupQueryVariables,
+  APITypes.ListUsersInCognitoGroupQuery
+>;
 export const listGroupsForCognitoUser =
   /* GraphQL */ `query ListGroupsForCognitoUser($username: String!) {
   listGroupsForCognitoUser(username: $username) {
@@ -395,9 +395,9 @@ export const listGroupsForCognitoUser =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListGroupsForCognitoUserQueryVariables,
-    APITypes.ListGroupsForCognitoUserQuery
-  >;
+  APITypes.ListGroupsForCognitoUserQueryVariables,
+  APITypes.ListGroupsForCognitoUserQuery
+>;
 export const debugCognitoUser =
   /* GraphQL */ `query DebugCognitoUser($email: String!) {
   debugCognitoUser(email: $email) {
@@ -434,9 +434,9 @@ export const debugCognitoUser =
   }
 }
 ` as GeneratedQuery<
-    APITypes.DebugCognitoUserQueryVariables,
-    APITypes.DebugCognitoUserQuery
-  >;
+  APITypes.DebugCognitoUserQueryVariables,
+  APITypes.DebugCognitoUserQuery
+>;
 export const debugEnvironment = /* GraphQL */ `query DebugEnvironment {
   debugEnvironment {
     success
@@ -486,9 +486,9 @@ export const listUsersByOffice =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListUsersByOfficeQueryVariables,
-    APITypes.ListUsersByOfficeQuery
-  >;
+  APITypes.ListUsersByOfficeQueryVariables,
+  APITypes.ListUsersByOfficeQuery
+>;
 export const listUsersWithoutOffice =
   /* GraphQL */ `query ListUsersWithoutOffice($orgID: ID, $nextToken: String) {
   listUsersWithoutOffice(orgID: $orgID, nextToken: $nextToken) {
@@ -514,9 +514,9 @@ export const listUsersWithoutOffice =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListUsersWithoutOfficeQueryVariables,
-    APITypes.ListUsersWithoutOfficeQuery
-  >;
+  APITypes.ListUsersWithoutOfficeQueryVariables,
+  APITypes.ListUsersWithoutOfficeQuery
+>;
 export const listUsersByCognitoGroup =
   /* GraphQL */ `query ListUsersByCognitoGroup($groupName: String!, $nextToken: String) {
   listUsersByCognitoGroup(groupName: $groupName, nextToken: $nextToken) {
@@ -537,9 +537,9 @@ export const listUsersByCognitoGroup =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListUsersByCognitoGroupQueryVariables,
-    APITypes.ListUsersByCognitoGroupQuery
-  >;
+  APITypes.ListUsersByCognitoGroupQueryVariables,
+  APITypes.ListUsersByCognitoGroupQuery
+>;
 export const listTractors = /* GraphQL */ `query ListTractors {
   listTractors {
     vin
@@ -552,6 +552,10 @@ export const listTractors = /* GraphQL */ `query ListTractors {
     loggerID
     currentImplement
     serviceStatus
+    armLength
+    dofChargeStatus
+    armLength
+    dofChargeStatus
     user
     minValue
     maxValue
@@ -617,6 +621,8 @@ export const listTractorsByUser =
     loggerID
     currentImplement
     serviceStatus
+    armLength
+    dofChargeStatus
     user
     minValue
     maxValue
@@ -666,9 +672,9 @@ export const listTractorsByUser =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListTractorsByUserQueryVariables,
-    APITypes.ListTractorsByUserQuery
-  >;
+  APITypes.ListTractorsByUserQueryVariables,
+  APITypes.ListTractorsByUserQuery
+>;
 export const listTractorsByPlant =
   /* GraphQL */ `query ListTractorsByPlant($plantID: ID!) {
   listTractorsByPlant(plantID: $plantID) {
@@ -682,6 +688,8 @@ export const listTractorsByPlant =
     loggerID
     currentImplement
     serviceStatus
+    armLength
+    dofChargeStatus
     user
     minValue
     maxValue
@@ -731,9 +739,9 @@ export const listTractorsByPlant =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListTractorsByPlantQueryVariables,
-    APITypes.ListTractorsByPlantQuery
-  >;
+  APITypes.ListTractorsByPlantQueryVariables,
+  APITypes.ListTractorsByPlantQuery
+>;
 export const listTractorsByOrg =
   /* GraphQL */ `query ListTractorsByOrg($orgID: ID!) {
   listTractorsByOrg(orgID: $orgID) {
@@ -747,6 +755,8 @@ export const listTractorsByOrg =
     loggerID
     currentImplement
     serviceStatus
+    armLength
+    dofChargeStatus
     user
     minValue
     maxValue
@@ -796,9 +806,9 @@ export const listTractorsByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListTractorsByOrgQueryVariables,
-    APITypes.ListTractorsByOrgQuery
-  >;
+  APITypes.ListTractorsByOrgQueryVariables,
+  APITypes.ListTractorsByOrgQuery
+>;
 export const getTractor = /* GraphQL */ `query GetTractor($vin: String!) {
   getTractor(vin: $vin) {
     vin
@@ -811,6 +821,16 @@ export const getTractor = /* GraphQL */ `query GetTractor($vin: String!) {
     loggerID
     currentImplement
     serviceStatus
+    armLength
+    dofChargeStatus
+    user
+    model
+    color
+    loggerID
+    currentImplement
+    serviceStatus
+    armLength
+    dofChargeStatus
     user
     minValue
     maxValue
@@ -891,9 +911,9 @@ export const listTractorDocuments =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListTractorDocumentsQueryVariables,
-    APITypes.ListTractorDocumentsQuery
-  >;
+  APITypes.ListTractorDocumentsQueryVariables,
+  APITypes.ListTractorDocumentsQuery
+>;
 export const getTelemetryByTractor =
   /* GraphQL */ `query GetTelemetryByTractor($loggerID: String!) {
   getTelemetryByTractor(loggerID: $loggerID) {
@@ -943,9 +963,9 @@ export const getTelemetryByTractor =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetTelemetryByTractorQueryVariables,
-    APITypes.GetTelemetryByTractorQuery
-  >;
+  APITypes.GetTelemetryByTractorQueryVariables,
+  APITypes.GetTelemetryByTractorQuery
+>;
 export const getRuntimeHourByTractor =
   /* GraphQL */ `query GetRuntimeHourByTractor($loggerID: String!) {
   getRuntimeHourByTractor(loggerID: $loggerID) {
@@ -995,9 +1015,9 @@ export const getRuntimeHourByTractor =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetRuntimeHourByTractorQueryVariables,
-    APITypes.GetRuntimeHourByTractorQuery
-  >;
+  APITypes.GetRuntimeHourByTractorQueryVariables,
+  APITypes.GetRuntimeHourByTractorQuery
+>;
 export const getEarliestRuntimeHourByTractorDate =
   /* GraphQL */ `query GetEarliestRuntimeHourByTractorDate(
   $loggerID: String!
@@ -1053,9 +1073,9 @@ export const getEarliestRuntimeHourByTractorDate =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetEarliestRuntimeHourByTractorDateQueryVariables,
-    APITypes.GetEarliestRuntimeHourByTractorDateQuery
-  >;
+  APITypes.GetEarliestRuntimeHourByTractorDateQueryVariables,
+  APITypes.GetEarliestRuntimeHourByTractorDateQuery
+>;
 export const getLatestRuntimeHourByTractorDate =
   /* GraphQL */ `query GetLatestRuntimeHourByTractorDate(
   $loggerID: String!
@@ -1111,9 +1131,9 @@ export const getLatestRuntimeHourByTractorDate =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetLatestRuntimeHourByTractorDateQueryVariables,
-    APITypes.GetLatestRuntimeHourByTractorDateQuery
-  >;
+  APITypes.GetLatestRuntimeHourByTractorDateQueryVariables,
+  APITypes.GetLatestRuntimeHourByTractorDateQuery
+>;
 export const getFilteredTelemetryByTractor =
   /* GraphQL */ `query GetFilteredTelemetryByTractor(
   $loggerID: String!
@@ -1177,9 +1197,9 @@ export const getFilteredTelemetryByTractor =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetFilteredTelemetryByTractorQueryVariables,
-    APITypes.GetFilteredTelemetryByTractorQuery
-  >;
+  APITypes.GetFilteredTelemetryByTractorQueryVariables,
+  APITypes.GetFilteredTelemetryByTractorQuery
+>;
 export const getLatestTelemetryByBatteryIThreshold =
   /* GraphQL */ `query GetLatestTelemetryByBatteryIThreshold(
   $loggerID: String!
@@ -1235,9 +1255,9 @@ export const getLatestTelemetryByBatteryIThreshold =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetLatestTelemetryByBatteryIThresholdQueryVariables,
-    APITypes.GetLatestTelemetryByBatteryIThresholdQuery
-  >;
+  APITypes.GetLatestTelemetryByBatteryIThresholdQueryVariables,
+  APITypes.GetLatestTelemetryByBatteryIThresholdQuery
+>;
 export const getManualRuntimeEntry =
   /* GraphQL */ `query GetManualRuntimeEntry($loggerID: String!, $date: String!) {
   getManualRuntimeEntry(loggerID: $loggerID, date: $date) {
@@ -1254,9 +1274,9 @@ export const getManualRuntimeEntry =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetManualRuntimeEntryQueryVariables,
-    APITypes.GetManualRuntimeEntryQuery
-  >;
+  APITypes.GetManualRuntimeEntryQueryVariables,
+  APITypes.GetManualRuntimeEntryQuery
+>;
 export const getManualRuntimeByDate =
   /* GraphQL */ `query GetManualRuntimeByDate($loggerID: String!, $date: String!) {
   getManualRuntimeByDate(loggerID: $loggerID, date: $date) {
@@ -1273,9 +1293,9 @@ export const getManualRuntimeByDate =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetManualRuntimeByDateQueryVariables,
-    APITypes.GetManualRuntimeByDateQuery
-  >;
+  APITypes.GetManualRuntimeByDateQueryVariables,
+  APITypes.GetManualRuntimeByDateQuery
+>;
 export const listManualRuntimeEntries =
   /* GraphQL */ `query ListManualRuntimeEntries(
   $loggerID: String
@@ -1310,9 +1330,9 @@ export const listManualRuntimeEntries =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListManualRuntimeEntriesQueryVariables,
-    APITypes.ListManualRuntimeEntriesQuery
-  >;
+  APITypes.ListManualRuntimeEntriesQueryVariables,
+  APITypes.ListManualRuntimeEntriesQuery
+>;
 export const getUsageSegment =
   /* GraphQL */ `query GetUsageSegment($tractorID: ID!, $startTime: String!) {
   getUsageSegment(tractorID: $tractorID, startTime: $startTime) {
@@ -1588,9 +1608,9 @@ export const getUsageSegment =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetUsageSegmentQueryVariables,
-    APITypes.GetUsageSegmentQuery
-  >;
+  APITypes.GetUsageSegmentQueryVariables,
+  APITypes.GetUsageSegmentQuery
+>;
 export const listUsageSegments = /* GraphQL */ `query ListUsageSegments(
   $tractorID: ID!
   $startTime: String
@@ -1921,9 +1941,9 @@ export const listUsageSegmentsByType =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListUsageSegmentsByTypeQueryVariables,
-    APITypes.ListUsageSegmentsByTypeQuery
-  >;
+  APITypes.ListUsageSegmentsByTypeQueryVariables,
+  APITypes.ListUsageSegmentsByTypeQuery
+>;
 export const getAnalytics = /* GraphQL */ `query GetAnalytics(
   $tractorID: ID!
   $PeriodType: PeriodType!
@@ -2464,9 +2484,9 @@ export const listAnalyticsByPeriodType =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAnalyticsByPeriodTypeQueryVariables,
-    APITypes.ListAnalyticsByPeriodTypeQuery
-  >;
+  APITypes.ListAnalyticsByPeriodTypeQueryVariables,
+  APITypes.ListAnalyticsByPeriodTypeQuery
+>;
 export const getLogger = /* GraphQL */ `query GetLogger($loggerID: ID!) {
   getLogger(loggerID: $loggerID) {
     loggerID
@@ -2570,9 +2590,9 @@ export const listDriversByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListDriversByOrgQueryVariables,
-    APITypes.ListDriversByOrgQuery
-  >;
+  APITypes.ListDriversByOrgQueryVariables,
+  APITypes.ListDriversByOrgQuery
+>;
 export const listComplianceByDriver =
   /* GraphQL */ `query ListComplianceByDriver(
   $driverID: ID!
@@ -2601,9 +2621,9 @@ export const listComplianceByDriver =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListComplianceByDriverQueryVariables,
-    APITypes.ListComplianceByDriverQuery
-  >;
+  APITypes.ListComplianceByDriverQueryVariables,
+  APITypes.ListComplianceByDriverQuery
+>;
 export const listAttendanceByDriver =
   /* GraphQL */ `query ListAttendanceByDriver(
   $driverID: ID!
@@ -2637,9 +2657,9 @@ export const listAttendanceByDriver =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAttendanceByDriverQueryVariables,
-    APITypes.ListAttendanceByDriverQuery
-  >;
+  APITypes.ListAttendanceByDriverQueryVariables,
+  APITypes.ListAttendanceByDriverQuery
+>;
 export const listAttendanceByPlantDate =
   /* GraphQL */ `query ListAttendanceByPlantDate(
   $plantID: ID!
@@ -2673,9 +2693,9 @@ export const listAttendanceByPlantDate =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAttendanceByPlantDateQueryVariables,
-    APITypes.ListAttendanceByPlantDateQuery
-  >;
+  APITypes.ListAttendanceByPlantDateQueryVariables,
+  APITypes.ListAttendanceByPlantDateQuery
+>;
 export const listAssignmentsByDriver =
   /* GraphQL */ `query ListAssignmentsByDriver(
   $driverID: ID!
@@ -2711,9 +2731,9 @@ export const listAssignmentsByDriver =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAssignmentsByDriverQueryVariables,
-    APITypes.ListAssignmentsByDriverQuery
-  >;
+  APITypes.ListAssignmentsByDriverQueryVariables,
+  APITypes.ListAssignmentsByDriverQuery
+>;
 export const listAssignmentsByTractorDate =
   /* GraphQL */ `query ListAssignmentsByTractorDate(
   $tractorVIN: String!
@@ -2747,9 +2767,9 @@ export const listAssignmentsByTractorDate =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAssignmentsByTractorDateQueryVariables,
-    APITypes.ListAssignmentsByTractorDateQuery
-  >;
+  APITypes.ListAssignmentsByTractorDateQueryVariables,
+  APITypes.ListAssignmentsByTractorDateQuery
+>;
 export const listPerformanceByDriver =
   /* GraphQL */ `query ListPerformanceByDriver(
   $driverID: ID!
@@ -2784,9 +2804,9 @@ export const listPerformanceByDriver =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListPerformanceByDriverQueryVariables,
-    APITypes.ListPerformanceByDriverQuery
-  >;
+  APITypes.ListPerformanceByDriverQueryVariables,
+  APITypes.ListPerformanceByDriverQuery
+>;
 export const getComplaint =
   /* GraphQL */ `query GetComplaint($complaintID: ID!) {
   getComplaint(complaintID: $complaintID) {
@@ -2846,9 +2866,9 @@ export const getComplaint =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetComplaintQueryVariables,
-    APITypes.GetComplaintQuery
-  >;
+  APITypes.GetComplaintQueryVariables,
+  APITypes.GetComplaintQuery
+>;
 export const listComplaintsByTractor =
   /* GraphQL */ `query ListComplaintsByTractor($tractorVIN: String!, $nextToken: String) {
   listComplaintsByTractor(tractorVIN: $tractorVIN, nextToken: $nextToken) {
@@ -2860,7 +2880,6 @@ export const listComplaintsByTractor =
       loggerID
       raisedByUserID
       source
-      problemType
       problemSubType
       maintenanceType
       description
@@ -2912,9 +2931,9 @@ export const listComplaintsByTractor =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListComplaintsByTractorQueryVariables,
-    APITypes.ListComplaintsByTractorQuery
-  >;
+  APITypes.ListComplaintsByTractorQueryVariables,
+  APITypes.ListComplaintsByTractorQuery
+>;
 export const listComplaintsByClient =
   /* GraphQL */ `query ListComplaintsByClient($userID: ID!, $nextToken: String) {
   listComplaintsByClient(userID: $userID, nextToken: $nextToken) {
@@ -2926,7 +2945,6 @@ export const listComplaintsByClient =
       loggerID
       raisedByUserID
       source
-      problemType
       problemSubType
       maintenanceType
       description
@@ -2978,9 +2996,9 @@ export const listComplaintsByClient =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListComplaintsByClientQueryVariables,
-    APITypes.ListComplaintsByClientQuery
-  >;
+  APITypes.ListComplaintsByClientQueryVariables,
+  APITypes.ListComplaintsByClientQuery
+>;
 export const listComplaintsByPlant =
   /* GraphQL */ `query ListComplaintsByPlant($plantID: ID!, $nextToken: String) {
   listComplaintsByPlant(plantID: $plantID, nextToken: $nextToken) {
@@ -2992,7 +3010,6 @@ export const listComplaintsByPlant =
       loggerID
       raisedByUserID
       source
-      problemType
       problemSubType
       maintenanceType
       description
@@ -3044,9 +3061,9 @@ export const listComplaintsByPlant =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListComplaintsByPlantQueryVariables,
-    APITypes.ListComplaintsByPlantQuery
-  >;
+  APITypes.ListComplaintsByPlantQueryVariables,
+  APITypes.ListComplaintsByPlantQuery
+>;
 export const listComplaintsByOrg =
   /* GraphQL */ `query ListComplaintsByOrg($orgID: ID!, $nextToken: String) {
   listComplaintsByOrg(orgID: $orgID, nextToken: $nextToken) {
@@ -3058,7 +3075,6 @@ export const listComplaintsByOrg =
       loggerID
       raisedByUserID
       source
-      problemType
       problemSubType
       maintenanceType
       description
@@ -3110,9 +3126,9 @@ export const listComplaintsByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListComplaintsByOrgQueryVariables,
-    APITypes.ListComplaintsByOrgQuery
-  >;
+  APITypes.ListComplaintsByOrgQueryVariables,
+  APITypes.ListComplaintsByOrgQuery
+>;
 export const listComplaintsByAssignee =
   /* GraphQL */ `query ListComplaintsByAssignee($userID: ID!, $nextToken: String) {
   listComplaintsByAssignee(userID: $userID, nextToken: $nextToken) {
@@ -3124,7 +3140,6 @@ export const listComplaintsByAssignee =
       loggerID
       raisedByUserID
       source
-      problemType
       problemSubType
       maintenanceType
       description
@@ -3176,9 +3191,9 @@ export const listComplaintsByAssignee =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListComplaintsByAssigneeQueryVariables,
-    APITypes.ListComplaintsByAssigneeQuery
-  >;
+  APITypes.ListComplaintsByAssigneeQueryVariables,
+  APITypes.ListComplaintsByAssigneeQuery
+>;
 export const listComplaintsByStatus =
   /* GraphQL */ `query ListComplaintsByStatus($state: ComplaintState!, $nextToken: String) {
   listComplaintsByStatus(state: $state, nextToken: $nextToken) {
@@ -3190,7 +3205,6 @@ export const listComplaintsByStatus =
       loggerID
       raisedByUserID
       source
-      problemType
       problemSubType
       maintenanceType
       description
@@ -3242,9 +3256,9 @@ export const listComplaintsByStatus =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListComplaintsByStatusQueryVariables,
-    APITypes.ListComplaintsByStatusQuery
-  >;
+  APITypes.ListComplaintsByStatusQueryVariables,
+  APITypes.ListComplaintsByStatusQuery
+>;
 export const listComplaintEvents =
   /* GraphQL */ `query ListComplaintEvents($complaintID: ID!, $nextToken: String) {
   listComplaintEvents(complaintID: $complaintID, nextToken: $nextToken) {
@@ -3257,9 +3271,9 @@ export const listComplaintEvents =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListComplaintEventsQueryVariables,
-    APITypes.ListComplaintEventsQuery
-  >;
+  APITypes.ListComplaintEventsQueryVariables,
+  APITypes.ListComplaintEventsQuery
+>;
 export const getJobCard = /* GraphQL */ `query GetJobCard($jobCardID: ID!) {
   getJobCard(jobCardID: $jobCardID) {
     jobCardID
@@ -3415,9 +3429,9 @@ export const listJobCardsByTractor =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListJobCardsByTractorQueryVariables,
-    APITypes.ListJobCardsByTractorQuery
-  >;
+  APITypes.ListJobCardsByTractorQueryVariables,
+  APITypes.ListJobCardsByTractorQuery
+>;
 export const listJobCardsByOrg =
   /* GraphQL */ `query ListJobCardsByOrg($orgID: ID!, $nextToken: String) {
   listJobCardsByOrg(orgID: $orgID, nextToken: $nextToken) {
@@ -3467,9 +3481,9 @@ export const listJobCardsByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListJobCardsByOrgQueryVariables,
-    APITypes.ListJobCardsByOrgQuery
-  >;
+  APITypes.ListJobCardsByOrgQueryVariables,
+  APITypes.ListJobCardsByOrgQuery
+>;
 export const listJobCardsBySLA = /* GraphQL */ `query ListJobCardsBySLA(
   $orgID: ID!
   $slaStatus: SLAStatus!
@@ -3586,9 +3600,9 @@ export const listJobCardsByAssignee =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListJobCardsByAssigneeQueryVariables,
-    APITypes.ListJobCardsByAssigneeQuery
-  >;
+  APITypes.ListJobCardsByAssigneeQueryVariables,
+  APITypes.ListJobCardsByAssigneeQuery
+>;
 export const listDelayedJobCards =
   /* GraphQL */ `query ListDelayedJobCards($orgID: ID!, $plantID: ID, $nextToken: String) {
   listDelayedJobCards(orgID: $orgID, plantID: $plantID, nextToken: $nextToken) {
@@ -3638,9 +3652,9 @@ export const listDelayedJobCards =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListDelayedJobCardsQueryVariables,
-    APITypes.ListDelayedJobCardsQuery
-  >;
+  APITypes.ListDelayedJobCardsQueryVariables,
+  APITypes.ListDelayedJobCardsQuery
+>;
 export const getVORRequest = /* GraphQL */ `query GetVORRequest($vorID: ID!) {
   getVORRequest(vorID: $vorID) {
     vorID
@@ -3709,9 +3723,9 @@ export const listVORRequests =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListVORRequestsQueryVariables,
-    APITypes.ListVORRequestsQuery
-  >;
+  APITypes.ListVORRequestsQueryVariables,
+  APITypes.ListVORRequestsQuery
+>;
 export const getVendorRequest =
   /* GraphQL */ `query GetVendorRequest($complaintID: ID!, $vendorRequestID: ID!) {
   getVendorRequest(
@@ -3737,9 +3751,9 @@ export const getVendorRequest =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetVendorRequestQueryVariables,
-    APITypes.GetVendorRequestQuery
-  >;
+  APITypes.GetVendorRequestQueryVariables,
+  APITypes.GetVendorRequestQuery
+>;
 export const listVendorRequestsByComplaint =
   /* GraphQL */ `query ListVendorRequestsByComplaint($complaintID: ID!, $nextToken: String) {
   listVendorRequestsByComplaint(
@@ -3769,9 +3783,9 @@ export const listVendorRequestsByComplaint =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListVendorRequestsByComplaintQueryVariables,
-    APITypes.ListVendorRequestsByComplaintQuery
-  >;
+  APITypes.ListVendorRequestsByComplaintQueryVariables,
+  APITypes.ListVendorRequestsByComplaintQuery
+>;
 export const listVendorRequestsByOrg =
   /* GraphQL */ `query ListVendorRequestsByOrg(
   $orgID: ID!
@@ -3806,9 +3820,9 @@ export const listVendorRequestsByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListVendorRequestsByOrgQueryVariables,
-    APITypes.ListVendorRequestsByOrgQuery
-  >;
+  APITypes.ListVendorRequestsByOrgQueryVariables,
+  APITypes.ListVendorRequestsByOrgQuery
+>;
 export const getPMSSchedule =
   /* GraphQL */ `query GetPMSSchedule($tractorVIN: ID!) {
   getPMSSchedule(tractorVIN: $tractorVIN) {
@@ -3829,9 +3843,9 @@ export const getPMSSchedule =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetPMSScheduleQueryVariables,
-    APITypes.GetPMSScheduleQuery
-  >;
+  APITypes.GetPMSScheduleQueryVariables,
+  APITypes.GetPMSScheduleQuery
+>;
 export const listOverduePMS =
   /* GraphQL */ `query ListOverduePMS($orgID: ID!, $plantID: ID, $nextToken: String) {
   listOverduePMS(orgID: $orgID, plantID: $plantID, nextToken: $nextToken) {
@@ -3856,9 +3870,9 @@ export const listOverduePMS =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListOverduePMSQueryVariables,
-    APITypes.ListOverduePMSQuery
-  >;
+  APITypes.ListOverduePMSQueryVariables,
+  APITypes.ListOverduePMSQuery
+>;
 export const getPMSAlerts =
   /* GraphQL */ `query GetPMSAlerts($orgID: ID!, $plantID: ID, $nextToken: String) {
   getPMSAlerts(orgID: $orgID, plantID: $plantID, nextToken: $nextToken) {
@@ -3882,9 +3896,9 @@ export const getPMSAlerts =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetPMSAlertsQueryVariables,
-    APITypes.GetPMSAlertsQuery
-  >;
+  APITypes.GetPMSAlertsQueryVariables,
+  APITypes.GetPMSAlertsQuery
+>;
 export const getPMSTracker =
   /* GraphQL */ `query GetPMSTracker($tractorVIN: ID!) {
   getPMSTracker(tractorVIN: $tractorVIN) {
@@ -3906,9 +3920,9 @@ export const getPMSTracker =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetPMSTrackerQueryVariables,
-    APITypes.GetPMSTrackerQuery
-  >;
+  APITypes.GetPMSTrackerQueryVariables,
+  APITypes.GetPMSTrackerQuery
+>;
 export const listPMSTrackersByOrg =
   /* GraphQL */ `query ListPMSTrackersByOrg($orgID: ID!, $nextToken: String) {
   listPMSTrackersByOrg(orgID: $orgID, nextToken: $nextToken) {
@@ -3934,9 +3948,9 @@ export const listPMSTrackersByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListPMSTrackersByOrgQueryVariables,
-    APITypes.ListPMSTrackersByOrgQuery
-  >;
+  APITypes.ListPMSTrackersByOrgQueryVariables,
+  APITypes.ListPMSTrackersByOrgQuery
+>;
 export const checkPMSAlert =
   /* GraphQL */ `query CheckPMSAlert($tractorVIN: ID!) {
   checkPMSAlert(tractorVIN: $tractorVIN) {
@@ -3954,9 +3968,9 @@ export const checkPMSAlert =
   }
 }
 ` as GeneratedQuery<
-    APITypes.CheckPMSAlertQueryVariables,
-    APITypes.CheckPMSAlertQuery
-  >;
+  APITypes.CheckPMSAlertQueryVariables,
+  APITypes.CheckPMSAlertQuery
+>;
 export const listPMSHistory =
   /* GraphQL */ `query ListPMSHistory($tractorVIN: ID!, $nextToken: String) {
   listPMSHistory(tractorVIN: $tractorVIN, nextToken: $nextToken) {
@@ -3977,9 +3991,9 @@ export const listPMSHistory =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListPMSHistoryQueryVariables,
-    APITypes.ListPMSHistoryQuery
-  >;
+  APITypes.ListPMSHistoryQueryVariables,
+  APITypes.ListPMSHistoryQuery
+>;
 export const listAllPMSStatus = /* GraphQL */ `query ListAllPMSStatus {
   listAllPMSStatus {
     tractorID
@@ -4038,9 +4052,9 @@ export const getWeeklyCheckSchedule =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetWeeklyCheckScheduleQueryVariables,
-    APITypes.GetWeeklyCheckScheduleQuery
-  >;
+  APITypes.GetWeeklyCheckScheduleQueryVariables,
+  APITypes.GetWeeklyCheckScheduleQuery
+>;
 export const listWeeklyChecksByTechnician =
   /* GraphQL */ `query ListWeeklyChecksByTechnician(
   $technicianID: ID!
@@ -4069,9 +4083,9 @@ export const listWeeklyChecksByTechnician =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListWeeklyChecksByTechnicianQueryVariables,
-    APITypes.ListWeeklyChecksByTechnicianQuery
-  >;
+  APITypes.ListWeeklyChecksByTechnicianQueryVariables,
+  APITypes.ListWeeklyChecksByTechnicianQuery
+>;
 export const listWeeklyChecksByPlant =
   /* GraphQL */ `query ListWeeklyChecksByPlant(
   $plantID: ID!
@@ -4100,9 +4114,9 @@ export const listWeeklyChecksByPlant =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListWeeklyChecksByPlantQueryVariables,
-    APITypes.ListWeeklyChecksByPlantQuery
-  >;
+  APITypes.ListWeeklyChecksByPlantQueryVariables,
+  APITypes.ListWeeklyChecksByPlantQuery
+>;
 export const getDelayAnalyticsBySite =
   /* GraphQL */ `query GetDelayAnalyticsBySite(
   $orgID: ID!
@@ -4144,9 +4158,9 @@ export const getDelayAnalyticsBySite =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetDelayAnalyticsBySiteQueryVariables,
-    APITypes.GetDelayAnalyticsBySiteQuery
-  >;
+  APITypes.GetDelayAnalyticsBySiteQueryVariables,
+  APITypes.GetDelayAnalyticsBySiteQuery
+>;
 export const getDelayAnalyticsByRegion =
   /* GraphQL */ `query GetDelayAnalyticsByRegion(
   $orgID: ID!
@@ -4186,9 +4200,9 @@ export const getDelayAnalyticsByRegion =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetDelayAnalyticsByRegionQueryVariables,
-    APITypes.GetDelayAnalyticsByRegionQuery
-  >;
+  APITypes.GetDelayAnalyticsByRegionQueryVariables,
+  APITypes.GetDelayAnalyticsByRegionQuery
+>;
 export const getTopDelayReasons = /* GraphQL */ `query GetTopDelayReasons(
   $orgID: ID!
   $plantID: ID
@@ -4239,9 +4253,9 @@ export const getRepeatFailurePatterns =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetRepeatFailurePatternsQueryVariables,
-    APITypes.GetRepeatFailurePatternsQuery
-  >;
+  APITypes.GetRepeatFailurePatternsQueryVariables,
+  APITypes.GetRepeatFailurePatternsQuery
+>;
 export const getSLAComplianceReport =
   /* GraphQL */ `query GetSLAComplianceReport(
   $orgID: ID!
@@ -4289,9 +4303,9 @@ export const getSLAComplianceReport =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetSLAComplianceReportQueryVariables,
-    APITypes.GetSLAComplianceReportQuery
-  >;
+  APITypes.GetSLAComplianceReportQueryVariables,
+  APITypes.GetSLAComplianceReportQuery
+>;
 export const getTechnicianProductivityReport =
   /* GraphQL */ `query GetTechnicianProductivityReport(
   $technicianID: ID!
@@ -4329,9 +4343,9 @@ export const getTechnicianProductivityReport =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetTechnicianProductivityReportQueryVariables,
-    APITypes.GetTechnicianProductivityReportQuery
-  >;
+  APITypes.GetTechnicianProductivityReportQueryVariables,
+  APITypes.GetTechnicianProductivityReportQuery
+>;
 export const getPlantPerformanceReport =
   /* GraphQL */ `query GetPlantPerformanceReport(
   $plantID: ID!
@@ -4372,9 +4386,9 @@ export const getPlantPerformanceReport =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetPlantPerformanceReportQueryVariables,
-    APITypes.GetPlantPerformanceReportQuery
-  >;
+  APITypes.GetPlantPerformanceReportQueryVariables,
+  APITypes.GetPlantPerformanceReportQuery
+>;
 export const getCostPerTractor = /* GraphQL */ `query GetCostPerTractor(
   $tractorVIN: String!
   $startDate: AWSDate!
@@ -4451,9 +4465,9 @@ export const getCostPerSite =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetCostPerSiteQueryVariables,
-    APITypes.GetCostPerSiteQuery
-  >;
+  APITypes.GetCostPerSiteQueryVariables,
+  APITypes.GetCostPerSiteQuery
+>;
 export const getInventoryAgingReport =
   /* GraphQL */ `query GetInventoryAgingReport($plantID: ID!, $thresholdDays: Int) {
   getInventoryAgingReport(plantID: $plantID, thresholdDays: $thresholdDays) {
@@ -4482,9 +4496,9 @@ export const getInventoryAgingReport =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetInventoryAgingReportQueryVariables,
-    APITypes.GetInventoryAgingReportQuery
-  >;
+  APITypes.GetInventoryAgingReportQueryVariables,
+  APITypes.GetInventoryAgingReportQuery
+>;
 export const getSlowMovingPartsReport =
   /* GraphQL */ `query GetSlowMovingPartsReport(
   $plantID: ID!
@@ -4507,9 +4521,9 @@ export const getSlowMovingPartsReport =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetSlowMovingPartsReportQueryVariables,
-    APITypes.GetSlowMovingPartsReportQuery
-  >;
+  APITypes.GetSlowMovingPartsReportQueryVariables,
+  APITypes.GetSlowMovingPartsReportQuery
+>;
 export const getSku = /* GraphQL */ `query GetSku($sku: ID!) {
   getSku(sku: $sku) {
     sku
@@ -4710,9 +4724,9 @@ export const getPlantStock =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetPlantStockQueryVariables,
-    APITypes.GetPlantStockQuery
-  >;
+  APITypes.GetPlantStockQueryVariables,
+  APITypes.GetPlantStockQuery
+>;
 export const listStockByPlant = /* GraphQL */ `query ListStockByPlant(
   $plantID: ID!
   $category: InventoryCategory!
@@ -4890,9 +4904,9 @@ export const listSerialEvents =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListSerialEventsQueryVariables,
-    APITypes.ListSerialEventsQuery
-  >;
+  APITypes.ListSerialEventsQueryVariables,
+  APITypes.ListSerialEventsQuery
+>;
 export const listSerialsByState = /* GraphQL */ `query ListSerialsByState(
   $state: SerialState!
   $sku: ID
@@ -5079,9 +5093,9 @@ export const listReservationsByPlant =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListReservationsByPlantQueryVariables,
-    APITypes.ListReservationsByPlantQuery
-  >;
+  APITypes.ListReservationsByPlantQueryVariables,
+  APITypes.ListReservationsByPlantQuery
+>;
 export const listReservationsByTicket =
   /* GraphQL */ `query ListReservationsByTicket(
   $ticketID: ID!
@@ -5123,9 +5137,9 @@ export const listReservationsByTicket =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListReservationsByTicketQueryVariables,
-    APITypes.ListReservationsByTicketQuery
-  >;
+  APITypes.ListReservationsByTicketQueryVariables,
+  APITypes.ListReservationsByTicketQuery
+>;
 export const listGoodsIssuesByTicket =
   /* GraphQL */ `query ListGoodsIssuesByTicket($ticketID: ID!, $limit: Int, $nextToken: String) {
   listGoodsIssuesByTicket(
@@ -5156,9 +5170,9 @@ export const listGoodsIssuesByTicket =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListGoodsIssuesByTicketQueryVariables,
-    APITypes.ListGoodsIssuesByTicketQuery
-  >;
+  APITypes.ListGoodsIssuesByTicketQueryVariables,
+  APITypes.ListGoodsIssuesByTicketQuery
+>;
 export const listTransfersBySource = /* GraphQL */ `query ListTransfersBySource(
   $srcPlantID: ID!
   $from: AWSDateTime
@@ -5254,9 +5268,9 @@ export const getWarrantyClaim =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetWarrantyClaimQueryVariables,
-    APITypes.GetWarrantyClaimQuery
-  >;
+  APITypes.GetWarrantyClaimQueryVariables,
+  APITypes.GetWarrantyClaimQuery
+>;
 export const listWarrantyByPart =
   /* GraphQL */ `query ListWarrantyByPart($partID: ID!, $limit: Int, $nextToken: String) {
   listWarrantyByPart(partID: $partID, limit: $limit, nextToken: $nextToken) {
@@ -5278,9 +5292,9 @@ export const listWarrantyByPart =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListWarrantyByPartQueryVariables,
-    APITypes.ListWarrantyByPartQuery
-  >;
+  APITypes.ListWarrantyByPartQueryVariables,
+  APITypes.ListWarrantyByPartQuery
+>;
 export const getInventoryAnalyticsByPlant =
   /* GraphQL */ `query GetInventoryAnalyticsByPlant(
   $plantID: ID!
@@ -5309,9 +5323,9 @@ export const getInventoryAnalyticsByPlant =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetInventoryAnalyticsByPlantQueryVariables,
-    APITypes.GetInventoryAnalyticsByPlantQuery
-  >;
+  APITypes.GetInventoryAnalyticsByPlantQueryVariables,
+  APITypes.GetInventoryAnalyticsByPlantQuery
+>;
 export const listInventoryAnalyticsByPlant =
   /* GraphQL */ `query ListInventoryAnalyticsByPlant(
   $plantID: ID!
@@ -5354,9 +5368,9 @@ export const listInventoryAnalyticsByPlant =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListInventoryAnalyticsByPlantQueryVariables,
-    APITypes.ListInventoryAnalyticsByPlantQuery
-  >;
+  APITypes.ListInventoryAnalyticsByPlantQueryVariables,
+  APITypes.ListInventoryAnalyticsByPlantQuery
+>;
 export const listEntityMedia =
   /* GraphQL */ `query ListEntityMedia($input: ListEntityMediaInput!) {
   listEntityMedia(input: $input) {
@@ -5381,9 +5395,9 @@ export const listEntityMedia =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListEntityMediaQueryVariables,
-    APITypes.ListEntityMediaQuery
-  >;
+  APITypes.ListEntityMediaQueryVariables,
+  APITypes.ListEntityMediaQuery
+>;
 export const getLogBookEntry =
   /* GraphQL */ `query GetLogBookEntry($orgID: ID!, $plantID: ID!, $logDate: AWSDate!) {
   getLogBookEntry(orgID: $orgID, plantID: $plantID, logDate: $logDate) {
@@ -5406,9 +5420,9 @@ export const getLogBookEntry =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetLogBookEntryQueryVariables,
-    APITypes.GetLogBookEntryQuery
-  >;
+  APITypes.GetLogBookEntryQueryVariables,
+  APITypes.GetLogBookEntryQuery
+>;
 export const listLogBookEntriesByPlant =
   /* GraphQL */ `query ListLogBookEntriesByPlant(
   $orgID: ID!
@@ -5451,9 +5465,9 @@ export const listLogBookEntriesByPlant =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListLogBookEntriesByPlantQueryVariables,
-    APITypes.ListLogBookEntriesByPlantQuery
-  >;
+  APITypes.ListLogBookEntriesByPlantQueryVariables,
+  APITypes.ListLogBookEntriesByPlantQuery
+>;
 export const listLogBookEntriesByOrg =
   /* GraphQL */ `query ListLogBookEntriesByOrg(
   $orgID: ID!
@@ -5494,9 +5508,9 @@ export const listLogBookEntriesByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListLogBookEntriesByOrgQueryVariables,
-    APITypes.ListLogBookEntriesByOrgQuery
-  >;
+  APITypes.ListLogBookEntriesByOrgQueryVariables,
+  APITypes.ListLogBookEntriesByOrgQuery
+>;
 export const getEmployeeAttendanceDay =
   /* GraphQL */ `query GetEmployeeAttendanceDay($userID: ID!, $date: AWSDate!) {
   getEmployeeAttendanceDay(userID: $userID, date: $date) {
@@ -5519,9 +5533,9 @@ export const getEmployeeAttendanceDay =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetEmployeeAttendanceDayQueryVariables,
-    APITypes.GetEmployeeAttendanceDayQuery
-  >;
+  APITypes.GetEmployeeAttendanceDayQueryVariables,
+  APITypes.GetEmployeeAttendanceDayQuery
+>;
 export const listEmployeeAttendanceByUser =
   /* GraphQL */ `query ListEmployeeAttendanceByUser(
   $userID: ID!
@@ -5558,9 +5572,9 @@ export const listEmployeeAttendanceByUser =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListEmployeeAttendanceByUserQueryVariables,
-    APITypes.ListEmployeeAttendanceByUserQuery
-  >;
+  APITypes.ListEmployeeAttendanceByUserQueryVariables,
+  APITypes.ListEmployeeAttendanceByUserQuery
+>;
 export const listEmployeeAttendanceByDate =
   /* GraphQL */ `query ListEmployeeAttendanceByDate($date: AWSDate!, $nextToken: String) {
   listEmployeeAttendanceByDate(date: $date, nextToken: $nextToken) {
@@ -5587,9 +5601,9 @@ export const listEmployeeAttendanceByDate =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListEmployeeAttendanceByDateQueryVariables,
-    APITypes.ListEmployeeAttendanceByDateQuery
-  >;
+  APITypes.ListEmployeeAttendanceByDateQueryVariables,
+  APITypes.ListEmployeeAttendanceByDateQuery
+>;
 export const listEmployeePunchesByUserDay =
   /* GraphQL */ `query ListEmployeePunchesByUserDay(
   $userID: ID!
@@ -5622,9 +5636,9 @@ export const listEmployeePunchesByUserDay =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListEmployeePunchesByUserDayQueryVariables,
-    APITypes.ListEmployeePunchesByUserDayQuery
-  >;
+  APITypes.ListEmployeePunchesByUserDayQueryVariables,
+  APITypes.ListEmployeePunchesByUserDayQuery
+>;
 export const listEmployeePunchesByDate =
   /* GraphQL */ `query ListEmployeePunchesByDate($date: AWSDate!, $nextToken: String) {
   listEmployeePunchesByDate(date: $date, nextToken: $nextToken) {
@@ -5649,9 +5663,9 @@ export const listEmployeePunchesByDate =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListEmployeePunchesByDateQueryVariables,
-    APITypes.ListEmployeePunchesByDateQuery
-  >;
+  APITypes.ListEmployeePunchesByDateQueryVariables,
+  APITypes.ListEmployeePunchesByDateQuery
+>;
 export const getFaceRegistration =
   /* GraphQL */ `query GetFaceRegistration($userID: ID!) {
   getFaceRegistration(userID: $userID) {
@@ -5666,9 +5680,9 @@ export const getFaceRegistration =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetFaceRegistrationQueryVariables,
-    APITypes.GetFaceRegistrationQuery
-  >;
+  APITypes.GetFaceRegistrationQueryVariables,
+  APITypes.GetFaceRegistrationQuery
+>;
 export const getAttendanceRegularizationRequest =
   /* GraphQL */ `query GetAttendanceRegularizationRequest($requestID: ID!) {
   getAttendanceRegularizationRequest(requestID: $requestID) {
@@ -5700,9 +5714,9 @@ export const getAttendanceRegularizationRequest =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetAttendanceRegularizationRequestQueryVariables,
-    APITypes.GetAttendanceRegularizationRequestQuery
-  >;
+  APITypes.GetAttendanceRegularizationRequestQueryVariables,
+  APITypes.GetAttendanceRegularizationRequestQuery
+>;
 export const listAttendanceRegularizationsByUser =
   /* GraphQL */ `query ListAttendanceRegularizationsByUser(
   $userID: ID!
@@ -5750,9 +5764,9 @@ export const listAttendanceRegularizationsByUser =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAttendanceRegularizationsByUserQueryVariables,
-    APITypes.ListAttendanceRegularizationsByUserQuery
-  >;
+  APITypes.ListAttendanceRegularizationsByUserQueryVariables,
+  APITypes.ListAttendanceRegularizationsByUserQuery
+>;
 export const listAttendanceRegularizations =
   /* GraphQL */ `query ListAttendanceRegularizations(
   $status: AttendanceRegularizationStatus
@@ -5798,9 +5812,9 @@ export const listAttendanceRegularizations =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAttendanceRegularizationsQueryVariables,
-    APITypes.ListAttendanceRegularizationsQuery
-  >;
+  APITypes.ListAttendanceRegularizationsQueryVariables,
+  APITypes.ListAttendanceRegularizationsQuery
+>;
 export const listAttendanceRegularizationsByApprover =
   /* GraphQL */ `query ListAttendanceRegularizationsByApprover(
   $approverID: ID!
@@ -5844,9 +5858,9 @@ export const listAttendanceRegularizationsByApprover =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAttendanceRegularizationsByApproverQueryVariables,
-    APITypes.ListAttendanceRegularizationsByApproverQuery
-  >;
+  APITypes.ListAttendanceRegularizationsByApproverQueryVariables,
+  APITypes.ListAttendanceRegularizationsByApproverQuery
+>;
 export const listAttendanceRegularizationsByStatus =
   /* GraphQL */ `query ListAttendanceRegularizationsByStatus(
   $status: AttendanceRegularizationStatus!
@@ -5894,9 +5908,9 @@ export const listAttendanceRegularizationsByStatus =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListAttendanceRegularizationsByStatusQueryVariables,
-    APITypes.ListAttendanceRegularizationsByStatusQuery
-  >;
+  APITypes.ListAttendanceRegularizationsByStatusQueryVariables,
+  APITypes.ListAttendanceRegularizationsByStatusQuery
+>;
 export const getOfficeLocation =
   /* GraphQL */ `query GetOfficeLocation($officeID: ID!) {
   getOfficeLocation(officeID: $officeID) {
@@ -5933,9 +5947,9 @@ export const getOfficeLocation =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetOfficeLocationQueryVariables,
-    APITypes.GetOfficeLocationQuery
-  >;
+  APITypes.GetOfficeLocationQueryVariables,
+  APITypes.GetOfficeLocationQuery
+>;
 export const listOfficeLocationsByOrg =
   /* GraphQL */ `query ListOfficeLocationsByOrg($orgID: ID!, $nextToken: String) {
   listOfficeLocationsByOrg(orgID: $orgID, nextToken: $nextToken) {
@@ -5976,9 +5990,9 @@ export const listOfficeLocationsByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListOfficeLocationsByOrgQueryVariables,
-    APITypes.ListOfficeLocationsByOrgQuery
-  >;
+  APITypes.ListOfficeLocationsByOrgQueryVariables,
+  APITypes.ListOfficeLocationsByOrgQuery
+>;
 export const listOfficeLocationsByPlant =
   /* GraphQL */ `query ListOfficeLocationsByPlant($plantID: ID!, $nextToken: String) {
   listOfficeLocationsByPlant(plantID: $plantID, nextToken: $nextToken) {
@@ -6019,9 +6033,9 @@ export const listOfficeLocationsByPlant =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListOfficeLocationsByPlantQueryVariables,
-    APITypes.ListOfficeLocationsByPlantQuery
-  >;
+  APITypes.ListOfficeLocationsByPlantQueryVariables,
+  APITypes.ListOfficeLocationsByPlantQuery
+>;
 export const listOfficeLocationsByType =
   /* GraphQL */ `query ListOfficeLocationsByType($officeType: OfficeType!, $nextToken: String) {
   listOfficeLocationsByType(officeType: $officeType, nextToken: $nextToken) {
@@ -6062,9 +6076,9 @@ export const listOfficeLocationsByType =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListOfficeLocationsByTypeQueryVariables,
-    APITypes.ListOfficeLocationsByTypeQuery
-  >;
+  APITypes.ListOfficeLocationsByTypeQueryVariables,
+  APITypes.ListOfficeLocationsByTypeQuery
+>;
 export const listActiveOfficesByOrg =
   /* GraphQL */ `query ListActiveOfficesByOrg($orgID: ID!, $nextToken: String) {
   listActiveOfficesByOrg(orgID: $orgID, nextToken: $nextToken) {
@@ -6105,9 +6119,9 @@ export const listActiveOfficesByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListActiveOfficesByOrgQueryVariables,
-    APITypes.ListActiveOfficesByOrgQuery
-  >;
+  APITypes.ListActiveOfficesByOrgQueryVariables,
+  APITypes.ListActiveOfficesByOrgQuery
+>;
 export const listActiveOfficesByPlant =
   /* GraphQL */ `query ListActiveOfficesByPlant($plantID: ID!, $nextToken: String) {
   listActiveOfficesByPlant(plantID: $plantID, nextToken: $nextToken) {
@@ -6148,9 +6162,9 @@ export const listActiveOfficesByPlant =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListActiveOfficesByPlantQueryVariables,
-    APITypes.ListActiveOfficesByPlantQuery
-  >;
+  APITypes.ListActiveOfficesByPlantQueryVariables,
+  APITypes.ListActiveOfficesByPlantQuery
+>;
 export const getMyPayslip =
   /* GraphQL */ `query GetMyPayslip($year: Int!, $month: Int!) {
   getMyPayslip(year: $year, month: $month) {
@@ -6207,9 +6221,9 @@ export const getMyPayslip =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetMyPayslipQueryVariables,
-    APITypes.GetMyPayslipQuery
-  >;
+  APITypes.GetMyPayslipQueryVariables,
+  APITypes.GetMyPayslipQuery
+>;
 export const listMyPayslips =
   /* GraphQL */ `query ListMyPayslips($year: Int, $nextToken: String) {
   listMyPayslips(year: $year, nextToken: $nextToken) {
@@ -6270,9 +6284,9 @@ export const listMyPayslips =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListMyPayslipsQueryVariables,
-    APITypes.ListMyPayslipsQuery
-  >;
+  APITypes.ListMyPayslipsQueryVariables,
+  APITypes.ListMyPayslipsQuery
+>;
 export const listPayslipsByOffice = /* GraphQL */ `query ListPayslipsByOffice(
   $officeID: ID!
   $year: Int
@@ -6545,9 +6559,9 @@ export const getUserPayslip =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetUserPayslipQueryVariables,
-    APITypes.GetUserPayslipQuery
-  >;
+  APITypes.GetUserPayslipQueryVariables,
+  APITypes.GetUserPayslipQuery
+>;
 export const getOfficeCalendar =
   /* GraphQL */ `query GetOfficeCalendar($officeID: ID!, $date: AWSDate!) {
   getOfficeCalendar(officeID: $officeID, date: $date) {
@@ -6572,9 +6586,9 @@ export const getOfficeCalendar =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetOfficeCalendarQueryVariables,
-    APITypes.GetOfficeCalendarQuery
-  >;
+  APITypes.GetOfficeCalendarQueryVariables,
+  APITypes.GetOfficeCalendarQuery
+>;
 export const listOfficeCalendarByMonth =
   /* GraphQL */ `query ListOfficeCalendarByMonth(
   $officeID: ID!
@@ -6613,9 +6627,9 @@ export const listOfficeCalendarByMonth =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListOfficeCalendarByMonthQueryVariables,
-    APITypes.ListOfficeCalendarByMonthQuery
-  >;
+  APITypes.ListOfficeCalendarByMonthQueryVariables,
+  APITypes.ListOfficeCalendarByMonthQuery
+>;
 export const listOfficeCalendarByDateRange =
   /* GraphQL */ `query ListOfficeCalendarByDateRange(
   $officeID: ID!
@@ -6654,9 +6668,9 @@ export const listOfficeCalendarByDateRange =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListOfficeCalendarByDateRangeQueryVariables,
-    APITypes.ListOfficeCalendarByDateRangeQuery
-  >;
+  APITypes.ListOfficeCalendarByDateRangeQueryVariables,
+  APITypes.ListOfficeCalendarByDateRangeQuery
+>;
 export const listHolidaysByOffice =
   /* GraphQL */ `query ListHolidaysByOffice($officeID: ID!, $year: Int!, $nextToken: String) {
   listHolidaysByOffice(
@@ -6689,9 +6703,9 @@ export const listHolidaysByOffice =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListHolidaysByOfficeQueryVariables,
-    APITypes.ListHolidaysByOfficeQuery
-  >;
+  APITypes.ListHolidaysByOfficeQueryVariables,
+  APITypes.ListHolidaysByOfficeQuery
+>;
 export const getReimbursementClaim =
   /* GraphQL */ `query GetReimbursementClaim($claimID: ID!) {
   getReimbursementClaim(claimID: $claimID) {
@@ -6749,9 +6763,9 @@ export const getReimbursementClaim =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetReimbursementClaimQueryVariables,
-    APITypes.GetReimbursementClaimQuery
-  >;
+  APITypes.GetReimbursementClaimQueryVariables,
+  APITypes.GetReimbursementClaimQuery
+>;
 export const listReimbursementClaimsByUser =
   /* GraphQL */ `query ListReimbursementClaimsByUser(
   $userID: ID!
@@ -6825,9 +6839,9 @@ export const listReimbursementClaimsByUser =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListReimbursementClaimsByUserQueryVariables,
-    APITypes.ListReimbursementClaimsByUserQuery
-  >;
+  APITypes.ListReimbursementClaimsByUserQueryVariables,
+  APITypes.ListReimbursementClaimsByUserQuery
+>;
 export const listReimbursementClaims =
   /* GraphQL */ `query ListReimbursementClaims(
   $status: ReimbursementStatus
@@ -6899,9 +6913,9 @@ export const listReimbursementClaims =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListReimbursementClaimsQueryVariables,
-    APITypes.ListReimbursementClaimsQuery
-  >;
+  APITypes.ListReimbursementClaimsQueryVariables,
+  APITypes.ListReimbursementClaimsQuery
+>;
 export const listReimbursementClaimsByApprover =
   /* GraphQL */ `query ListReimbursementClaimsByApprover(
   $approverID: ID!
@@ -6971,9 +6985,9 @@ export const listReimbursementClaimsByApprover =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListReimbursementClaimsByApproverQueryVariables,
-    APITypes.ListReimbursementClaimsByApproverQuery
-  >;
+  APITypes.ListReimbursementClaimsByApproverQueryVariables,
+  APITypes.ListReimbursementClaimsByApproverQuery
+>;
 export const listReimbursementClaimsByStatus =
   /* GraphQL */ `query ListReimbursementClaimsByStatus(
   $status: ReimbursementStatus!
@@ -7047,9 +7061,9 @@ export const listReimbursementClaimsByStatus =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListReimbursementClaimsByStatusQueryVariables,
-    APITypes.ListReimbursementClaimsByStatusQuery
-  >;
+  APITypes.ListReimbursementClaimsByStatusQueryVariables,
+  APITypes.ListReimbursementClaimsByStatusQuery
+>;
 export const getLeavePolicy =
   /* GraphQL */ `query GetLeavePolicy($orgID: ID!, $leaveType: LeaveType!) {
   getLeavePolicy(orgID: $orgID, leaveType: $leaveType) {
@@ -7073,9 +7087,9 @@ export const getLeavePolicy =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetLeavePolicyQueryVariables,
-    APITypes.GetLeavePolicyQuery
-  >;
+  APITypes.GetLeavePolicyQueryVariables,
+  APITypes.GetLeavePolicyQuery
+>;
 export const listLeavePoliciesByOrg =
   /* GraphQL */ `query ListLeavePoliciesByOrg($orgID: ID!, $nextToken: String) {
   listLeavePoliciesByOrg(orgID: $orgID, nextToken: $nextToken) {
@@ -7103,9 +7117,9 @@ export const listLeavePoliciesByOrg =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListLeavePoliciesByOrgQueryVariables,
-    APITypes.ListLeavePoliciesByOrgQuery
-  >;
+  APITypes.ListLeavePoliciesByOrgQueryVariables,
+  APITypes.ListLeavePoliciesByOrgQuery
+>;
 export const getUserLeaveBalance =
   /* GraphQL */ `query GetUserLeaveBalance($userID: ID!, $year: Int!, $leaveType: LeaveType!) {
   getUserLeaveBalance(userID: $userID, year: $year, leaveType: $leaveType) {
@@ -7123,9 +7137,9 @@ export const getUserLeaveBalance =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetUserLeaveBalanceQueryVariables,
-    APITypes.GetUserLeaveBalanceQuery
-  >;
+  APITypes.GetUserLeaveBalanceQueryVariables,
+  APITypes.GetUserLeaveBalanceQuery
+>;
 export const listUserLeaveBalances =
   /* GraphQL */ `query ListUserLeaveBalances($userID: ID!, $year: Int!, $nextToken: String) {
   listUserLeaveBalances(userID: $userID, year: $year, nextToken: $nextToken) {
@@ -7147,9 +7161,9 @@ export const listUserLeaveBalances =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListUserLeaveBalancesQueryVariables,
-    APITypes.ListUserLeaveBalancesQuery
-  >;
+  APITypes.ListUserLeaveBalancesQueryVariables,
+  APITypes.ListUserLeaveBalancesQuery
+>;
 export const listLeaveBalances = /* GraphQL */ `query ListLeaveBalances(
   $year: Int!
   $leaveType: LeaveType
@@ -7215,9 +7229,9 @@ export const getLeaveApplication =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetLeaveApplicationQueryVariables,
-    APITypes.GetLeaveApplicationQuery
-  >;
+  APITypes.GetLeaveApplicationQueryVariables,
+  APITypes.GetLeaveApplicationQuery
+>;
 export const listLeaveApplicationsByUser =
   /* GraphQL */ `query ListLeaveApplicationsByUser(
   $userID: ID!
@@ -7272,9 +7286,9 @@ export const listLeaveApplicationsByUser =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListLeaveApplicationsByUserQueryVariables,
-    APITypes.ListLeaveApplicationsByUserQuery
-  >;
+  APITypes.ListLeaveApplicationsByUserQueryVariables,
+  APITypes.ListLeaveApplicationsByUserQuery
+>;
 export const listLeaveApplicationsByApprover =
   /* GraphQL */ `query ListLeaveApplicationsByApprover(
   $approverID: ID!
@@ -7325,9 +7339,9 @@ export const listLeaveApplicationsByApprover =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListLeaveApplicationsByApproverQueryVariables,
-    APITypes.ListLeaveApplicationsByApproverQuery
-  >;
+  APITypes.ListLeaveApplicationsByApproverQueryVariables,
+  APITypes.ListLeaveApplicationsByApproverQuery
+>;
 export const listLeaveApplications = /* GraphQL */ `query ListLeaveApplications(
   $status: LeaveStatus
   $month: String
@@ -7428,9 +7442,9 @@ export const listLeaveApplicationsByStatus =
   }
 }
 ` as GeneratedQuery<
-    APITypes.ListLeaveApplicationsByStatusQueryVariables,
-    APITypes.ListLeaveApplicationsByStatusQuery
-  >;
+  APITypes.ListLeaveApplicationsByStatusQueryVariables,
+  APITypes.ListLeaveApplicationsByStatusQuery
+>;
 export const getPlantLeaveCalendar = /* GraphQL */ `query GetPlantLeaveCalendar(
   $plantID: ID!
   $startDate: AWSDate!
@@ -7583,9 +7597,9 @@ export const getUnifiedAttendanceData =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetUnifiedAttendanceDataQueryVariables,
-    APITypes.GetUnifiedAttendanceDataQuery
-  >;
+  APITypes.GetUnifiedAttendanceDataQueryVariables,
+  APITypes.GetUnifiedAttendanceDataQuery
+>;
 export const universalQuery = /* GraphQL */ `query UniversalQuery(
   $tableName: String!
   $filters: [UniversalFilterInput!]
@@ -7683,9 +7697,9 @@ export const getGenericDocument =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetGenericDocumentQueryVariables,
-    APITypes.GetGenericDocumentQuery
-  >;
+  APITypes.GetGenericDocumentQueryVariables,
+  APITypes.GetGenericDocumentQuery
+>;
 export const listGenericDocuments = /* GraphQL */ `query ListGenericDocuments(
   $orgID: ID!
   $documentType: DocumentType
@@ -7823,60 +7837,17 @@ export const getGenericDocumentDownloadUrl =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetGenericDocumentDownloadUrlQueryVariables,
-    APITypes.GetGenericDocumentDownloadUrlQuery
-  >;
+  APITypes.GetGenericDocumentDownloadUrlQueryVariables,
+  APITypes.GetGenericDocumentDownloadUrlQuery
+>;
 export const deleteGenericDocument =
   /* GraphQL */ `query DeleteGenericDocument($documentID: ID!) {
   deleteGenericDocument(documentID: $documentID)
 }
 ` as GeneratedQuery<
-    APITypes.DeleteGenericDocumentQueryVariables,
-    APITypes.DeleteGenericDocumentQuery
-  >;
-export const listUSBDevices = /* GraphQL */ `query ListUSBDevices {
-  listUSBDevices {
-    name
-    vendorId
-    productId
-    manufacturer
-    serialNumber
-    path
-    __typename
-  }
-}
-` as GeneratedQuery<
-  APITypes.ListUSBDevicesQueryVariables,
-  APITypes.ListUSBDevicesQuery
+  APITypes.DeleteGenericDocumentQueryVariables,
+  APITypes.DeleteGenericDocumentQuery
 >;
-export const getUSBDeviceStatus = /* GraphQL */ `query GetUSBDeviceStatus {
-  getUSBDeviceStatus {
-    name
-    connected
-    lastReceived
-    errorCount
-    __typename
-  }
-}
-` as GeneratedQuery<
-  APITypes.GetUSBDeviceStatusQueryVariables,
-  APITypes.GetUSBDeviceStatusQuery
->;
-export const readFromUSBDevice =
-  /* GraphQL */ `query ReadFromUSBDevice($deviceName: String!, $timeout: Int) {
-  readFromUSBDevice(deviceName: $deviceName, timeout: $timeout) {
-    success
-    deviceName
-    data
-    timestamp
-    error
-    __typename
-  }
-}
-` as GeneratedQuery<
-    APITypes.ReadFromUSBDeviceQueryVariables,
-    APITypes.ReadFromUSBDeviceQuery
-  >;
 export const getERPItem =
   /* GraphQL */ `query GetERPItem($pk: ID!, $sk: String!) {
   getERPItem(pk: $pk, sk: $sk) {
@@ -8003,9 +7974,9 @@ export const getERPItem =
   }
 }
 ` as GeneratedQuery<
-    APITypes.GetERPItemQueryVariables,
-    APITypes.GetERPItemQuery
-  >;
+  APITypes.GetERPItemQueryVariables,
+  APITypes.GetERPItemQuery
+>;
 export const listERPItemsByPK = /* GraphQL */ `query ListERPItemsByPK(
   $pk: ID!
   $skBeginsWith: String
@@ -8147,4 +8118,276 @@ export const listERPItemsByPK = /* GraphQL */ `query ListERPItemsByPK(
 ` as GeneratedQuery<
   APITypes.ListERPItemsByPKQueryVariables,
   APITypes.ListERPItemsByPKQuery
+>;
+export const getBooking = /* GraphQL */ `query GetBooking($bookingID: ID!) {
+  getBooking(bookingID: $bookingID) {
+    bookingID
+    firstName
+    lastName
+    email
+    phoneNumber
+    city
+    country
+    state
+    subject
+    message
+    visitType
+    preferredDate
+    preferredTime
+    status
+    createdAt
+    updatedAt
+    assignedTo
+    notes
+    orgID
+    plantID
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.GetBookingQueryVariables,
+  APITypes.GetBookingQuery
+>;
+export const listBookings =
+  /* GraphQL */ `query ListBookings($input: ListBookingsInput!) {
+  listBookings(input: $input) {
+    items {
+      bookingID
+      firstName
+      lastName
+      email
+      phoneNumber
+      city
+      country
+      state
+      subject
+      message
+      visitType
+      preferredDate
+      preferredTime
+      status
+      createdAt
+      updatedAt
+      assignedTo
+      notes
+      orgID
+      plantID
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ListBookingsQueryVariables,
+  APITypes.ListBookingsQuery
+>;
+export const listBookingsByOrg = /* GraphQL */ `query ListBookingsByOrg(
+  $orgID: ID!
+  $status: BookingStatus
+  $limit: Int
+  $nextToken: String
+) {
+  listBookingsByOrg(
+    orgID: $orgID
+    status: $status
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      bookingID
+      firstName
+      lastName
+      email
+      phoneNumber
+      city
+      country
+      state
+      subject
+      message
+      visitType
+      preferredDate
+      preferredTime
+      status
+      createdAt
+      updatedAt
+      assignedTo
+      notes
+      orgID
+      plantID
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ListBookingsByOrgQueryVariables,
+  APITypes.ListBookingsByOrgQuery
+>;
+export const listBookingsByPlant = /* GraphQL */ `query ListBookingsByPlant(
+  $plantID: ID!
+  $status: BookingStatus
+  $limit: Int
+  $nextToken: String
+) {
+  listBookingsByPlant(
+    plantID: $plantID
+    status: $status
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      bookingID
+      firstName
+      lastName
+      email
+      phoneNumber
+      city
+      country
+      state
+      subject
+      message
+      visitType
+      preferredDate
+      preferredTime
+      status
+      createdAt
+      updatedAt
+      assignedTo
+      notes
+      orgID
+      plantID
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ListBookingsByPlantQueryVariables,
+  APITypes.ListBookingsByPlantQuery
+>;
+export const listBookingsByStatus = /* GraphQL */ `query ListBookingsByStatus(
+  $status: BookingStatus!
+  $limit: Int
+  $nextToken: String
+) {
+  listBookingsByStatus(status: $status, limit: $limit, nextToken: $nextToken) {
+    items {
+      bookingID
+      firstName
+      lastName
+      email
+      phoneNumber
+      city
+      country
+      state
+      subject
+      message
+      visitType
+      preferredDate
+      preferredTime
+      status
+      createdAt
+      updatedAt
+      assignedTo
+      notes
+      orgID
+      plantID
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ListBookingsByStatusQueryVariables,
+  APITypes.ListBookingsByStatusQuery
+>;
+export const listBookingsByAssignee =
+  /* GraphQL */ `query ListBookingsByAssignee(
+  $assignedTo: ID!
+  $limit: Int
+  $nextToken: String
+) {
+  listBookingsByAssignee(
+    assignedTo: $assignedTo
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      bookingID
+      firstName
+      lastName
+      email
+      phoneNumber
+      city
+      country
+      state
+      subject
+      message
+      visitType
+      preferredDate
+      preferredTime
+      status
+      createdAt
+      updatedAt
+      assignedTo
+      notes
+      orgID
+      plantID
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ListBookingsByAssigneeQueryVariables,
+  APITypes.ListBookingsByAssigneeQuery
+>;
+export const listBookingsByDateRange =
+  /* GraphQL */ `query ListBookingsByDateRange(
+  $startDate: AWSDate!
+  $endDate: AWSDate!
+  $limit: Int
+  $nextToken: String
+) {
+  listBookingsByDateRange(
+    startDate: $startDate
+    endDate: $endDate
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      bookingID
+      firstName
+      lastName
+      email
+      phoneNumber
+      city
+      country
+      state
+      subject
+      message
+      visitType
+      preferredDate
+      preferredTime
+      status
+      createdAt
+      updatedAt
+      assignedTo
+      notes
+      orgID
+      plantID
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ListBookingsByDateRangeQueryVariables,
+  APITypes.ListBookingsByDateRangeQuery
 >;

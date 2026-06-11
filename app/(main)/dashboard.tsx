@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   Platform,
@@ -15,7 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
-import { fetchFleetTotalCostSavings } from '@/lib/appsync';
+import { fetchFleetImpactMetrics } from '@/lib/appsync';
 import {
   buildDashboardActivity,
   formatInr,
@@ -71,8 +71,9 @@ export default function DashboardScreen() {
     refresh,
   } = useApp();
 
-  const [costSavings, setCostSavings] = useState<number | null>(null);
-  const [costLoading, setCostLoading] = useState(false);
+  const [metrics, setMetrics] = useState<{ costSavings: number; treesSaved: number } | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const wasLoadingRef = useRef(isLoading);
 
   const topPad = Platform.OS === 'web' ? 67 : 0;
 
@@ -86,25 +87,33 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     if (tractorIds.length === 0) {
-      setCostSavings(0);
+      setMetrics({ costSavings: 0, treesSaved: 0 });
       return;
     }
+    if (isLoading) {
+      wasLoadingRef.current = true;
+      return;
+    }
+
+    const shouldForce = wasLoadingRef.current;
+    wasLoadingRef.current = false;
+
     let cancelled = false;
-    setCostLoading(true);
-    fetchFleetTotalCostSavings(tractorIds)
-      .then(sum => {
-        if (!cancelled) setCostSavings(sum);
+    setMetricsLoading(true);
+    fetchFleetImpactMetrics(tractorIds, 6, shouldForce)
+      .then(res => {
+        if (!cancelled) setMetrics(res);
       })
       .catch(() => {
-        if (!cancelled) setCostSavings(null);
+        if (!cancelled) setMetrics(null);
       })
       .finally(() => {
-        if (!cancelled) setCostLoading(false);
+        if (!cancelled) setMetricsLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [tractorIds.join('|')]);
+  }, [tractorIds.join('|'), isLoading]);
 
   const openTickets = useMemo(
     () =>
@@ -120,9 +129,11 @@ export default function DashboardScreen() {
   );
 
   const costLabel =
-    costSavings != null ? formatInr(costSavings) : '—';
+    metrics?.costSavings != null ? formatInr(metrics.costSavings) : '—';
+  const treesLabel =
+    metrics?.treesSaved != null ? metrics.treesSaved.toFixed(1) : '—';
 
-  const costCardLoading = costLoading && costSavings === null;
+  const costCardLoading = metricsLoading && metrics === null;
   const statsSyncing = isLoadingMorePlants || costCardLoading;
 
   if (error && !isLoading) {
@@ -229,10 +240,8 @@ export default function DashboardScreen() {
                 <Text style={styles.subCardValue}>{costLabel}</Text>
               </View>
               <View style={styles.floatingSubCard}>
-                <Text style={styles.subCardLabel}>Average per Tractor</Text>
-                <Text style={styles.subCardValue}>
-                  {costSavings ? formatInr(costSavings / (totalFleet || 1)) : '—'}
-                </Text>
+                <Text style={styles.subCardLabel}>Trees Saved</Text>
+                <Text style={styles.subCardValue}>{treesLabel}</Text>
               </View>
             </View>
           </View>

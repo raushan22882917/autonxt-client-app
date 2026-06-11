@@ -53,6 +53,7 @@ function SummaryBox({
   bg,
   border,
   icon,
+  isFullRow,
 }: {
   value: number;
   label: string;
@@ -60,14 +61,35 @@ function SummaryBox({
   bg: string;
   border: string;
   icon: string;
+  isFullRow?: boolean;
 }) {
   return (
-    <View style={[summaryStyles.box, { backgroundColor: bg, borderColor: border }]}>
-      <View style={[summaryStyles.iconWrap, { backgroundColor: color + '20' }]}>
-        <Feather name={icon as any} size={15} color={color} />
+    <View
+      style={[
+        summaryStyles.box,
+        isFullRow ? summaryStyles.boxFull : summaryStyles.boxSmall,
+        {
+          backgroundColor: bg,
+          borderColor: border,
+          borderBottomColor: color,
+          borderBottomWidth: 5,
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.15,
+          shadowRadius: 12,
+          elevation: 6,
+        },
+      ]}
+    >
+      <View style={isFullRow ? summaryStyles.fullRowContent : summaryStyles.smallRowContent}>
+        <View style={[summaryStyles.iconWrap, { backgroundColor: color + '20' }]}>
+          <Feather name={icon as any} size={isFullRow ? 18 : 15} color={color} />
+        </View>
+        <View style={isFullRow ? summaryStyles.fullRowText : summaryStyles.smallRowText}>
+          <Text style={[summaryStyles.num, isFullRow && { fontSize: 26 }, { color }]}>{value}</Text>
+          <Text style={[summaryStyles.label, { color: color + 'BB' }]}>{label}</Text>
+        </View>
       </View>
-      <Text style={[summaryStyles.num, { color }]}>{value}</Text>
-      <Text style={[summaryStyles.label, { color: color + 'BB' }]}>{label}</Text>
     </View>
   );
 }
@@ -271,39 +293,42 @@ export default function ComplaintsScreen() {
         </Text>
 
         {/* Icon-enhanced Summary Boxes */}
-        <View style={styles.summaryRow}>
+        <View style={styles.summaryContainer}>
           <SummaryBox
             value={raisedCount}
             label="Raised"
-            color={c.blue}
-            bg={c.blueSoft}
-            border={c.blue + '30'}
-            icon="inbox"
-          />
-          <SummaryBox
-            value={critCount}
-            label="Critical"
-            color={c.red}
+            color={c.primary}
             bg={c.redSoft}
             border={c.redBorder}
-            icon="alert-octagon"
+            icon="inbox"
+            isFullRow
           />
-          <SummaryBox
-            value={openCount}
-            label="Open"
-            color={c.warning}
-            bg={c.warningSoft}
-            border={c.warningBorder}
-            icon="clock"
-          />
-          <SummaryBox
-            value={breakdownRaised}
-            label="Breakdown"
-            color={c.foreground}
-            bg={c.surfaceAlt}
-            border={c.border}
-            icon="tool"
-          />
+          <View style={styles.summarySubRow}>
+            <SummaryBox
+              value={critCount}
+              label="Critical"
+              color="#D73220"
+              bg="#FDE8E5"
+              border="#FDA4AF"
+              icon="alert-octagon"
+            />
+            <SummaryBox
+              value={openCount}
+              label="Open"
+              color={c.warning}
+              bg={c.warningSoft}
+              border={c.warningBorder}
+              icon="clock"
+            />
+            <SummaryBox
+              value={breakdownRaised}
+              label="Breakdown"
+              color={c.foreground}
+              bg={c.surfaceAlt}
+              border={c.border}
+              icon="tool"
+            />
+          </View>
         </View>
 
         {/* Results count + period */}
@@ -343,7 +368,7 @@ export default function ComplaintsScreen() {
               {emptyMessageForTab(statusTab, breakdownOnly, periodLabel)}
             </Text>
             <TouchableOpacity
-              style={[styles.emptyFilterBtn, { borderColor: c.primary + '44', backgroundColor: c.blueSoft }]}
+              style={[styles.emptyFilterBtn, { borderColor: c.primary + '44', backgroundColor: c.redSoft }]}
               onPress={() => setFilterSheetOpen(true)}
             >
               <Feather name="sliders" size={15} color={c.primary} />
@@ -365,26 +390,41 @@ export default function ComplaintsScreen() {
 
 const summaryStyles = StyleSheet.create({
   box: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 18,
+    borderWidth: 1.5,
     paddingVertical: 14,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
+  },
+  boxFull: {
+    width: '100%',
+  },
+  boxSmall: {
+    flex: 1,
+  },
+  fullRowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  smallRowContent: {
     alignItems: 'center',
     gap: 4,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+  },
+  fullRowText: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+  },
+  smallRowText: {
+    alignItems: 'center',
+    gap: 2,
   },
   iconWrap: {
-    width: 30,
-    height: 30,
+    width: 34,
+    height: 34,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
   },
   num: {
     fontSize: 22,
@@ -539,7 +579,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     letterSpacing: 0.1,
   },
-  summaryRow: {
+  summaryContainer: {
+    gap: 10,
+    marginBottom: 6,
+  },
+  summarySubRow: {
     flexDirection: 'row',
     gap: 8,
   },

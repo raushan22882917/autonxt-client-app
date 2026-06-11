@@ -23,7 +23,7 @@ export interface DataTableColumn<T> {
   render?: (row: T, index: number) => React.ReactNode;
 }
 
-interface Props<T> {
+export interface DataTableProps<T> {
   title?: string;
   subtitle?: string;
   columns: DataTableColumn<T>[];
@@ -67,7 +67,7 @@ export function DataTable<T>({
   outerBorderColor,
   titleBgGradient,
   headerBgGradient,
-}: Props<T>) {
+}: DataTableProps<T>) {
   const c = useColors();
 
   const cellAlign = (align?: 'left' | 'center' | 'right'): TextStyle['textAlign'] => {
@@ -107,7 +107,7 @@ export function DataTable<T>({
       {/* Header row */}
       {headerBgGradient ? (
         <LinearGradient
-          colors={headerBgGradient}
+          colors={headerBgGradient as [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[
@@ -218,7 +218,7 @@ export function DataTable<T>({
       {title ? (
         titleBgGradient ? (
           <LinearGradient
-            colors={titleBgGradient}
+            colors={titleBgGradient as [string, string, ...string[]]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={[
@@ -292,6 +292,10 @@ export function DataTable<T>({
 }
 
 /** Two-column key / value summary table. */
+export interface KeyValueTableProps extends Omit<DataTableProps<any>, 'columns' | 'data' | 'keyExtractor' | 'emptyMessage'> {
+  rows: { label: string; value: string }[];
+}
+
 export function KeyValueTable({
   title,
   subtitle,
@@ -307,22 +311,7 @@ export function KeyValueTable({
   outerBorderColor,
   titleBgGradient,
   headerBgGradient,
-}: {
-  title?: string;
-  subtitle?: string;
-  rows: { label: string; value: string }[];
-  loading?: boolean;
-  compact?: boolean;
-  titleColor?: string;
-  headerBgColor?: string;
-  headerTextColor?: string;
-  rowBgColorEven?: string;
-  rowBgColorOdd?: string;
-  borderColor?: string;
-  outerBorderColor?: string;
-  titleBgGradient?: string[];
-  headerBgGradient?: string[];
-}) {
+}: KeyValueTableProps) {
   return (
     <DataTable
       title={title}

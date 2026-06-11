@@ -179,13 +179,6 @@ export type NotificationResult = {
   notificationSentAt?: string | null;
 };
 
-export type USBDeviceResponse = {
-  __typename: 'USBDeviceResponse';
-  success: boolean;
-  message: string;
-  deviceName?: string | null;
-};
-
 export type CreateERPItemInput = {
   PK: string;
   SK: string;
@@ -529,6 +522,8 @@ export type CreateTractorInput = {
   orgID?: string | null;
   currentImplement?: string | null;
   serviceStatus?: string | null;
+  armLength?: string | null;
+  dofChargeStatus?: string | null;
   minValue?: number | null;
   maxValue?: number | null;
   midValue?: number | null;
@@ -565,6 +560,8 @@ export type Tractor = {
   loggerID?: string | null;
   currentImplement?: string | null;
   serviceStatus?: string | null;
+  armLength?: string | null;
+  dofChargeStatus?: string | null;
   user?: string | null;
   minValue?: number | null;
   maxValue?: number | null;
@@ -697,6 +694,8 @@ export type UpdateTractorInput = {
   user?: string | null;
   currentImplement?: string | null;
   serviceStatus?: string | null;
+  armLength?: string | null;
+  dofChargeStatus?: string | null;
   minValue?: number | null;
   maxValue?: number | null;
   midValue?: number | null;
@@ -1394,7 +1393,6 @@ export enum ComplaintSource {
 export enum ComplaintProblemType {
   MECHANICAL = 'MECHANICAL',
   ELECTRICAL = 'ELECTRICAL',
-  ATTACHMENT = 'ATTACHMENT',
   SOFTWARE = 'SOFTWARE',
   ACCIDENT = 'ACCIDENT',
   MAJOR_BREAKDOWN = 'MAJOR_BREAKDOWN',
@@ -2070,7 +2068,7 @@ export type SkuModelPartsRequiredInput = {
 export type SkuMaster = {
   __typename: 'SkuMaster';
   sku: string;
-  orgID: string;
+  orgID?: string | null;
   name: string;
   description?: string | null;
   category: InventoryCategory;
@@ -3778,6 +3776,83 @@ export enum GroupMembershipAction {
   REPLACE_USERS = 'REPLACE_USERS',
 }
 
+export type CreateBookingInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  city: string;
+  country: string;
+  state: string;
+  subject: string;
+  message: string;
+  visitType: VisitType;
+  preferredDate?: string | null;
+  preferredTime?: string | null;
+  orgID?: string | null;
+  plantID?: string | null;
+};
+
+export enum VisitType {
+  SITE_VISIT = 'SITE_VISIT',
+  PRODUCT_DEMO = 'PRODUCT_DEMO',
+  CONSULTATION = 'CONSULTATION',
+  MAINTENANCE = 'MAINTENANCE',
+  INSPECTION = 'INSPECTION',
+  OTHER = 'OTHER',
+}
+
+export type Booking = {
+  __typename: 'Booking';
+  bookingID: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  city: string;
+  country: string;
+  state: string;
+  subject: string;
+  message: string;
+  visitType: VisitType;
+  preferredDate?: string | null;
+  preferredTime?: string | null;
+  status: BookingStatus;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: string | null;
+  notes?: string | null;
+  orgID?: string | null;
+  plantID?: string | null;
+};
+
+export enum BookingStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  RESCHEDULED = 'RESCHEDULED',
+}
+
+export type UpdateBookingInput = {
+  bookingID: string;
+  status?: BookingStatus | null;
+  assignedTo?: string | null;
+  notes?: string | null;
+  preferredDate?: string | null;
+  preferredTime?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+  city?: string | null;
+  country?: string | null;
+  state?: string | null;
+  subject?: string | null;
+  message?: string | null;
+  visitType?: VisitType | null;
+};
+
 export type CognitoUserConnection = {
   __typename: 'CognitoUserConnection';
   items: Array<CognitoUser>;
@@ -4598,36 +4673,26 @@ export type DocumentDownloadUrl = {
   mimeType: string;
 };
 
-export type USBDevice = {
-  __typename: 'USBDevice';
-  name: string;
-  vendorId: number;
-  productId: number;
-  manufacturer?: string | null;
-  serialNumber?: string | null;
-  path?: string | null;
-};
-
-export type USBDeviceStatus = {
-  __typename: 'USBDeviceStatus';
-  name: string;
-  connected: boolean;
-  lastReceived?: string | null;
-  errorCount: number;
-};
-
-export type USBDataResponse = {
-  __typename: 'USBDataResponse';
-  success: boolean;
-  deviceName: string;
-  data: string;
-  timestamp: string;
-  error?: string | null;
-};
-
 export type ERPItemConnection = {
   __typename: 'ERPItemConnection';
   items: Array<ERPItem>;
+  nextToken?: string | null;
+};
+
+export type ListBookingsInput = {
+  status?: BookingStatus | null;
+  visitType?: VisitType | null;
+  orgID?: string | null;
+  plantID?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  limit?: number | null;
+  nextToken?: string | null;
+};
+
+export type BookingConnection = {
+  __typename: 'BookingConnection';
+  items: Array<Booking>;
   nextToken?: string | null;
 };
 
@@ -4879,71 +4944,6 @@ export type NotifyPlantTechnicalSupervisorMutation = {
     message?: string | null;
     notifiedSupervisors?: Array<string> | null;
     notificationSentAt?: string | null;
-  };
-};
-
-export type ConnectToUSBDeviceMutationVariables = {
-  deviceName: string;
-  baudRate?: number | null;
-};
-
-export type ConnectToUSBDeviceMutation = {
-  connectToUSBDevice: {
-    __typename: 'USBDeviceResponse';
-    success: boolean;
-    message: string;
-    deviceName?: string | null;
-  };
-};
-
-export type DisconnectFromUSBDeviceMutationVariables = {
-  deviceName: string;
-};
-
-export type DisconnectFromUSBDeviceMutation = {
-  disconnectFromUSBDevice: {
-    __typename: 'USBDeviceResponse';
-    success: boolean;
-    message: string;
-    deviceName?: string | null;
-  };
-};
-
-export type WriteToUSBDeviceMutationVariables = {
-  deviceName: string;
-  data: string;
-};
-
-export type WriteToUSBDeviceMutation = {
-  writeToUSBDevice: {
-    __typename: 'USBDeviceResponse';
-    success: boolean;
-    message: string;
-    deviceName?: string | null;
-  };
-};
-
-export type ConnectAllUSBDevicesMutationVariables = {
-  baudRate?: number | null;
-};
-
-export type ConnectAllUSBDevicesMutation = {
-  connectAllUSBDevices: {
-    __typename: 'USBDeviceResponse';
-    success: boolean;
-    message: string;
-    deviceName?: string | null;
-  };
-};
-
-export type DisconnectAllUSBDevicesMutationVariables = {};
-
-export type DisconnectAllUSBDevicesMutation = {
-  disconnectAllUSBDevices: {
-    __typename: 'USBDeviceResponse';
-    success: boolean;
-    message: string;
-    deviceName?: string | null;
   };
 };
 
@@ -6103,6 +6103,8 @@ export type CreateTractorMutation = {
     loggerID?: string | null;
     currentImplement?: string | null;
     serviceStatus?: string | null;
+    armLength?: string | null;
+    dofChargeStatus?: string | null;
     user?: string | null;
     minValue?: number | null;
     maxValue?: number | null;
@@ -6168,6 +6170,8 @@ export type UpdateTractorMutation = {
     loggerID?: string | null;
     currentImplement?: string | null;
     serviceStatus?: string | null;
+    armLength?: string | null;
+    dofChargeStatus?: string | null;
     user?: string | null;
     minValue?: number | null;
     maxValue?: number | null;
@@ -6233,6 +6237,8 @@ export type DeleteTractorMutation = {
     loggerID?: string | null;
     currentImplement?: string | null;
     serviceStatus?: string | null;
+    armLength?: string | null;
+    dofChargeStatus?: string | null;
     user?: string | null;
     minValue?: number | null;
     maxValue?: number | null;
@@ -9431,7 +9437,7 @@ export type UpsertSkuMutation = {
   upsertSku: {
     __typename: 'SkuMaster';
     sku: string;
-    orgID: string;
+    orgID?: string | null;
     name: string;
     description?: string | null;
     category: InventoryCategory;
@@ -9488,7 +9494,7 @@ export type DeleteSkuMutation = {
   deleteSku?: {
     __typename: 'SkuMaster';
     sku: string;
-    orgID: string;
+    orgID?: string | null;
     name: string;
     description?: string | null;
     category: InventoryCategory;
@@ -12043,6 +12049,190 @@ export type UniversalManageGroupMembershipMutation = {
   };
 };
 
+export type CreateBookingMutationVariables = {
+  input: CreateBookingInput;
+};
+
+export type CreateBookingMutation = {
+  createBooking: {
+    __typename: 'Booking';
+    bookingID: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    city: string;
+    country: string;
+    state: string;
+    subject: string;
+    message: string;
+    visitType: VisitType;
+    preferredDate?: string | null;
+    preferredTime?: string | null;
+    status: BookingStatus;
+    createdAt: string;
+    updatedAt: string;
+    assignedTo?: string | null;
+    notes?: string | null;
+    orgID?: string | null;
+    plantID?: string | null;
+  };
+};
+
+export type UpdateBookingMutationVariables = {
+  input: UpdateBookingInput;
+};
+
+export type UpdateBookingMutation = {
+  updateBooking: {
+    __typename: 'Booking';
+    bookingID: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    city: string;
+    country: string;
+    state: string;
+    subject: string;
+    message: string;
+    visitType: VisitType;
+    preferredDate?: string | null;
+    preferredTime?: string | null;
+    status: BookingStatus;
+    createdAt: string;
+    updatedAt: string;
+    assignedTo?: string | null;
+    notes?: string | null;
+    orgID?: string | null;
+    plantID?: string | null;
+  };
+};
+
+export type DeleteBookingMutationVariables = {
+  bookingID: string;
+};
+
+export type DeleteBookingMutation = {
+  deleteBooking: {
+    __typename: 'Booking';
+    bookingID: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    city: string;
+    country: string;
+    state: string;
+    subject: string;
+    message: string;
+    visitType: VisitType;
+    preferredDate?: string | null;
+    preferredTime?: string | null;
+    status: BookingStatus;
+    createdAt: string;
+    updatedAt: string;
+    assignedTo?: string | null;
+    notes?: string | null;
+    orgID?: string | null;
+    plantID?: string | null;
+  };
+};
+
+export type CancelBookingMutationVariables = {
+  bookingID: string;
+  reason?: string | null;
+};
+
+export type CancelBookingMutation = {
+  cancelBooking: {
+    __typename: 'Booking';
+    bookingID: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    city: string;
+    country: string;
+    state: string;
+    subject: string;
+    message: string;
+    visitType: VisitType;
+    preferredDate?: string | null;
+    preferredTime?: string | null;
+    status: BookingStatus;
+    createdAt: string;
+    updatedAt: string;
+    assignedTo?: string | null;
+    notes?: string | null;
+    orgID?: string | null;
+    plantID?: string | null;
+  };
+};
+
+export type RescheduleBookingMutationVariables = {
+  bookingID: string;
+  newDate: string;
+  newTime?: string | null;
+};
+
+export type RescheduleBookingMutation = {
+  rescheduleBooking: {
+    __typename: 'Booking';
+    bookingID: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    city: string;
+    country: string;
+    state: string;
+    subject: string;
+    message: string;
+    visitType: VisitType;
+    preferredDate?: string | null;
+    preferredTime?: string | null;
+    status: BookingStatus;
+    createdAt: string;
+    updatedAt: string;
+    assignedTo?: string | null;
+    notes?: string | null;
+    orgID?: string | null;
+    plantID?: string | null;
+  };
+};
+
+export type AssignBookingMutationVariables = {
+  bookingID: string;
+  assignedTo: string;
+};
+
+export type AssignBookingMutation = {
+  assignBooking: {
+    __typename: 'Booking';
+    bookingID: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    city: string;
+    country: string;
+    state: string;
+    subject: string;
+    message: string;
+    visitType: VisitType;
+    preferredDate?: string | null;
+    preferredTime?: string | null;
+    status: BookingStatus;
+    createdAt: string;
+    updatedAt: string;
+    assignedTo?: string | null;
+    notes?: string | null;
+    orgID?: string | null;
+    plantID?: string | null;
+  };
+};
+
 export type GetOrganizationQueryVariables = {
   orgID: string;
 };
@@ -12600,6 +12790,8 @@ export type ListTractorsQuery = {
     loggerID?: string | null;
     currentImplement?: string | null;
     serviceStatus?: string | null;
+    armLength?: string | null;
+    dofChargeStatus?: string | null;
     user?: string | null;
     minValue?: number | null;
     maxValue?: number | null;
@@ -12665,6 +12857,8 @@ export type ListTractorsByUserQuery = {
     loggerID?: string | null;
     currentImplement?: string | null;
     serviceStatus?: string | null;
+    armLength?: string | null;
+    dofChargeStatus?: string | null;
     user?: string | null;
     minValue?: number | null;
     maxValue?: number | null;
@@ -12730,6 +12924,8 @@ export type ListTractorsByPlantQuery = {
     loggerID?: string | null;
     currentImplement?: string | null;
     serviceStatus?: string | null;
+    armLength?: string | null;
+    dofChargeStatus?: string | null;
     user?: string | null;
     minValue?: number | null;
     maxValue?: number | null;
@@ -12795,6 +12991,8 @@ export type ListTractorsByOrgQuery = {
     loggerID?: string | null;
     currentImplement?: string | null;
     serviceStatus?: string | null;
+    armLength?: string | null;
+    dofChargeStatus?: string | null;
     user?: string | null;
     minValue?: number | null;
     maxValue?: number | null;
@@ -12860,6 +13058,8 @@ export type GetTractorQuery = {
     loggerID?: string | null;
     currentImplement?: string | null;
     serviceStatus?: string | null;
+    armLength?: string | null;
+    dofChargeStatus?: string | null;
     user?: string | null;
     minValue?: number | null;
     maxValue?: number | null;
@@ -16395,7 +16595,7 @@ export type GetSkuQuery = {
   getSku?: {
     __typename: 'SkuMaster';
     sku: string;
-    orgID: string;
+    orgID?: string | null;
     name: string;
     description?: string | null;
     category: InventoryCategory;
@@ -16456,7 +16656,7 @@ export type ListSkusQuery = {
     items: Array<{
       __typename: 'SkuMaster';
       sku: string;
-      orgID: string;
+      orgID?: string | null;
       name: string;
       description?: string | null;
       category: InventoryCategory;
@@ -16520,7 +16720,7 @@ export type ListSkusByOrgQuery = {
     items: Array<{
       __typename: 'SkuMaster';
       sku: string;
-      orgID: string;
+      orgID?: string | null;
       name: string;
       description?: string | null;
       category: InventoryCategory;
@@ -19460,48 +19660,6 @@ export type DeleteGenericDocumentQuery = {
   deleteGenericDocument: boolean;
 };
 
-export type ListUSBDevicesQueryVariables = {};
-
-export type ListUSBDevicesQuery = {
-  listUSBDevices?: Array<{
-    __typename: 'USBDevice';
-    name: string;
-    vendorId: number;
-    productId: number;
-    manufacturer?: string | null;
-    serialNumber?: string | null;
-    path?: string | null;
-  } | null> | null;
-};
-
-export type GetUSBDeviceStatusQueryVariables = {};
-
-export type GetUSBDeviceStatusQuery = {
-  getUSBDeviceStatus?: Array<{
-    __typename: 'USBDeviceStatus';
-    name: string;
-    connected: boolean;
-    lastReceived?: string | null;
-    errorCount: number;
-  } | null> | null;
-};
-
-export type ReadFromUSBDeviceQueryVariables = {
-  deviceName: string;
-  timeout?: number | null;
-};
-
-export type ReadFromUSBDeviceQuery = {
-  readFromUSBDevice: {
-    __typename: 'USBDataResponse';
-    success: boolean;
-    deviceName: string;
-    data: string;
-    timestamp: string;
-    error?: string | null;
-  };
-};
-
 export type GetERPItemQueryVariables = {
   pk: string;
   sk: string;
@@ -19763,6 +19921,253 @@ export type ListERPItemsByPKQuery = {
         secondPaymentAmount?: number | null;
         paymentStatus?: string | null;
       }> | null;
+    }>;
+    nextToken?: string | null;
+  } | null;
+};
+
+export type GetBookingQueryVariables = {
+  bookingID: string;
+};
+
+export type GetBookingQuery = {
+  getBooking?: {
+    __typename: 'Booking';
+    bookingID: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    city: string;
+    country: string;
+    state: string;
+    subject: string;
+    message: string;
+    visitType: VisitType;
+    preferredDate?: string | null;
+    preferredTime?: string | null;
+    status: BookingStatus;
+    createdAt: string;
+    updatedAt: string;
+    assignedTo?: string | null;
+    notes?: string | null;
+    orgID?: string | null;
+    plantID?: string | null;
+  } | null;
+};
+
+export type ListBookingsQueryVariables = {
+  input: ListBookingsInput;
+};
+
+export type ListBookingsQuery = {
+  listBookings?: {
+    __typename: 'BookingConnection';
+    items: Array<{
+      __typename: 'Booking';
+      bookingID: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+      city: string;
+      country: string;
+      state: string;
+      subject: string;
+      message: string;
+      visitType: VisitType;
+      preferredDate?: string | null;
+      preferredTime?: string | null;
+      status: BookingStatus;
+      createdAt: string;
+      updatedAt: string;
+      assignedTo?: string | null;
+      notes?: string | null;
+      orgID?: string | null;
+      plantID?: string | null;
+    }>;
+    nextToken?: string | null;
+  } | null;
+};
+
+export type ListBookingsByOrgQueryVariables = {
+  orgID: string;
+  status?: BookingStatus | null;
+  limit?: number | null;
+  nextToken?: string | null;
+};
+
+export type ListBookingsByOrgQuery = {
+  listBookingsByOrg?: {
+    __typename: 'BookingConnection';
+    items: Array<{
+      __typename: 'Booking';
+      bookingID: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+      city: string;
+      country: string;
+      state: string;
+      subject: string;
+      message: string;
+      visitType: VisitType;
+      preferredDate?: string | null;
+      preferredTime?: string | null;
+      status: BookingStatus;
+      createdAt: string;
+      updatedAt: string;
+      assignedTo?: string | null;
+      notes?: string | null;
+      orgID?: string | null;
+      plantID?: string | null;
+    }>;
+    nextToken?: string | null;
+  } | null;
+};
+
+export type ListBookingsByPlantQueryVariables = {
+  plantID: string;
+  status?: BookingStatus | null;
+  limit?: number | null;
+  nextToken?: string | null;
+};
+
+export type ListBookingsByPlantQuery = {
+  listBookingsByPlant?: {
+    __typename: 'BookingConnection';
+    items: Array<{
+      __typename: 'Booking';
+      bookingID: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+      city: string;
+      country: string;
+      state: string;
+      subject: string;
+      message: string;
+      visitType: VisitType;
+      preferredDate?: string | null;
+      preferredTime?: string | null;
+      status: BookingStatus;
+      createdAt: string;
+      updatedAt: string;
+      assignedTo?: string | null;
+      notes?: string | null;
+      orgID?: string | null;
+      plantID?: string | null;
+    }>;
+    nextToken?: string | null;
+  } | null;
+};
+
+export type ListBookingsByStatusQueryVariables = {
+  status: BookingStatus;
+  limit?: number | null;
+  nextToken?: string | null;
+};
+
+export type ListBookingsByStatusQuery = {
+  listBookingsByStatus?: {
+    __typename: 'BookingConnection';
+    items: Array<{
+      __typename: 'Booking';
+      bookingID: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+      city: string;
+      country: string;
+      state: string;
+      subject: string;
+      message: string;
+      visitType: VisitType;
+      preferredDate?: string | null;
+      preferredTime?: string | null;
+      status: BookingStatus;
+      createdAt: string;
+      updatedAt: string;
+      assignedTo?: string | null;
+      notes?: string | null;
+      orgID?: string | null;
+      plantID?: string | null;
+    }>;
+    nextToken?: string | null;
+  } | null;
+};
+
+export type ListBookingsByAssigneeQueryVariables = {
+  assignedTo: string;
+  limit?: number | null;
+  nextToken?: string | null;
+};
+
+export type ListBookingsByAssigneeQuery = {
+  listBookingsByAssignee?: {
+    __typename: 'BookingConnection';
+    items: Array<{
+      __typename: 'Booking';
+      bookingID: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+      city: string;
+      country: string;
+      state: string;
+      subject: string;
+      message: string;
+      visitType: VisitType;
+      preferredDate?: string | null;
+      preferredTime?: string | null;
+      status: BookingStatus;
+      createdAt: string;
+      updatedAt: string;
+      assignedTo?: string | null;
+      notes?: string | null;
+      orgID?: string | null;
+      plantID?: string | null;
+    }>;
+    nextToken?: string | null;
+  } | null;
+};
+
+export type ListBookingsByDateRangeQueryVariables = {
+  startDate: string;
+  endDate: string;
+  limit?: number | null;
+  nextToken?: string | null;
+};
+
+export type ListBookingsByDateRangeQuery = {
+  listBookingsByDateRange?: {
+    __typename: 'BookingConnection';
+    items: Array<{
+      __typename: 'Booking';
+      bookingID: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+      city: string;
+      country: string;
+      state: string;
+      subject: string;
+      message: string;
+      visitType: VisitType;
+      preferredDate?: string | null;
+      preferredTime?: string | null;
+      status: BookingStatus;
+      createdAt: string;
+      updatedAt: string;
+      assignedTo?: string | null;
+      notes?: string | null;
+      orgID?: string | null;
+      plantID?: string | null;
     }>;
     nextToken?: string | null;
   } | null;

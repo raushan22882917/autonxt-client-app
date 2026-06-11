@@ -88,24 +88,45 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
         </View>
       )}
 
-      {/* Left: image zone */}
-      <View style={styles.left}>
-        {!hideActions && onOpenDetail ? (
-          <TouchableOpacity
-            style={[styles.detailBtn, { backgroundColor: c.primary }]}
-            onPress={onOpenDetail}
-            activeOpacity={0.8}
-            accessibilityLabel="View tractor details"
+      {/* Top Header Row */}
+      <View style={styles.headerRow}>
+        <View style={styles.imageBox}>
+          <TractorImage tractor={t} resizeMode="contain" colorful={false} />
+        </View>
+        <View style={styles.headerInfo}>
+          <Text
+            style={[styles.headlineId, { color: inMaintenance ? c.warning : c.foreground }]}
+            numberOfLines={1}
           >
-            <Feather name="info" size={13} color={c.primaryForeground} />
-          </TouchableOpacity>
-        ) : null}
-
-        <View style={[styles.imageBox, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
-          <TractorImage tractor={t} resizeMode="contain" colorful />
+            {headlineId}
+          </Text>
+          <Text style={[styles.displayName, { color: c.mutedForeground }]} numberOfLines={1}>
+            {t.displayName || t.tractorID}
+          </Text>
         </View>
 
-        {/* Status row */}
+        {/* Chevron right trigger */}
+        {onOpenDetail && !hideActions ? (
+          <TouchableOpacity
+            style={styles.arrowHit}
+            onPress={onOpenDetail}
+            activeOpacity={0.7}
+            accessibilityLabel="Open tractor details"
+            accessibilityRole="button"
+          >
+            <View style={[styles.chevronWrap, { backgroundColor: c.surfaceAlt }]}>
+              <Feather name="chevron-right" size={18} color={c.mutedForeground} />
+            </View>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
+      {/* Horizontal Divider Line */}
+      <View style={[styles.divider, { backgroundColor: c.border }]} />
+
+      {/* Features & Status Badges */}
+      <View style={styles.featuresContainer}>
+        {/* Status row: Live signal, charging, model pill */}
         <View style={styles.statusRow}>
           {/* Live signal */}
           <View
@@ -139,31 +160,25 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
               color={t.isCharging ? c.primary : c.mutedForeground}
             />
           </View>
+
+          {/* Model pill */}
+          <View style={[styles.modelPill, { backgroundColor: c.accent }]}>
+            <Feather name="zap" size={10} color={c.card} />
+            <Text style={[styles.modelPillText, { color: c.card }]} numberOfLines={1}>
+              {t.model}
+            </Text>
+          </View>
+
+          {/* In Maintenance Badge */}
+          {inMaintenance && (
+            <View style={[styles.maintenanceBadge, { backgroundColor: c.warningSoft, borderColor: c.warningBorder }]}>
+              <Feather name="tool" size={10} color={c.warning} />
+              <Text style={[styles.maintenanceBadgeText, { color: c.warning }]}>Maintenance</Text>
+            </View>
+          )}
         </View>
 
-        {/* Model pill */}
-        <View style={[styles.modelPill, { backgroundColor: c.accent }]}>
-          <Feather name="zap" size={10} color={c.card} />
-          <Text style={[styles.modelPillText, { color: c.card }]} numberOfLines={1}>
-            {t.model}
-          </Text>
-        </View>
-      </View>
-
-      {/* Right: data zone */}
-      <View style={styles.right}>
-        <Text
-          style={[styles.headlineId, { color: inMaintenance ? c.warning : c.foreground }]}
-          numberOfLines={1}
-        >
-          {headlineId}
-        </Text>
-
-        <Text style={[styles.displayName, { color: c.mutedForeground }]} numberOfLines={1}>
-          {t.displayName || t.tractorID}
-        </Text>
-
-        {/* Telemetry chips */}
+        {/* Telemetry Chips Grid */}
         <View style={styles.chipGrid}>
           {chips.map(chip => (
             <View
@@ -176,48 +191,30 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
               </Text>
             </View>
           ))}
-        </View>
 
-        {/* Implement */}
-        <View
-          style={[
-            styles.implementChip,
-            { backgroundColor: c.chip, borderColor: c.border },
-          ]}
-        >
-          <Feather name="tool" size={12} color={c.primary} />
-          <Text style={[styles.chipText, { color: c.foreground }]} numberOfLines={1}>
-            {implementLabel}
-          </Text>
+          {/* Implement Chip */}
+          <View
+            style={[
+              styles.implementChip,
+              { backgroundColor: c.chip, borderColor: c.border },
+            ]}
+          >
+            <Feather name="tool" size={12} color={c.primary} />
+            <Text style={[styles.chipText, { color: c.foreground }]} numberOfLines={1}>
+              {implementLabel}
+            </Text>
+          </View>
         </View>
       </View>
-
-      {/* Chevron */}
-      {onOpenDetail && !hideActions ? (
-        <TouchableOpacity
-          style={styles.arrowHit}
-          onPress={onOpenDetail}
-          activeOpacity={0.7}
-          accessibilityLabel="Open tractor details"
-          accessibilityRole="button"
-        >
-          <View style={[styles.chevronWrap, { backgroundColor: c.surfaceAlt }]}>
-            <Feather name="chevron-right" size={18} color={c.mutedForeground} />
-          </View>
-        </TouchableOpacity>
-      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
     borderRadius: 18,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 14,
-    alignItems: 'stretch',
-    minHeight: 176,
     borderWidth: 1,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.07,
@@ -225,7 +222,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     position: 'relative',
     overflow: 'hidden',
-    gap: 12,
+    gap: 10,
   },
   statusBanner: {
     position: 'absolute',
@@ -245,31 +242,35 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
-  left: {
-    width: 118,
-    flexShrink: 0,
-    gap: 8,
-  },
-  detailBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+  },
+  headerInfo: {
+    flex: 1,
     justifyContent: 'center',
-    alignSelf: 'flex-start',
+    gap: 1,
   },
   imageBox: {
-    flex: 1,
-    borderRadius: 12,
+    width: 60,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    minHeight: 80,
-    borderWidth: 1,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 4,
+  },
+  featuresContainer: {
+    gap: 10,
   },
   statusRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
+    alignItems: 'center',
   },
   signalBadge: {
     flexDirection: 'row',
@@ -304,28 +305,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 20,
-    alignSelf: 'flex-start',
   },
   modelPillText: {
     fontSize: 10,
     fontFamily: 'Inter_700Bold',
     letterSpacing: 0.2,
   },
-  right: {
-    flex: 1,
-    gap: 6,
-    minWidth: 0,
-    paddingRight: 2,
+  maintenanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  maintenanceBadgeText: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.2,
   },
   headlineId: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   displayName: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    marginTop: -4,
   },
   chipGrid: {
     flexDirection: 'row',
@@ -350,12 +357,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    alignSelf: 'flex-start',
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    maxWidth: '100%',
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
   },
   arrowHit: {
     justifyContent: 'center',
