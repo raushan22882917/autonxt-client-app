@@ -491,7 +491,7 @@ export default function ComplaintsScreen() {
                     Raised Complaints
                   </Text>
                 </View>
-                <Text style={{ fontSize: numberFontSize, fontFamily: 'SpaceMono_700Bold', color: c.foreground }}>
+                <Text style={{ fontSize: numberFontSize, fontFamily: 'Inter_700Bold', color: c.foreground }}>
                   {raisedCount}
                 </Text>
               </TouchableOpacity>
@@ -524,7 +524,7 @@ export default function ComplaintsScreen() {
                     Critical Tickets
                   </Text>
                 </View>
-                <Text style={{ fontSize: numberFontSize, fontFamily: 'SpaceMono_700Bold', color: '#EF4444' }}>
+                <Text style={{ fontSize: numberFontSize, fontFamily: 'Inter_700Bold', color: '#EF4444' }}>
                   {critCount}
                 </Text>
               </TouchableOpacity>
@@ -560,7 +560,7 @@ export default function ComplaintsScreen() {
                     Awaiting Resolution
                   </Text>
                 </View>
-                <Text style={{ fontSize: numberFontSize, fontFamily: 'SpaceMono_700Bold', color: '#E2A93E' }}>
+                <Text style={{ fontSize: numberFontSize, fontFamily: 'Inter_700Bold', color: '#E2A93E' }}>
                   {openCount}
                 </Text>
               </TouchableOpacity>
@@ -593,7 +593,7 @@ export default function ComplaintsScreen() {
                     Breakdowns Reported
                   </Text>
                 </View>
-                <Text style={{ fontSize: numberFontSize, fontFamily: 'SpaceMono_700Bold', color: '#7E152F' }}>
+                <Text style={{ fontSize: numberFontSize, fontFamily: 'Inter_700Bold', color: '#7E152F' }}>
                   {breakdownRaised}
                 </Text>
               </TouchableOpacity>

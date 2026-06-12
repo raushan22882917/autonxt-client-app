@@ -1,10 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   FlatList,
+  Modal,
   Platform,
+  Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -21,14 +25,58 @@ export default function PlantAnalysisScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { plants, tractors, complaints, runtimeRecords, isLoading, refresh, organization } = useApp();
+  const {
+    plants,
+    tractors,
+    complaints,
+    runtimeRecords,
+    isLoading,
+    refresh,
+    selectedPlantID,
+    setSelectedPlantID,
+  } = useApp();
+
+  const [plantOpen, setPlantOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownSearch, setDropdownSearch] = useState('');
+
+  const filteredPlantsForDropdown = useMemo(() => {
+    const q = dropdownSearch.toLowerCase().trim();
+    if (!q) return plants;
+    return plants.filter(
+      p =>
+        p.name.toLowerCase().includes(q) ||
+        p.location?.toLowerCase().includes(q)
+    );
+  }, [plants, dropdownSearch]);
 
   const topPad = Platform.OS === 'web' ? 67 : 0;
+
+  const selectedLabel = useMemo(() => {
+    if (!selectedPlantID) return 'All Plants';
+    return plants.find(p => p.plantID === selectedPlantID)?.name ?? 'All Plants';
+  }, [plants, selectedPlantID]);
 
   const summaries = useMemo(
     () => buildPlantSummaries(plants, tractors, complaints, runtimeRecords),
     [plants, tractors, complaints, runtimeRecords]
   );
+
+  const displayedSummaries = useMemo(() => {
+    let list = summaries;
+    if (selectedPlantID) {
+      list = list.filter(s => s.plant.plantID === selectedPlantID);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        s =>
+          s.plant.name.toLowerCase().includes(q) ||
+          s.plant.location?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [summaries, selectedPlantID, searchQuery]);
 
   const openPlant = (plantID: string) =>
     router.push(`/plant/${encodeURIComponent(plantID)}`);
@@ -36,20 +84,95 @@ export default function PlantAnalysisScreen() {
   const ListHeader = (
     <View style={[styles.header, { paddingTop: topPad + 16 }]}>
       <View style={styles.headerTitleContainer}>
-        <View style={styles.titleRow}>
-          <Text style={[styles.mainTitleText, { color: c.foreground }]}>All Plants</Text>
-          <View style={styles.skewWrapper}>
-            <View style={styles.skewSolid} />
-            <View style={styles.skewDivider} />
-            <LinearGradient
-              colors={['#FF0000', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.skewGradient}
-            />
-          </View>
+        <View style={[styles.titleRow, { width: '100%' }]}>
+          <LinearGradient
+            colors={['transparent', '#7E152F1A', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              width: '100%',
+              paddingVertical: 5,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={[styles.mainTitleText, { color: c.foreground, textAlign: 'center' }]}>All Plants</Text>
+          </LinearGradient>
         </View>
-        <Text style={[styles.subtitleText, { color: c.mutedForeground }]}>Choose your plant</Text>
+
+        {/* Interactive Dropdown & Search Bar Controls wrapped in a single container with a red border */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: c.card,
+            borderColor: c.border, // standard neutral border
+            borderWidth: 1.5,
+            borderRadius: 14,
+            height: 48,
+            paddingHorizontal: 12,
+            marginTop: 8,
+            marginBottom: 10,
+            shadowColor: c.shadow,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.04,
+            shadowRadius: 6,
+            elevation: 2,
+          }}
+        >
+          {/* Left Side: Distinct Inner Search Bar Div */}
+          <View
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: c.surfaceAlt, // distinct search bar background
+              borderRadius: 10,
+              height: 34,
+              paddingHorizontal: 10,
+              marginRight: 12,
+            }}
+          >
+            <Feather name="search" size={14} color={c.mutedForeground} style={{ marginRight: 6 }} />
+            <TextInput
+              style={{
+                color: c.foreground,
+                fontSize: 13,
+                fontFamily: 'Inter_500Medium',
+                flex: 1,
+                paddingVertical: 0,
+                height: '100%',
+              }}
+              placeholder="Search..."
+              placeholderTextColor={c.mutedForeground + '99'}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
+                <Feather name="x" size={14} color={c.mutedForeground} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Right Side: Little Option for Dropdown (Symbol Only) */}
+          <TouchableOpacity
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: c.surfaceAlt,
+              borderRadius: 10,
+              height: 34,
+              width: 34,
+            }}
+            activeOpacity={0.75}
+            onPress={() => setPlantOpen(true)}
+          >
+            <Feather name="map-pin" size={15} color="#7E152F" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -57,7 +180,7 @@ export default function PlantAnalysisScreen() {
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <FlatList
-        data={summaries}
+        data={displayedSummaries}
         keyExtractor={s => s.plant.plantID}
         renderItem={({ item }) => (
           <PlantAnalysisCard summary={item} onPress={() => openPlant(item.plant.plantID)} />
@@ -79,11 +202,133 @@ export default function PlantAnalysisScreen() {
             </View>
             <Text style={[styles.emptyTitle, { color: c.foreground }]}>No Plants Found</Text>
             <Text style={[styles.emptyText, { color: c.mutedForeground }]}>
-              {isLoading ? 'Loading plant data…' : 'No plants found for this organization'}
+              {isLoading ? 'Loading plant data…' : 'No plants found matching your filters'}
             </Text>
           </View>
         }
       />
+
+      {/* Dropdown Menu Modal */}
+      <Modal
+        visible={plantOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setPlantOpen(false);
+          setDropdownSearch('');
+        }}
+      >
+        <Pressable
+          style={styles.overlay}
+          onPress={() => {
+            setPlantOpen(false);
+            setDropdownSearch('');
+          }}
+        >
+          <Pressable
+            style={[styles.menu, { backgroundColor: c.card, borderColor: c.border }]}
+            onPress={e => e.stopPropagation()}
+          >
+            {/* Inner Dropdown Search */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: c.surfaceAlt,
+                borderColor: c.border,
+                borderWidth: 1.5,
+                borderRadius: 12,
+                margin: 14,
+                marginBottom: 10,
+                paddingHorizontal: 12,
+                height: 40,
+              }}
+            >
+              <Feather name="search" size={15} color={c.mutedForeground} style={{ marginRight: 6 }} />
+              <TextInput
+                style={{
+                  color: c.foreground,
+                  fontSize: 14,
+                  fontFamily: 'Inter_500Medium',
+                  flex: 1,
+                  paddingVertical: 0,
+                  height: '100%',
+                }}
+                placeholder="Search plants…"
+                placeholderTextColor={c.mutedForeground + '88'}
+                value={dropdownSearch}
+                onChangeText={setDropdownSearch}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {dropdownSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setDropdownSearch('')} hitSlop={8}>
+                  <Feather name="x" size={15} color={c.mutedForeground} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <ScrollView style={styles.menuScroll} showsVerticalScrollIndicator={false}>
+              {!dropdownSearch.trim() && (
+                <TouchableOpacity
+                  style={[
+                    styles.option,
+                    {
+                      backgroundColor: !selectedPlantID ? c.primary + '0E' : 'transparent',
+                      borderColor: !selectedPlantID ? c.primary + '35' : c.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    setSelectedPlantID(null);
+                    setPlantOpen(false);
+                    setDropdownSearch('');
+                  }}
+                >
+                  <View style={[styles.optionIcon, { backgroundColor: !selectedPlantID ? c.primary : c.surfaceAlt }]}>
+                    <Feather name={!selectedPlantID ? 'check' : 'layers'} size={14} color={!selectedPlantID ? c.primaryForeground : c.mutedForeground} />
+                  </View>
+                  <View style={styles.optionBody}>
+                    <Text style={[styles.optionLabel, { color: c.foreground }]}>All Plants</Text>
+                    <Text style={[styles.optionSub, { color: c.mutedForeground }]}>Show summaries for all locations</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {filteredPlantsForDropdown.map(p => {
+                const active = selectedPlantID === p.plantID;
+                const tractorCount = tractors.filter(t => t.plantID === p.plantID).length;
+                return (
+                  <TouchableOpacity
+                    key={p.plantID}
+                    style={[
+                      styles.option,
+                      {
+                        backgroundColor: active ? c.primary + '0E' : 'transparent',
+                        borderColor: active ? c.primary + '35' : c.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedPlantID(p.plantID);
+                      setPlantOpen(false);
+                      setDropdownSearch('');
+                    }}
+                  >
+                    <View style={[styles.optionIcon, { backgroundColor: active ? c.primary : c.surfaceAlt }]}>
+                      <Feather name={active ? 'check' : 'map-pin'} size={14} color={active ? c.primaryForeground : c.mutedForeground} />
+                    </View>
+                    <View style={styles.optionBody}>
+                      <Text style={[styles.optionLabel, { color: c.foreground }]} numberOfLines={1}>{p.name}</Text>
+                      <Text style={[styles.optionSub, { color: c.mutedForeground }]} numberOfLines={1}>
+                        {p.location || 'Site'} · {tractorCount} tractor{tractorCount !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -101,43 +346,23 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: 4,
     marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   mainTitleText: {
-    fontSize: 32,
+    fontSize: 22,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
   subtitleText: {
     fontSize: 14,
     fontFamily: 'Inter_500Medium',
     letterSpacing: -0.1,
-  },
-  skewWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 140,
-    height: 20,
-    marginLeft: 12,
-    overflow: 'hidden',
-    transform: [{ skewX: '-25deg' }],
-  },
-  skewSolid: {
-    width: 16,
-    height: '100%',
-    backgroundColor: '#FF0000',
-  },
-  skewDivider: {
-    width: 3,
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-  },
-  skewGradient: {
-    flex: 1,
-    height: '100%',
   },
 
   // ── Empty ──
@@ -166,5 +391,54 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(18, 14, 16, 0.52)',
+    justifyContent: 'flex-end',
+  },
+  menu: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    maxHeight: '82%',
+    overflow: 'hidden',
+    shadowColor: '#120E10',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 24,
+  },
+  menuScroll: {
+    paddingVertical: 10,
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 12,
+    marginBottom: 8,
+    padding: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  optionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  optionBody: { flex: 1, gap: 1 },
+  optionLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.1,
+  },
+  optionSub: {
+    fontSize: 10,
+    fontFamily: 'Inter_400Regular',
   },
 });

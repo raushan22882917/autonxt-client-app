@@ -163,7 +163,7 @@ export default function ComplaintDetailScreen() {
         borderBottomRightRadius: 16,
       }}>
         {/* Hero Info inside the header */}
-        <View style={{ position: 'relative', paddingHorizontal: 16, paddingRight: 160, paddingTop: 2, paddingBottom: 8 }}>
+        <View style={{ position: 'relative', paddingHorizontal: 16, paddingRight: 145, paddingTop: 2, paddingBottom: 8 }}>
           {/* Premium Capsule showing screen title */}
           <View style={{ flexDirection: 'row', marginBottom: 12 }}>
             <LinearGradient
@@ -237,8 +237,8 @@ export default function ComplaintDetailScreen() {
               position: 'absolute',
               bottom: -5,
               right: 0,
-              width: 165,
-              height: 118,
+              width: 150,
+              height: 107,
             }}
             resizeMode="contain"
           />
