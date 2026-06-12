@@ -131,7 +131,7 @@ export const runtimeColumns: DataTableColumn<RawManualRuntimeEntry>[] = [
   },
   {
     key: 'todaysRuntime',
-    label: 'Today',
+    label: 'Total',
     flex: 0.85,
     minWidth: 56,
     align: 'right',

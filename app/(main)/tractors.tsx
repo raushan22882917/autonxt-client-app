@@ -114,7 +114,7 @@ export default function TractorsScreen() {
   );
 
   const ListHeader = (
-    <View style={{ paddingTop: topPad }}>
+    <View style={[styles.header, { paddingTop: topPad + 16 }]}>
       {/* ── Fleet Management Hero Strip ── */}
       <View style={[styles.heroStrip, { shadowColor: c.primary }]}>
         <LinearGradient
@@ -149,7 +149,7 @@ export default function TractorsScreen() {
       </View>
 
       {/* ── Search + Filter area ── */}
-      <View style={[styles.controlBar, { paddingTop: 14 }]}>
+      <View style={styles.controlBar}>
         {/* Search bar */}
         <View
           style={[
@@ -314,20 +314,27 @@ export default function TractorsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
 
+  header: {
+    gap: 14,
+    paddingBottom: 4,
+    paddingHorizontal: 0,
+  },
+
   // ── Hero strip ──
   heroStrip: {
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    elevation: 5,
+    borderRadius: 22,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 7,
   },
   heroGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 12,
+    padding: 20,
+    gap: 16,
     overflow: 'hidden',
+    borderRadius: 22,
   },
   heroDotTR: {
     position: 'absolute',
@@ -394,7 +401,7 @@ const styles = StyleSheet.create({
 
   // ── Control bar ──
   controlBar: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
     paddingBottom: 12,
     gap: 12,
   },

@@ -712,10 +712,11 @@ export default function TractorDetailScreen() {
                   titleBgGradient={[c.gradientEnd, '#be1e2d']}
                   headerBgColor={c.redSoft}
                   headerTextColor={c.primary}
-                  rowBgColorOdd={c.redSoft + '40'}
-                  rowBgColorEven={c.card}
+                  rowBgColorOdd={c.redSoft}
+                  rowBgColorEven={c.redSoft + '80'}
                   borderColor={c.redBorder}
                   outerBorderColor={c.redBorder}
+                  backgroundColor={c.redSoft + '30'}
                 />
               </View>
             )}

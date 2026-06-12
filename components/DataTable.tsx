@@ -44,6 +44,7 @@ export interface DataTableProps<T> {
   outerBorderColor?: string;
   titleBgGradient?: string[];
   headerBgGradient?: string[];
+  backgroundColor?: string;
 }
 
 export function DataTable<T>({
@@ -67,6 +68,7 @@ export function DataTable<T>({
   outerBorderColor,
   titleBgGradient,
   headerBgGradient,
+  backgroundColor,
 }: DataTableProps<T>) {
   const c = useColors();
 
@@ -214,7 +216,7 @@ export function DataTable<T>({
   );
 
   return (
-    <View style={[styles.wrap, { backgroundColor: c.card, borderColor: outerBorderColor || c.border }]}>
+    <View style={[styles.wrap, { backgroundColor: backgroundColor || c.card, borderColor: outerBorderColor || c.border }]}>
       {title ? (
         titleBgGradient ? (
           <LinearGradient
@@ -311,6 +313,7 @@ export function KeyValueTable({
   outerBorderColor,
   titleBgGradient,
   headerBgGradient,
+  backgroundColor,
 }: KeyValueTableProps) {
   return (
     <DataTable
@@ -335,6 +338,7 @@ export function KeyValueTable({
       outerBorderColor={outerBorderColor}
       titleBgGradient={titleBgGradient}
       headerBgGradient={headerBgGradient}
+      backgroundColor={backgroundColor}
     />
   );
 }

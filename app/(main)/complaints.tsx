@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   FlatList,
+  Modal,
   Platform,
   RefreshControl,
   StyleSheet,
@@ -13,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { ComplaintFilterSheet } from '@/components/ComplaintFilterSheet';
@@ -45,50 +47,38 @@ function activeFilterSummary(filters: ComplaintFilterValues): string {
   return parts.join(' · ');
 }
 
-// ── Icon-enhanced summary box ─────────────────────────────────────────────
-function SummaryBox({
+// ── Icon-enhanced summary card ────────────────────────────────────────────
+function SummaryCard({
   value,
   label,
-  color,
-  bg,
-  border,
   icon,
-  isFullRow,
+  color,
+  c,
 }: {
   value: number;
   label: string;
-  color: string;
-  bg: string;
-  border: string;
   icon: string;
-  isFullRow?: boolean;
+  color: string;
+  c: ReturnType<typeof useColors>;
 }) {
   return (
     <View
       style={[
-        summaryStyles.box,
-        isFullRow ? summaryStyles.boxFull : summaryStyles.boxSmall,
+        summaryStyles.card,
         {
-          backgroundColor: bg,
-          borderColor: border,
-          borderBottomColor: color,
-          borderBottomWidth: 5,
-          shadowColor: color,
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.15,
-          shadowRadius: 12,
-          elevation: 6,
+          backgroundColor: c.card, // solid white background for maximum contrast
+          borderColor: c.border,
+          borderBottomColor: c.primary, // bold red 3D bottom bevel line
+          shadowColor: c.primary, // warm ambient brand glow
         },
       ]}
     >
-      <View style={isFullRow ? summaryStyles.fullRowContent : summaryStyles.smallRowContent}>
-        <View style={[summaryStyles.iconWrap, { backgroundColor: color + '20' }]}>
-          <Feather name={icon as any} size={isFullRow ? 18 : 15} color={color} />
+      <Text style={[summaryStyles.label, { color: c.mutedForeground }]}>{label}</Text>
+      <View style={summaryStyles.valueContainer}>
+        <View style={[summaryStyles.iconWrap, { backgroundColor: color + '10' }]}>
+          <Feather name={icon as any} size={15} color={color} />
         </View>
-        <View style={isFullRow ? summaryStyles.fullRowText : summaryStyles.smallRowText}>
-          <Text style={[summaryStyles.num, isFullRow && { fontSize: 26 }, { color }]}>{value}</Text>
-          <Text style={[summaryStyles.label, { color: color + 'BB' }]}>{label}</Text>
-        </View>
+        <Text style={[summaryStyles.value, { color: c.foreground }]}>{value}</Text>
       </View>
     </View>
   );
@@ -103,6 +93,7 @@ export default function ComplaintsScreen() {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<ComplaintFilterValues>(DEFAULT_COMPLAINT_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [showAllModal, setShowAllModal] = useState(false);
 
   const { period, customMonth, statusTab, severity, breakdownOnly } = filters;
   const activeFilterCount = countActiveComplaintFilters(filters);
@@ -153,11 +144,14 @@ export default function ComplaintsScreen() {
           },
         ]}
         activeOpacity={0.75}
-        onPress={() => router.push(`/complaint/${item.complaintID}`)}
+        onPress={() => {
+          setShowAllModal(false); // close the modal if open
+          router.push(`/complaint/${item.complaintID}`);
+        }}
         accessibilityRole="button"
       >
-        {/* Severity stripe — 5px */}
-        <View style={[styles.sevStripe, { backgroundColor: sev }]} />
+        {/* Accent stripe — 5px */}
+        <View style={[styles.sevStripe, { backgroundColor: c.primary }]} />
 
         <View style={styles.cardBody}>
           {/* Header row */}
@@ -206,7 +200,7 @@ export default function ComplaintsScreen() {
   };
 
   const ListHeader = (
-    <View style={{ paddingTop: topPad }}>
+    <View style={[styles.header, { paddingTop: topPad + 16 }]}>
       {/* ── Operator Support Hero Strip ── */}
       <View style={[styles.heroStrip, { shadowColor: c.primary }]}>
         <LinearGradient
@@ -240,10 +234,10 @@ export default function ComplaintsScreen() {
         </LinearGradient>
       </View>
 
-      {/* ── Search + Filter ── */}
+      {/* ── Search ── */}
       <View style={styles.controlArea}>
         <View style={styles.searchRow}>
-          <View style={[styles.searchBox, { backgroundColor: c.card, borderColor: c.border }]}>
+          <View style={[styles.searchBox, { backgroundColor: c.card, borderColor: c.border, flex: 1 }]}>
             <Feather name="search" size={17} color={c.mutedForeground} />
             <TextInput
               style={[styles.searchInput, { color: c.foreground }]}
@@ -260,84 +254,89 @@ export default function ComplaintsScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
-
-          <TouchableOpacity
-            style={[
-              styles.filterBtn,
-              {
-                backgroundColor: activeFilterCount > 0 ? c.primary : c.card,
-                borderColor: activeFilterCount > 0 ? c.primary : c.border,
-                shadowColor: activeFilterCount > 0 ? c.primary : 'transparent',
-                shadowOpacity: activeFilterCount > 0 ? 0.3 : 0,
-              },
-            ]}
-            onPress={() => setFilterSheetOpen(true)}
-            activeOpacity={0.8}
-          >
-            <Feather
-              name="sliders"
-              size={19}
-              color={activeFilterCount > 0 ? c.primaryForeground : c.foreground}
-            />
-            {activeFilterCount > 0 ? (
-              <View style={[styles.filterBadge, { backgroundColor: c.primaryForeground }]}>
-                <Text style={[styles.filterBadgeText, { color: c.primary }]}>{activeFilterCount}</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
         </View>
 
-        {/* Active filter summary */}
-        <Text style={[styles.activeFilters, { color: c.mutedForeground }]} numberOfLines={1}>
-          {activeFilterSummary(filters)}
-        </Text>
+        {/* Date Period Header Box (Avatar style) — replacing the old "Open · June 2026" summary text */}
+        <TouchableOpacity
+          style={[
+            summaryStyles.headerBox,
+            {
+              backgroundColor: 'transparent',
+              borderColor: c.border,
+              borderBottomColor: c.primary, // red 3D bottom bevel line
+              shadowColor: c.shadowStrong,
+            },
+          ]}
+          activeOpacity={0.8}
+          onPress={() => setFilterSheetOpen(true)}
+        >
+          {Platform.OS === 'ios' ? (
+            <BlurView
+              intensity={40}
+              tint="light"
+              style={[
+                StyleSheet.absoluteFillObject,
+                {
+                  backgroundColor: 'rgba(245, 246, 248, 0.65)', // page background matching translucent wash
+                },
+              ]}
+            />
+          ) : (
+            <View
+              style={[
+                StyleSheet.absoluteFillObject,
+                {
+                  backgroundColor: 'rgba(245, 246, 248, 0.9)', // page background matching fallback tint
+                },
+              ]}
+            />
+          )}
 
-        {/* Icon-enhanced Summary Boxes */}
-        <View style={styles.summaryContainer}>
-          <SummaryBox
-            value={raisedCount}
-            label="Raised"
-            color={c.primary}
-            bg={c.redSoft}
-            border={c.redBorder}
-            icon="inbox"
-            isFullRow
-          />
-          <View style={styles.summarySubRow}>
-            <SummaryBox
-              value={critCount}
-              label="Critical"
-              color="#D73220"
-              bg="#FDE8E5"
-              border="#FDA4AF"
-              icon="alert-octagon"
-            />
-            <SummaryBox
-              value={openCount}
-              label="Open"
-              color={c.warning}
-              bg={c.warningSoft}
-              border={c.warningBorder}
-              icon="clock"
-            />
-            <SummaryBox
-              value={breakdownRaised}
-              label="Breakdown"
-              color={c.foreground}
-              bg={c.surfaceAlt}
-              border={c.border}
-              icon="tool"
-            />
+          <View style={summaryStyles.headerBoxLeft}>
+            <View style={[summaryStyles.avatarWrap, { backgroundColor: c.primary + '15' }]}>
+              <Feather name="calendar" size={15} color={c.primary} />
+            </View>
+            <View style={summaryStyles.headerBoxText}>
+              <Text style={[summaryStyles.headerBoxLabel, { color: c.mutedForeground }]}>Date Period</Text>
+              <Text style={[summaryStyles.headerBoxValue, { color: c.foreground }]}>{periodLabel}</Text>
+            </View>
+          </View>
+
+          <View style={summaryStyles.headerBoxRight}>
+            {activeFilterCount > 0 && (
+              <Text style={[summaryStyles.ratingText, { color: c.foreground }]}>{activeFilterCount}</Text>
+            )}
+            <Feather name="sliders" size={14} color={c.primary} />
+          </View>
+        </TouchableOpacity>
+
+        {/* 2x2 Grid of Summary Cards */}
+        <View style={summaryStyles.gridContainer}>
+          <View style={summaryStyles.grid}>
+            <View style={summaryStyles.row}>
+              <SummaryCard value={raisedCount} label="Raised" icon="inbox" color={c.primary} c={c} />
+              <SummaryCard value={critCount} label="Critical" icon="alert-octagon" color={c.primary} c={c} />
+            </View>
+            <View style={summaryStyles.row}>
+              <SummaryCard value={openCount} label="Open" icon="clock" color={c.primary} c={c} />
+              <SummaryCard value={breakdownRaised} label="Breakdown" icon="tool" color={c.primary} c={c} />
+            </View>
           </View>
         </View>
 
         {/* Results count + period */}
         <View style={styles.resultsRow}>
-          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
-          <Text style={[styles.periodHint, { color: c.mutedForeground }]}>
-            Showing <Text style={{ color: c.foreground, fontFamily: 'Inter_700Bold' }}>{displayed.length}</Text>
-            {' '}of {raisedCount} · {periodLabel}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
+            <Text style={[styles.periodHint, { color: c.foreground }]}>
+              Tickets <Text style={{ color: c.mutedForeground, fontSize: 12, fontFamily: 'Inter_500Medium' }}>({displayed.length > 4 ? `Showing 4 of ${displayed.length}` : displayed.length})</Text>
+            </Text>
+          </View>
+          {displayed.length > 4 && (
+            <TouchableOpacity onPress={() => setShowAllModal(true)} activeOpacity={0.7}>
+              <Text style={[styles.seeAllText, { color: c.primary }]}>See All</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -346,7 +345,7 @@ export default function ComplaintsScreen() {
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <FlatList
-        data={displayed}
+        data={displayed.slice(0, 4)}
         keyExtractor={x => x.complaintID}
         renderItem={renderComplaint}
         ListHeaderComponent={ListHeader}
@@ -378,6 +377,120 @@ export default function ComplaintsScreen() {
         }
       />
 
+      {/* Pop Window / Bottom Sheet for See All scrollable tickets */}
+      <Modal
+        visible={showAllModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAllModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalContent, { backgroundColor: '#FAF5F0' }]}>
+            {/* Modal Header */}
+            <View
+              style={[
+                styles.modalHeader,
+                {
+                  backgroundColor: c.card, // 3D white background
+                  borderColor: c.border,
+                  borderBottomWidth: 4, // 3D bevel line
+                  borderBottomColor: c.primary, // theme primary red line
+                  shadowColor: '#120E10',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 8,
+                  elevation: 5,
+                },
+              ]}
+            >
+              {/* Modal Drag Indicator Bar */}
+              <View style={[styles.modalDragBar, { backgroundColor: c.border }]} />
+
+              <View style={styles.modalHeaderContent}>
+                <Text style={[styles.modalTitle, { color: c.primary }]} numberOfLines={1}>
+                  Tickets ({displayed.length})
+                </Text>
+                
+                <View style={[styles.modalSearchBox, { backgroundColor: c.card, borderColor: c.primary, borderWidth: 1.5 }]}>
+                  <Feather name="search" size={14} color={c.primary} />
+                  <TextInput
+                    style={[
+                      styles.modalSearchInput,
+                      {
+                        color: c.primary,
+                        height: '100%',
+                        paddingVertical: 0,
+                        paddingBottom: 3, // Shift up
+                        textAlign: 'center',
+                      },
+                    ]}
+                    placeholder="Search..."
+                    placeholderTextColor={c.primary + '80'}
+                    value={search}
+                    onChangeText={setSearch}
+                  />
+                  {search.length > 0 ? (
+                    <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+                      <Feather name="x" size={12} color={c.primary} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
+                {/* Modal Filter Trigger Button */}
+                <TouchableOpacity
+                  onPress={() => setFilterSheetOpen(true)}
+                  style={[
+                    styles.modalFilterBtn,
+                    {
+                      backgroundColor: activeFilterCount > 0 ? c.primary : c.card,
+                      borderColor: c.primary,
+                      borderWidth: 1.5,
+                      height: 34,
+                      width: 34,
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <Feather
+                    name="sliders"
+                    size={14}
+                    color={activeFilterCount > 0 ? c.primaryForeground : c.primary}
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setShowAllModal(false)}
+                  style={[
+                    styles.modalCloseBtn,
+                    {
+                      backgroundColor: c.card,
+                      borderColor: c.primary,
+                      borderWidth: 1.5,
+                      height: 34,
+                      width: 34,
+                      borderRadius: 17,
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="x" size={16} color={c.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Scrollable Modal List of Complaints */}
+            <FlatList
+              data={displayed}
+              keyExtractor={x => x.complaintID}
+              renderItem={renderComplaint}
+              contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40 }}
+              ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+              showsVerticalScrollIndicator={true}
+            />
+          </View>
+        </View>
+      </Modal>
+
       <ComplaintFilterSheet
         visible={filterSheetOpen}
         applied={filters}
@@ -389,73 +502,129 @@ export default function ComplaintsScreen() {
 }
 
 const summaryStyles = StyleSheet.create({
-  box: {
-    borderRadius: 18,
-    borderWidth: 1.5,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  boxFull: {
-    width: '100%',
-  },
-  boxSmall: {
-    flex: 1,
-  },
-  fullRowContent: {
+  headerBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'space-between',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderBottomWidth: 3,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 10,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  smallRowContent: {
+  headerBoxLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  avatarWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerBoxText: {
+    gap: 1,
+  },
+  headerBoxLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    lineHeight: 14,
+  },
+  headerBoxValue: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    lineHeight: 17,
+  },
+  headerBoxRight: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  fullRowText: {
+  ratingText: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+  },
+  gridContainer: {
+    marginBottom: 10,
+  },
+  grid: {
+    gap: 10,
+  },
+  row: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    gap: 10,
+  },
+  card: {
+    flex: 1,
+    borderRadius: 22, // highly rounded corners for premium widget feel
+    borderWidth: 1,
+    borderBottomWidth: 4, // distinct 3D bottom bevel
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06, // subtle warm ambient glow
+    shadowRadius: 10,
+    elevation: 3,
     gap: 8,
   },
-  smallRowText: {
+  label: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  valueContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 10,
   },
   iconWrap: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: 10, // rounded-square tile
     alignItems: 'center',
     justifyContent: 'center',
   },
-  num: {
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
+  value: {
+    fontSize: 26, // ultra-bold and readable metric value
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: -0.5,
-  },
-  label: {
-    fontSize: 9,
-    fontFamily: 'Inter_700Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
 });
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
 
+  header: {
+    gap: 14,
+    paddingBottom: 4,
+    paddingHorizontal: 0,
+  },
+
   // ── Hero strip ──
   heroStrip: {
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    elevation: 5,
+    borderRadius: 22,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 7,
   },
   heroGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 12,
+    padding: 20,
+    gap: 16,
     overflow: 'hidden',
+    borderRadius: 22,
   },
   heroDotTR: {
     position: 'absolute',
@@ -515,8 +684,7 @@ const styles = StyleSheet.create({
 
   // ── Control area ──
   controlArea: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingHorizontal: 0,
     paddingBottom: 8,
     gap: 10,
   },
@@ -590,6 +758,7 @@ const styles = StyleSheet.create({
   resultsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
   },
   sectionAccent: {
@@ -598,8 +767,87 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   periodHint: {
-    fontSize: 12,
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+  },
+
+  // ── Modal / Pop Window ──
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(18, 14, 16, 0.45)', // dim overlay
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+    height: '80%',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  modalDragBar: {
+    width: 38,
+    height: 5,
+    borderRadius: 2.5,
+    alignSelf: 'center',
+  },
+  modalHeader: {
+    flexDirection: 'column',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 10,
+  },
+  modalHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalSearchBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginLeft: 8,
+    marginRight: 6,
+    paddingHorizontal: 8,
+    height: 34,
+  },
+  modalSearchInput: {
+    flex: 1,
+    fontSize: 13,
     fontFamily: 'Inter_400Regular',
+    paddingVertical: 0,
+  },
+  modalFilterBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
   },
 
   // ── Complaint card ──

@@ -9,7 +9,8 @@ const config: ResourcesConfig = {
       endpoint:
         'https://md3jfqmlmbgspdqfgmxffhcwai.appsync-api.ap-south-1.amazonaws.com/graphql',
       region: 'ap-south-1',
-      defaultAuthMode: 'userPool',
+      defaultAuthMode: 'userPool'
+      ,
     },
   },
   Auth: {

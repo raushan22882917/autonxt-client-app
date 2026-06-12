@@ -72,7 +72,7 @@ export default function PlantAnalysisScreen() {
     router.push(`/plant/${encodeURIComponent(plantID)}`);
 
   const ListHeader = (
-    <View style={[styles.header, { paddingTop: topPad + 14 }]}>
+    <View style={[styles.header, { paddingTop: topPad + 16 }]}>
       {/* ── Mission Control Hero Banner ── */}
       <View style={[styles.heroBanner, { shadowColor: c.primary }]}>
         <LinearGradient
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   header: {
     gap: 14,
     paddingBottom: 4,
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
   },
 
   // ── Hero banner ──
