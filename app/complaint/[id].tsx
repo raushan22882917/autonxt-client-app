@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +17,8 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { severityColor, formatDateTime } from '@/lib/complaint';
 import { FleetLoader } from '@/components/FleetLoader';
 import { ComplaintDetail, fetchComplaintById } from '@/lib/appsync';
+import { getTractorListRowImageSource, defaultTractorImage } from '@/lib/tractorImages';
+import { isBreakdownComplaint } from '@/lib/isBreakdownComplaint';
 
 export default function ComplaintDetailScreen() {
   const c = useColors();
@@ -61,32 +64,16 @@ export default function ComplaintDetailScreen() {
     else router.replace('/(main)/complaints');
   };
 
-  const TopBar = (
-    <View
-      style={[
-        styles.topBar,
-        {
-          paddingTop: insets.top + 10,
-          backgroundColor: '#7E152F',
-        },
-      ]}
-    >
-      <TouchableOpacity
-        style={[styles.backBtn, { backgroundColor: 'rgba(255, 255, 255, 0.18)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.3)' }]}
-        onPress={goBack}
-        activeOpacity={0.7}
-      >
-        <Feather name="arrow-left" size={20} color="#FFFFFF" />
-      </TouchableOpacity>
-      <Text style={[styles.topTitle, { color: '#FFFFFF' }]}>Ticket Details</Text>
-      <View style={{ width: 40 }} />
-    </View>
-  );
-
   if (loading && !complaint) {
     return (
       <View style={[styles.root, { backgroundColor: c.background }]}>
-        {TopBar}
+        <View style={{
+          backgroundColor: '#7E152F',
+          paddingTop: insets.top + 2,
+          paddingBottom: 12,
+          borderBottomLeftRadius: 12,
+          borderBottomRightRadius: 12,
+        }} />
         <View style={styles.empty}>
           <FleetLoader visible inline title="Ticket details" message="Loading issue information…" />
         </View>
@@ -97,7 +84,13 @@ export default function ComplaintDetailScreen() {
   if (!complaint) {
     return (
       <View style={[styles.root, { backgroundColor: c.background }]}>
-        {TopBar}
+        <View style={{
+          backgroundColor: '#7E152F',
+          paddingTop: insets.top + 2,
+          paddingBottom: 12,
+          borderBottomLeftRadius: 12,
+          borderBottomRightRadius: 12,
+        }} />
         <View style={styles.empty}>
           <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
             <Feather name="search" size={32} color={c.mutedForeground} />
@@ -111,8 +104,24 @@ export default function ComplaintDetailScreen() {
     );
   }
 
-  const sev = severityColor(complaint.severity, c);
+  const getDamageColor = (severity: string) => {
+    switch (severity?.toUpperCase()) {
+      case 'CRITICAL':
+      case 'HIGH':
+        return '#DC2626'; // Vibrant Red
+      case 'MEDIUM':
+        return '#EAB308'; // Vibrant Yellow
+      case 'LOW':
+        return '#10B981'; // Green
+      default:
+        return c.mutedForeground;
+    }
+  };
+  const sev = getDamageColor(complaint.severity);
   const isResolved = complaint.status === 'RESOLVED' || complaint.status === 'CLOSED';
+  const bannerColor = isResolved ? c.success : sev;
+  const bannerBg = isResolved ? c.successSoft : sev + '12';
+  const bannerBorder = isResolved ? c.successBorder : sev + '35';
 
   const meta: { icon: keyof typeof Feather.glyphMap; label: string; value: string }[] = [
     { icon: 'truck', label: 'Tractor', value: complaint.tractorModel || complaint.tractorID || '—' },
@@ -145,37 +154,169 @@ export default function ComplaintDetailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
-      {TopBar}
+      {/* Redesigned Header Block with solid Burgundy background */}
+      <View style={{
+        backgroundColor: '#7E152F',
+        paddingTop: insets.top + 2,
+        paddingBottom: 24,
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+      }}>
+        {/* Hero Info inside the header */}
+        <View style={{ position: 'relative', paddingHorizontal: 16, paddingRight: 160, paddingTop: 2, paddingBottom: 8 }}>
+          {/* Premium Capsule showing screen title */}
+          <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+            <LinearGradient
+              colors={['#7E152F', '#A82C48']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                borderColor: 'rgba(255, 255, 255, 0.25)',
+                borderWidth: 1,
+                borderRadius: 20,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Brick background pattern (faint white brick lines) */}
+              <View style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]} pointerEvents="none">
+                <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
+                <View style={{ position: 'absolute', top: 0, bottom: '50%', left: '33%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
+                <View style={{ position: 'absolute', top: 0, bottom: '50%', left: '66%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
+                <View style={{ position: 'absolute', top: '50%', bottom: 0, left: '16%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
+                <View style={{ position: 'absolute', top: '50%', bottom: 0, left: '50%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
+                <View style={{ position: 'absolute', top: '50%', bottom: 0, left: '83%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
+              </View>
+
+              <Feather name="file-text" size={10} color="#FFFFFF" />
+              <Text style={{ fontSize: 9, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                Ticket Details
+              </Text>
+            </LinearGradient>
+          </View>
+
+          <Text style={[styles.heroTitle, { color: '#FFFFFF', textAlign: 'left', fontSize: 18, lineHeight: 24 }]}>
+            {complaint.title}
+          </Text>
+          
+          <Text style={{ fontSize: 12, fontFamily: 'Inter_500Medium', color: 'rgba(255, 255, 255, 0.7)', marginTop: 4 }}>
+            {[complaint.tractorModel, complaint.plantName || complaint.location].filter(Boolean).join(' · ')}
+          </Text>
+
+          <View style={[styles.badgeRow, { justifyContent: 'flex-start', marginTop: 10 }]}>
+            <StatusBadge status={complaint.severity} />
+            <StatusBadge status={complaint.status} />
+            {isBreakdownComplaint(complaint) && (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 20,
+                borderWidth: 1,
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+              }}>
+                <Feather name="alert-octagon" size={9} color="#FFFFFF" />
+                <Text style={{ fontSize: 10, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.2 }}>
+                  Breakdown
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Tractor illustration positioned at bottom right */}
+          <Image
+            source={tractor ? getTractorListRowImageSource(tractor) || defaultTractorImage : defaultTractorImage}
+            style={{
+              position: 'absolute',
+              bottom: -5,
+              right: 0,
+              width: 165,
+              height: 118,
+            }}
+            resizeMode="contain"
+          />
+        </View>
+      </View>
+
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
+        style={{ flex: 1, marginTop: -20 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingHorizontal: 16 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero */}
-        <View style={[styles.heroCard, { shadowColor: sev }]}>
-          <LinearGradient
-            colors={[sev + '18', sev + '06']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.heroGradient, { borderRadius: 20, borderWidth: 1, borderColor: sev + '33' }]}
-          >
-            <View style={[styles.heroIconWrap, { backgroundColor: sev + '1C' }]}>
-              <Feather name="alert-triangle" size={28} color={sev} />
+        {/* Main Details Overlapping Card */}
+        <View style={{
+          backgroundColor: c.card,
+          borderRadius: 24,
+          padding: 16,
+          // 3D elevated card shadow
+          shadowColor: '#120E10',
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          elevation: 3,
+          marginBottom: 16,
+        }}>
+          {/* Description & Info Box (Search bar styling) */}
+          <View style={{
+            backgroundColor: '#F5F6F8',
+            borderRadius: 16,
+            borderLeftWidth: 4,
+            borderLeftColor: sev,
+            padding: 14,
+            paddingLeft: 12,
+            marginBottom: 16,
+          }}>
+            {/* Top row with Type and Severity (Damage) */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Feather name="tool" size={14} color="#7E152F" />
+                <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#120E10' }}>
+                  Type: {isBreakdownComplaint(complaint) ? 'Breakdown' : 'General'}
+                </Text>
+              </View>
+              {isBreakdownComplaint(complaint) && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Feather name="alert-triangle" size={14} color={sev} />
+                  <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: sev }}>
+                    Damage: {complaint.severity}
+                  </Text>
+                </View>
+              )}
             </View>
-            <Text style={[styles.heroTitle, { color: c.foreground }]}>{complaint.title}</Text>
-            <View style={styles.badgeRow}>
-              <StatusBadge status={complaint.severity} />
-              <StatusBadge status={complaint.status} />
-            </View>
-          </LinearGradient>
-        </View>
 
-        {/* Description */}
-        <View style={styles.sectionHeader}>
-          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
-          <Text style={[styles.sectionLabel, { color: c.foreground }]}>Description</Text>
-        </View>
-        <View style={[styles.block, { backgroundColor: c.card, borderColor: c.border }]}>
-          <Text style={[styles.description, { color: c.foreground }]}>{complaint.description}</Text>
+            {/* Separator line */}
+            <View style={{ height: 1, backgroundColor: '#E2E8F0', marginBottom: 10 }} />
+
+            <Text style={[styles.description, { color: c.foreground }]}>{complaint.description}</Text>
+          </View>
+
+          {/* Details list inside the same card */}
+          <View style={{ gap: 2 }}>
+            {meta.map((m, i) => (
+              <View
+                key={m.label}
+                style={[
+                  styles.metaRow,
+                  i < meta.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.hairline },
+                ]}
+              >
+                <View style={[styles.metaIcon, { backgroundColor: c.primary + '12' }]}>
+                  <Feather name={m.icon} size={15} color={c.primary} />
+                </View>
+                <Text style={[styles.metaLabel, { color: c.mutedForeground }]}>{m.label}</Text>
+                <Text style={[styles.metaValue, { color: c.foreground }]} numberOfLines={2}>
+                  {m.value}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Status banner */}
@@ -183,58 +324,34 @@ export default function ComplaintDetailScreen() {
           style={[
             styles.statusBanner,
             {
-              backgroundColor: isResolved ? c.successSoft : sev + '12',
-              borderColor: isResolved ? c.successBorder : sev + '35',
+              backgroundColor: bannerBg,
+              borderColor: bannerBorder,
+              marginBottom: 16,
             },
           ]}
         >
-          <View style={[styles.bannerIcon, { backgroundColor: isResolved ? c.success + '18' : sev + '18' }]}>
+          <View style={[styles.bannerIcon, { backgroundColor: bannerColor + '18' }]}>
             <Feather
               name={isResolved ? 'check-circle' : 'clock'}
               size={18}
-              color={isResolved ? c.success : sev}
+              color={bannerColor}
             />
           </View>
-          <Text style={[styles.bannerText, { color: isResolved ? c.success : sev }]}>
+          <Text style={[styles.bannerText, { color: bannerColor }]}>
             {isResolved
               ? 'This complaint has been resolved.'
               : 'This complaint is awaiting resolution.'}
           </Text>
         </View>
 
-        {/* Details */}
-        <View style={styles.sectionHeader}>
-          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
-          <Text style={[styles.sectionLabel, { color: c.foreground }]}>Details</Text>
-        </View>
-        <View style={[styles.block, { backgroundColor: c.card, borderColor: c.border }]}>
-          {meta.map((m, i) => (
-            <View
-              key={m.label}
-              style={[
-                styles.metaRow,
-                i < meta.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.hairline },
-              ]}
-            >
-              <View style={[styles.metaIcon, { backgroundColor: c.primary + '12' }]}>
-                <Feather name={m.icon} size={15} color={c.primary} />
-              </View>
-              <Text style={[styles.metaLabel, { color: c.mutedForeground }]}>{m.label}</Text>
-              <Text style={[styles.metaValue, { color: c.foreground }]} numberOfLines={2}>
-                {m.value}
-              </Text>
-            </View>
-          ))}
-        </View>
-
         {/* Live telemetry */}
         {tractor ? (
           <>
-            <View style={styles.sectionHeader}>
+            <View style={[styles.sectionHeader, { marginTop: 16 }]}>
               <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
               <Text style={[styles.sectionLabel, { color: c.foreground }]}>Live Telemetry</Text>
             </View>
-            <View style={styles.telemetryGrid}>
+            <View style={[styles.telemetryGrid, { marginTop: 8 }]}>
               {telemetry.map(t => (
                 <View
                   key={t.label}
@@ -257,11 +374,11 @@ export default function ComplaintDetailScreen() {
         {/* Timeline */}
         {complaint.events && complaint.events.length > 0 ? (
           <>
-            <View style={styles.sectionHeader}>
+            <View style={[styles.sectionHeader, { marginTop: 16 }]}>
               <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
               <Text style={[styles.sectionLabel, { color: c.foreground }]}>Timeline</Text>
             </View>
-            <View style={[styles.block, { backgroundColor: c.card, borderColor: c.border, paddingVertical: 4 }]}>
+            <View style={[styles.block, { backgroundColor: c.card, borderColor: c.border, paddingVertical: 4, marginTop: 8 }]}>
               {complaint.events.map((event, i) => (
                 <View
                   key={`${event.ts}-${event.type}-${i}`}
@@ -277,11 +394,11 @@ export default function ComplaintDetailScreen() {
                     <Feather name="activity" size={15} color={c.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.metaValue, { color: c.foreground }]}>{event.type}</Text>
+                    <Text style={[styles.metaValue, { color: c.foreground, textAlign: 'left' }]}>{event.type}</Text>
                     {event.note ? (
-                      <Text style={[styles.metaLabel, { color: c.mutedForeground }]}>{event.note}</Text>
+                      <Text style={[styles.metaLabel, { color: c.mutedForeground, width: 'auto' }]}>{event.note}</Text>
                     ) : null}
-                    <Text style={[styles.metaLabel, { color: c.mutedForeground }]}>
+                    <Text style={[styles.metaLabel, { color: c.mutedForeground, width: 'auto', marginTop: 2 }]}>
                       {formatDateTime(event.ts)}
                       {event.by ? ` · ${event.by}` : ''}
                     </Text>
@@ -358,9 +475,9 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   heroIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
