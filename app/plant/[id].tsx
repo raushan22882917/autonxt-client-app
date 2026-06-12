@@ -15,9 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { DataTable } from '@/components/DataTable';
-import { PlantDetailDateBar } from '@/components/PlantDetailDateBar';
 import { PlantDetailFilterSheet } from '@/components/PlantDetailFilterSheet';
-import { UptimeMetricCards } from '@/components/UptimeMetricCards';
 import { isActiveComplaint } from '@/lib/complaintFilters';
 import { isBreakdownComplaint } from '@/lib/isBreakdownComplaint';
 import {
@@ -27,7 +25,7 @@ import {
   plantRuntimeTractorColumns,
   plantTractorColumns,
 } from '@/lib/plantDetailTables';
-import type { ComplaintPeriod } from '@/lib/complaintFilters';
+import { complaintPeriodLabel, type ComplaintPeriod } from '@/lib/complaintFilters';
 import {
   applyPeriodToTractorMetrics,
   countActivePlantDetailFilters,
@@ -62,7 +60,7 @@ export default function PlantDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const plantID = id ? decodeURIComponent(id) : '';
-  const { plants, tractors, complaints, runtimeRecords } = useApp();
+  const { plants, tractors, complaints, runtimeRecords, refresh } = useApp();
   const [tab, setTab] = useState<TabKey>('tractors');
   const [filters, setFilters] = useState<PlantDetailFilterValues>(DEFAULT_PLANT_DETAIL_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -189,26 +187,20 @@ export default function PlantDetailScreen() {
   const openTractor  = (id: string) => router.push(`/tractor/${encodeURIComponent(id)}`);
   const openComplaint = (id: string) => router.push(`/complaint/${id}`);
 
-  const Header = (
-    <View style={styles.headerContainer}>
-      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity
-          style={styles.circleBackBtn}
-          onPress={goBack}
-          activeOpacity={0.75}
-        >
-          <Feather name="arrow-left" size={18} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.topTitle}>Plant Details</Text>
-        <View style={{ width: 44 }} />
-      </View>
-    </View>
-  );
-
   if (!plant || !summary) {
     return (
       <View style={[styles.root, { backgroundColor: c.background }]}>
-        {Header}
+        <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
+          <TouchableOpacity
+            style={styles.circleBackBtn}
+            onPress={goBack}
+            activeOpacity={0.75}
+          >
+            <Feather name="arrow-left" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.topTitle}>Plant Details</Text>
+          <View style={{ width: 44 }} />
+        </View>
         <View style={[styles.centered]}>
           <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
             <Feather name="home" size={32} color={c.mutedForeground} />
@@ -220,249 +212,672 @@ export default function PlantDetailScreen() {
   }
 
   const currentMeta = tabMeta[tab];
-  const filterSummary = plantDetailFilterSummary(appliedFilters, tractorOptions);
+  const dateLabel = useMemo(() => {
+    return complaintPeriodLabel(
+      appliedFilters.period,
+      appliedFilters.period === 'CUSTOM' ? appliedFilters.customMonth : undefined
+    );
+  }, [appliedFilters.period, appliedFilters.customMonth]);
 
-  const tableWrap = (child: React.ReactNode, title: string, subtitle: string) => (
-    <View style={[styles.tableCard, { backgroundColor: c.card, borderColor: c.border }]}>
-      <View style={styles.tableCardHeader}>
-        <Text style={[styles.tableCardTitle, { color: c.foreground }]}>{title}</Text>
-        <Text style={[styles.tableCardSub, { color: c.mutedForeground }]}>{subtitle}</Text>
-      </View>
-      {child}
-    </View>
-  );
+  const otherFiltersLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (appliedFilters.tractorID) {
+      const t = tractorOptions.find(o => o.id === appliedFilters.tractorID);
+      parts.push(`Tractor: ${t?.label ?? 'Selected'}`);
+    }
+    if (appliedFilters.tractorStatus !== 'ALL') parts.push(`Status: ${appliedFilters.tractorStatus}`);
+    if (appliedFilters.severity !== 'ALL') parts.push(`Severity: ${appliedFilters.severity}`);
+    if (appliedFilters.breakdownOnly) parts.push('Breakdown only');
+    if (appliedFilters.search.trim()) parts.push(`Search: "${appliedFilters.search.trim()}"`);
+    return parts.join(' · ');
+  }, [appliedFilters, tractorOptions]);
 
   const tabContent = () => {
     switch (tab) {
       case 'tractors':
-        return tableWrap(
-          <DataTable columns={tractorColumns} data={filteredTractors}
-            keyExtractor={m => m.tractor.tractorID} emptyMessage="No tractors match filters"
-            compact fitWidth showRowChevron onRowPress={m => openTractor(m.tractor.tractorID)} />,
-          'Fleet tractors', `${filteredTractors.length} of ${metricsBase.length} in range`
+        return (
+          <DataTable
+            title="Fleet tractors"
+            subtitle={`${filteredTractors.length} of ${metricsBase.length} in range`}
+            columns={tractorColumns}
+            data={filteredTractors}
+            keyExtractor={m => m.tractor.tractorID}
+            emptyMessage="No tractors match filters"
+            compact
+            showRowChevron
+            stickyFirstColumn
+            onRowPress={m => openTractor(m.tractor.tractorID)}
+            titleColor="#FFFFFF"
+            titleBgGradient={[c.gradientEnd, '#be1e2d']}
+            headerBgColor={c.redSoft}
+            headerTextColor={c.primary}
+            rowBgColorOdd={c.redSoft + '40'}
+            rowBgColorEven={c.card}
+            borderColor={c.redBorder}
+            outerBorderColor={c.redBorder}
+          />
         );
       case 'breakdown':
-        return tableWrap(
-          <DataTable columns={complaintColumns} data={filteredBreakdown}
-            keyExtractor={r => r.complaintID} emptyMessage="No breakdown records match filters"
-            compact fitWidth showRowChevron onRowPress={r => openComplaint(r.complaintID)} />,
-          'Breakdown history', `${filteredBreakdown.length} of ${breakdownInPeriod.length} in range`
+        return (
+          <DataTable
+            title="Breakdown history"
+            subtitle={`${filteredBreakdown.length} of ${breakdownInPeriod.length} in range`}
+            columns={complaintColumns}
+            data={filteredBreakdown}
+            keyExtractor={r => r.complaintID}
+            emptyMessage="No breakdown records match filters"
+            compact
+            showRowChevron
+            stickyFirstColumn
+            onRowPress={r => openComplaint(r.complaintID)}
+            titleColor="#FFFFFF"
+            titleBgGradient={[c.gradientEnd, '#be1e2d']}
+            headerBgColor={c.redSoft}
+            headerTextColor={c.primary}
+            rowBgColorOdd={c.redSoft + '40'}
+            rowBgColorEven={c.card}
+            borderColor={c.redBorder}
+            outerBorderColor={c.redBorder}
+          />
         );
       case 'tickets':
-        return tableWrap(
-          <DataTable columns={complaintColumns} data={filteredTickets}
-            keyExtractor={r => r.complaintID} emptyMessage="No open tickets match filters"
-            compact fitWidth showRowChevron onRowPress={r => openComplaint(r.complaintID)} />,
-          'Open tickets', `${filteredTickets.length} of ${openTicketsInPeriod.length} in range`
+        return (
+          <DataTable
+            title="Open tickets"
+            subtitle={`${filteredTickets.length} of ${openTicketsInPeriod.length} in range`}
+            columns={complaintColumns}
+            data={filteredTickets}
+            keyExtractor={r => r.complaintID}
+            emptyMessage="No open tickets match filters"
+            compact
+            showRowChevron
+            stickyFirstColumn
+            onRowPress={r => openComplaint(r.complaintID)}
+            titleColor="#FFFFFF"
+            titleBgGradient={[c.gradientEnd, '#be1e2d']}
+            headerBgColor={c.redSoft}
+            headerTextColor={c.primary}
+            rowBgColorOdd={c.redSoft + '40'}
+            rowBgColorEven={c.card}
+            borderColor={c.redBorder}
+            outerBorderColor={c.redBorder}
+          />
         );
       case 'runtime':
         return (
           <View style={styles.runtimeStack}>
-            {tableWrap(
-              <DataTable columns={runtimeTractorCols} data={runtimeTractorsDisplay}
-                keyExtractor={m => m.tractor.tractorID} emptyMessage="No tractors match filters"
-                compact fitWidth showRowChevron onRowPress={m => openTractor(m.tractor.tractorID)} />,
-              'Tractor runtime', `${runtimeTractorsDisplay.length} tractor${runtimeTractorsDisplay.length === 1 ? '' : 's'}`
-            )}
-            {tableWrap(
-              <DataTable columns={runtimeLogCols} data={filteredRuntimeLogs}
-                keyExtractor={r => r.recordID} emptyMessage="No log entries match filters"
-                compact fitWidth showRowChevron onRowPress={r => openTractor(r.tractorID)} />,
-              'Manual log', `${filteredRuntimeLogs.length} of ${runtimeLogRows.length} entries`
-            )}
+            <DataTable
+              title="Tractor runtime"
+              subtitle={`${runtimeTractorsDisplay.length} tractor${runtimeTractorsDisplay.length === 1 ? '' : 's'}`}
+              columns={runtimeTractorCols}
+              data={runtimeTractorsDisplay}
+              keyExtractor={m => m.tractor.tractorID}
+              emptyMessage="No tractors match filters"
+              compact
+              showRowChevron
+              stickyFirstColumn
+              onRowPress={m => openTractor(m.tractor.tractorID)}
+              titleColor="#FFFFFF"
+              titleBgGradient={[c.gradientEnd, '#be1e2d']}
+              headerBgColor={c.redSoft}
+              headerTextColor={c.primary}
+              rowBgColorOdd={c.redSoft + '40'}
+              rowBgColorEven={c.card}
+              borderColor={c.redBorder}
+              outerBorderColor={c.redBorder}
+            />
+            <DataTable
+              title="Manual log"
+              subtitle={`${filteredRuntimeLogs.length} of ${runtimeLogRows.length} entries`}
+              columns={runtimeLogCols}
+              data={filteredRuntimeLogs}
+              keyExtractor={r => r.recordID}
+              emptyMessage="No log entries match filters"
+              compact
+              showRowChevron
+              stickyFirstColumn
+              onRowPress={r => openTractor(r.tractorID)}
+              titleColor="#FFFFFF"
+              titleBgGradient={[c.gradientEnd, '#be1e2d']}
+              headerBgColor={c.redSoft}
+              headerTextColor={c.primary}
+              rowBgColorOdd={c.redSoft + '40'}
+              rowBgColorEven={c.card}
+              borderColor={c.redBorder}
+              outerBorderColor={c.redBorder}
+            />
           </View>
         );
       default: return null;
     }
   };
-
   const uptimeColor = summary.uptimePct >= 75 ? c.success : summary.uptimePct >= 50 ? c.warning : c.red;
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
-      {Header}
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }} showsVerticalScrollIndicator={false}>
-
-        {/* Hero */}
-        <View style={[styles.hero, { paddingTop: 8 }]}>
-          <LinearGradient
-            colors={[theme.accent + '22', theme.accent + '08', c.background]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFillObject}
-          />
-
-          {/* Plant header card */}
-          <View style={[styles.heroCard, { backgroundColor: c.card, borderColor: theme.border, shadowColor: theme.accent }]}>
-            {/* Icon + name */}
-            <View style={styles.heroTop}>
-              <View style={[styles.heroIcon, { backgroundColor: theme.accent + '18' }]}>
-                <Feather name={theme.icon} size={28} color={theme.accent} />
-              </View>
-              <View style={styles.heroInfo}>
-                <Text style={[styles.heroTitle, { color: c.foreground }]}>{plant.name}</Text>
-                {plant.location ? (
-                  <View style={styles.locationRow}>
-                    <Feather name="map-pin" size={12} color={c.mutedForeground} />
-                    <Text style={[styles.heroSub, { color: c.mutedForeground }]} numberOfLines={1}>
-                      {plant.location}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-
-            {/* Stat pills */}
-            <View style={styles.pillRow}>
-              {[
-                { label: 'Tractors',     value: summary.tractorCount, color: theme.accent,  bg: theme.accent + '14' },
-                { label: 'In operation', value: summary.inOperation,  color: c.success,     bg: c.successSoft },
-                { label: 'Maintenance',  value: summary.maintenance,  color: c.warning,     bg: c.warningSoft },
-                { label: 'Open',         value: summary.openTickets,  color: c.red,         bg: c.redSoft },
-              ].map(p => (
-                <View key={p.label} style={[styles.pill, { backgroundColor: p.bg }]}>
-                  <Text style={[styles.pillValue, { color: p.color }]}>{p.value}</Text>
-                  <Text style={[styles.pillLabel, { color: p.color + 'BB' }]}>{p.label}</Text>
+        {/* Red Gradient Header Area */}
+        <LinearGradient
+          colors={['#7E152F', '#BE185D']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{
+            paddingTop: insets.top + 12,
+            paddingHorizontal: 20,
+            paddingBottom: 40,
+            borderBottomLeftRadius: 32,
+            borderBottomRightRadius: 32,
+          }}
+        >
+          {/* Top Navigation Bar inside Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 36, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textAlign: 'center' }}>
+                {plant.name}
+              </Text>
+              {plant.location ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                  <Feather name="map-pin" size={11} color="rgba(255, 255, 255, 0.75)" />
+                  <Text style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: 'rgba(255, 255, 255, 0.75)', textAlign: 'center' }} numberOfLines={1}>
+                    {plant.location}
+                  </Text>
                 </View>
-              ))}
+              ) : null}
+            </View>
+          </View>
+
+
+
+          {/* Progress / Slider Indicator */}
+          <View style={{ height: 4, backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 2, position: 'relative', marginTop: 16, marginBottom: 8 }}>
+            <View style={{ height: 4, backgroundColor: '#FFFFFF', borderRadius: 2, width: `${Math.min(100, summary.uptimePct)}%` }} />
+            <View
+              style={{
+                position: 'absolute',
+                top: -5,
+                left: `${Math.min(100, summary.uptimePct)}%`,
+                width: 14,
+                height: 14,
+                borderRadius: 7,
+                backgroundColor: '#FFFFFF',
+                borderWidth: 3,
+                borderColor: '#7E152F',
+                marginLeft: -7,
+              }}
+            />
+          </View>
+        </LinearGradient>
+
+        {/* Overlapping White Card */}
+        {/* Giant Parent 3D Metrics Box containing all three metrics sections */}
+        <View
+          style={{
+            backgroundColor: c.card,
+            borderRadius: 24,
+            borderWidth: 1.2,
+            borderColor: c.border,
+            borderBottomWidth: 4, // 3D depth bevel thickness
+            borderBottomColor: c.border,
+            padding: 12, // increased from 10
+            marginHorizontal: 16,
+            marginTop: -36,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.1,
+            shadowRadius: 20,
+            elevation: 8,
+            marginBottom: 20,
+            gap: 12, // increased from 10
+          }}
+        >
+          {/* SECTION 1: Status List (Tractors, In operation, Maintenance, Open tickets) */}
+          <View>
+            {[
+              { label: 'Tractors',     value: `${summary.tractorCount} units`, dotColor: theme.accent, showBorder: true },
+              { label: 'In operation', value: `${summary.inOperation} units`,  dotColor: c.success, showBorder: true },
+              { label: 'Maintenance',  value: `${summary.maintenance} units`,  dotColor: c.warning, showBorder: true },
+              { label: 'Open tickets', value: `${summary.openTickets} open`,    dotColor: c.red, showBorder: false },
+            ].map((item, idx) => (
+              <View
+                key={item.label}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: 10, // increased from 8
+                  borderBottomWidth: item.showBorder ? StyleSheet.hairlineWidth : 0,
+                  borderBottomColor: c.border,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: item.dotColor }} />
+                  <Text style={{ fontSize: 15, fontFamily: 'Inter_600SemiBold', color: c.foreground }}>
+                    {item.label}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 15, fontFamily: 'Inter_700Bold', color: c.foreground }}>
+                  {item.value}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Divider */}
+          <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: c.border }} />
+
+          {/* SECTION 2: Fleet Bar (Breakdown open, Runtime logged, Fleet uptime) */}
+          <View style={{
+            flexDirection: 'row',
+            backgroundColor: c.surfaceAlt,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: c.border,
+            paddingVertical: 10, // increased from 8
+            paddingHorizontal: 8,
+          }}>
+            <View style={{ flex: 1, alignItems: 'center', gap: 3 }}>
+              <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: c.warning }}>
+                {summary.breakdownOpen}
+              </Text>
+              <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, textAlign: 'center' }}>
+                Breakdown open
+              </Text>
+            </View>
+            <View style={{ width: 1, height: 30, backgroundColor: c.border, alignSelf: 'center' }} />
+            
+            <View style={{ flex: 1, alignItems: 'center', gap: 3 }}>
+              <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: c.primary }}>
+                {summary.runtimeHours > 0 ? `${Math.round(summary.runtimeHours)}h` : '—'}
+              </Text>
+              <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, textAlign: 'center' }}>
+                Runtime logged
+              </Text>
+            </View>
+            <View style={{ width: 1, height: 30, backgroundColor: c.border, alignSelf: 'center' }} />
+            
+            <View style={{ flex: 1, alignItems: 'center', gap: 3 }}>
+              <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: uptimeColor }}>
+                {formatPct(summary.uptimePct)}
+              </Text>
+              <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, textAlign: 'center' }}>
+                Fleet uptime
+              </Text>
+            </View>
+          </View>
+
+          {/* Divider */}
+          <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: c.border }} />
+
+          {/* SECTION 3: 3-box layout side-by-side with brick texture backdrop */}
+          <View
+            style={{
+              borderRadius: 16,
+              borderWidth: 0,
+              padding: 6, // increased from 4 (horizontal/vertical unified)
+              overflow: 'hidden',
+              backgroundColor: c.surfaceAlt,
+            }}
+          >
+            {/* Brick background pattern (faint neutral brick lines) */}
+            <View style={[StyleSheet.absoluteFillObject, { borderRadius: 16, overflow: 'hidden' }]} pointerEvents="none">
+              {/* Horizontal rows */}
+              <View style={{ position: 'absolute', top: '20%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: '40%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: '60%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: '80%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              
+              {/* Vertical joints */}
+              <View style={{ position: 'absolute', top: 0, bottom: '80%', left: '33%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: 0, bottom: '80%', left: '66%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              
+              <View style={{ position: 'absolute', top: '20%', bottom: '60%', left: '16%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: '20%', bottom: '60%', left: '50%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: '20%', bottom: '60%', left: '83%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              
+              <View style={{ position: 'absolute', top: '40%', bottom: '40%', left: '33%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: '40%', bottom: '40%', left: '66%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              
+              <View style={{ position: 'absolute', top: '60%', bottom: '20%', left: '16%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: '60%', bottom: '20%', left: '50%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: '60%', bottom: '20%', left: '83%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+
+              <View style={{ position: 'absolute', top: '80%', bottom: 0, left: '33%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
+              <View style={{ position: 'absolute', top: '80%', bottom: 0, left: '66%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
             </View>
 
-            <UptimeMetricCards
-              uptimePct={summary.uptimePct}
-              downtimePct={summary.downtimePct}
-              repairDays={summary.repairDays}
-            />
-
-            {/* Fleet bar */}
-            <View style={[styles.fleetBar, { backgroundColor: c.surfaceAlt, borderColor: c.hairline }]}>
-              <View style={styles.fleetBarItem}>
-                <Text style={[styles.fleetBarVal, { color: c.warning }]}>{summary.breakdownOpen}</Text>
-                <Text style={[styles.fleetBarLbl, { color: c.mutedForeground }]}>Breakdown open</Text>
-              </View>
-              <View style={[styles.fleetBarDivider, { backgroundColor: c.border }]} />
-              <View style={styles.fleetBarItem}>
-                <Text style={[styles.fleetBarVal, { color: c.primary }]}>
-                  {summary.runtimeHours > 0 ? `${Math.round(summary.runtimeHours)}h` : '—'}
-                </Text>
-                <Text style={[styles.fleetBarLbl, { color: c.mutedForeground }]}>Runtime logged</Text>
-              </View>
-              <View style={[styles.fleetBarDivider, { backgroundColor: c.border }]} />
-              <View style={styles.fleetBarItem}>
-                <Text style={[styles.fleetBarVal, { color: uptimeColor }]}>
+            {/* Child cards container in 3-box layout side-by-side in the same line */}
+            <View style={{ flexDirection: 'row', gap: 2 }}>
+              {/* Box 1: Uptime */}
+              <View
+                style={{
+                  flexGrow: 1,
+                  flexShrink: 1,
+                  flexBasis: 0,
+                  minHeight: 60, // increased from 52
+                  backgroundColor: c.card,
+                  borderRadius: 12,
+                  borderWidth: 1.2,
+                  borderColor: c.border,
+                  borderBottomWidth: 2.5,
+                  borderBottomColor: c.border,
+                  paddingHorizontal: 6, // increased from 5
+                  paddingVertical: 8, // increased from 6
+                  gap: 2,
+                  shadowColor: c.shadow,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: uptimeColor }} />
+                  <Text 
+                    style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: c.foreground }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    Uptime
+                  </Text>
+                </View>
+                <Text 
+                  style={{ fontSize: 18, fontFamily: 'SpaceMono_700Bold', color: uptimeColor }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
                   {formatPct(summary.uptimePct)}
                 </Text>
-                <Text style={[styles.fleetBarLbl, { color: c.mutedForeground }]}>Fleet uptime</Text>
               </View>
-            </View>
 
-            {/* Uptime progress bar */}
-            <View style={styles.uptimeBarWrap}>
-              <View style={[styles.uptimeTrack, { backgroundColor: c.track }]}>
-                <View style={[styles.uptimeFill, { width: `${Math.min(100, summary.uptimePct)}%`, backgroundColor: uptimeColor }]} />
+              {/* Box 2: Downtime */}
+              <View
+                style={{
+                  flexGrow: 1,
+                  flexShrink: 1,
+                  flexBasis: 0,
+                  minHeight: 60, // increased from 52
+                  backgroundColor: c.card,
+                  borderRadius: 12,
+                  borderWidth: 1.2,
+                  borderColor: c.border,
+                  borderBottomWidth: 2.5,
+                  borderBottomColor: c.border,
+                  paddingHorizontal: 6, // increased from 5
+                  paddingVertical: 8, // increased from 6
+                  gap: 2,
+                  shadowColor: c.shadow,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.warning }} />
+                  <Text 
+                    style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: c.foreground }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    Downtime
+                  </Text>
+                </View>
+                <Text 
+                  style={{ fontSize: 18, fontFamily: 'SpaceMono_700Bold', color: c.warning }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {formatPct(summary.downtimePct)}
+                </Text>
+              </View>
+
+              {/* Box 3: Repair */}
+              <View
+                style={{
+                  flexGrow: 1,
+                  flexShrink: 1,
+                  flexBasis: 0,
+                  minHeight: 60, // increased from 52
+                  backgroundColor: c.card,
+                  borderRadius: 12,
+                  borderWidth: 1.2,
+                  borderColor: c.border,
+                  borderBottomWidth: 2.5,
+                  borderBottomColor: c.border,
+                  paddingHorizontal: 6, // increased from 5
+                  paddingVertical: 8, // increased from 6
+                  gap: 2,
+                  shadowColor: c.shadow,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.red }} />
+                  <Text 
+                    style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: c.foreground }}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    Repair
+                  </Text>
+                </View>
+                <Text 
+                  style={{ fontSize: 18, fontFamily: 'SpaceMono_700Bold', color: c.red }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {summary.repairDays}d
+                </Text>
               </View>
             </View>
+          </View>
+
+          {/* SECTION 4: Uptime progress bar track at bottom */}
+          <View style={{ height: 6, backgroundColor: c.track, borderRadius: 3, overflow: 'hidden' }}>
+            <View style={{ height: '100%', borderRadius: 3, backgroundColor: uptimeColor, width: `${Math.min(100, summary.uptimePct)}%` }} />
           </View>
         </View>
 
-        {/* Horizontal tab chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabScroll}
-          style={styles.tabScrollWrap}
-        >
-          {TABS.map(t => {
-            const active = tab === t.key;
-            const meta = tabMeta[t.key];
-            return (
-              <TouchableOpacity
-                key={t.key}
-                style={[
-                  styles.tabChip,
-                  {
-                    backgroundColor: active ? c.primary : c.card,
-                    borderColor: active ? c.primary : c.border,
-                    shadowColor: active ? c.primary : 'transparent',
-                  },
-                ]}
-                onPress={() => setTab(t.key)}
-                activeOpacity={0.8}
-              >
-                <Feather name={t.icon} size={14} color={active ? c.primaryForeground : c.mutedForeground} />
-                <Text style={[styles.tabChipLabel, { color: active ? c.primaryForeground : c.foreground }]}>
-                  {t.label}
-                </Text>
-                <View style={[styles.tabChipBadge, { backgroundColor: active ? c.primaryForeground + '28' : c.muted }]}>
-                  <Text style={[styles.tabChipBadgeText, { color: active ? c.primaryForeground : c.mutedForeground }]}>
-                    {meta.count}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
 
-        {/* Content section */}
-        <View style={styles.contentSection}>
-          <PlantDetailDateBar
-            period={period}
-            customMonth={customMonth}
-            onPeriodChange={(p: ComplaintPeriod) => setFilters(prev => ({ ...prev, period: p }))}
-            onCustomMonthChange={month => setFilters(prev => ({ ...prev, customMonth: month, period: 'CUSTOM' }))}
-          />
+        {/* Recent Section Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginTop: 16, marginBottom: 12 }}>
+          <View style={{ width: 5, height: 24, borderRadius: 2.5, backgroundColor: c.primary }} />
+          <Text style={{ fontSize: 22, fontFamily: 'Inter_900Black', color: c.foreground, letterSpacing: -0.4 }}>
+            Fleet Details
+          </Text>
+        </View>
 
-          {/* Search + filter bar */}
-          <View style={styles.toolbar}>
-            <View style={[styles.searchBox, { backgroundColor: c.card, borderColor: c.border }]}>
-              <Feather name="search" size={16} color={c.mutedForeground} />
-              <TextInput
-                style={[styles.searchInput, { color: c.foreground }]}
-                placeholder="Search…"
-                placeholderTextColor={c.mutedForeground + '88'}
-                value={search}
-                onChangeText={setSearch}
-              />
-              {search.length > 0 ? (
-                <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
-                  <View style={[styles.clearBtn, { backgroundColor: c.border }]}>
-                    <Feather name="x" size={12} color={c.mutedForeground} />
-                  </View>
-                </TouchableOpacity>
-              ) : null}
+        {/* Big Div Wrapper for Tabs + Content (styled like a premium card) */}
+        <View style={{
+          backgroundColor: c.card,
+          borderRadius: 24,
+          borderWidth: 1,
+          borderColor: c.border,
+          padding: 14,
+          marginHorizontal: 16,
+          marginBottom: 24,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.05,
+          shadowRadius: 15,
+          elevation: 4,
+        }}>
+          {/* Non-scrollable Tab Chips Container Card Wrapper */}
+          <View style={{
+            backgroundColor: c.surfaceAlt,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: c.border,
+            padding: 5,
+            marginBottom: 12,
+            gap: 4,
+          }}>
+            {/* Row 1 */}
+            <View style={{ flexDirection: 'row', gap: 4 }}>
+              {TABS.slice(0, 2).map(t => {
+                const active = tab === t.key;
+                const meta = tabMeta[t.key];
+                return (
+                  <TouchableOpacity
+                    key={t.key}
+                    style={[
+                      styles.tabChip,
+                      {
+                        flex: 1, // distribute space evenly
+                        backgroundColor: active ? c.primary : c.card,
+                        borderColor: active ? c.primary : c.border,
+                        paddingHorizontal: 6,
+                        paddingVertical: 6,
+                        justifyContent: 'center',
+                        gap: 4,
+                      },
+                    ]}
+                    onPress={() => setTab(t.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name={t.icon} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
+                    <Text 
+                      style={[styles.tabChipLabel, { color: active ? c.primaryForeground : c.foreground, fontSize: 11 }]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
+                      {t.label}
+                    </Text>
+                    <View style={[styles.tabChipBadge, { 
+                      backgroundColor: active ? c.primaryForeground + '28' : c.muted, 
+                      minWidth: 16, 
+                      height: 16, 
+                      borderRadius: 8,
+                      paddingHorizontal: 3,
+                    }]}>
+                      <Text 
+                        style={[styles.tabChipBadgeText, { color: active ? c.primaryForeground : c.mutedForeground, fontSize: 8 }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        {meta.count}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            <TouchableOpacity
-              style={[
-                styles.filterBtn,
-                {
-                  backgroundColor: activeFilterCount > 0 ? c.primary : c.card,
-                  borderColor: activeFilterCount > 0 ? c.primary : c.border,
-                  shadowColor: activeFilterCount > 0 ? c.primary : 'transparent',
-                },
-              ]}
-              onPress={() => setFilterSheetOpen(true)}
-              activeOpacity={0.8}
-            >
-              <Feather name="sliders" size={18} color={activeFilterCount > 0 ? c.primaryForeground : c.foreground} />
-              {activeFilterCount > 0 ? (
-                <View style={[styles.filterBadge, { backgroundColor: c.primaryForeground }]}>
-                  <Text style={[styles.filterBadgeText, { color: c.primary }]}>{activeFilterCount}</Text>
-                </View>
-              ) : null}
-            </TouchableOpacity>
+
+            {/* Row 2 */}
+            <View style={{ flexDirection: 'row', gap: 4 }}>
+              {TABS.slice(2, 4).map(t => {
+                const active = tab === t.key;
+                const meta = tabMeta[t.key];
+                return (
+                  <TouchableOpacity
+                    key={t.key}
+                    style={[
+                      styles.tabChip,
+                      {
+                        flex: 1, // distribute space evenly
+                        backgroundColor: active ? c.primary : c.card,
+                        borderColor: active ? c.primary : c.border,
+                        paddingHorizontal: 6,
+                        paddingVertical: 6,
+                        justifyContent: 'center',
+                        gap: 4,
+                      },
+                    ]}
+                    onPress={() => setTab(t.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name={t.icon} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
+                    <Text 
+                      style={[styles.tabChipLabel, { color: active ? c.primaryForeground : c.foreground, fontSize: 11 }]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
+                      {t.label}
+                    </Text>
+                    <View style={[styles.tabChipBadge, { 
+                      backgroundColor: active ? c.primaryForeground + '28' : c.muted, 
+                      minWidth: 16, 
+                      height: 16, 
+                      borderRadius: 8,
+                      paddingHorizontal: 3,
+                    }]}>
+                      <Text 
+                        style={[styles.tabChipBadgeText, { color: active ? c.primaryForeground : c.mutedForeground, fontSize: 8 }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        {meta.count}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
-          {filterSummary ? (
-            <Text style={[styles.filterLine, { color: c.mutedForeground }]} numberOfLines={2}>
-              {filterSummary}
-            </Text>
-          ) : null}
+          {/* Inner Content Section */}
+          <View style={{ gap: 12 }}>
+            {/* Search + filter bar */}
+            <View style={[styles.toolbar, { marginHorizontal: 0, marginTop: 0 }]}>
+              <View style={[styles.searchBox, { backgroundColor: c.background, borderColor: c.border }]}>
+                <Feather name="search" size={15} color={c.mutedForeground} />
+                <TextInput
+                  style={[styles.searchInput, { color: c.foreground }]}
+                  placeholder="Search…"
+                  placeholderTextColor={c.mutedForeground + '88'}
+                  value={search}
+                  onChangeText={setSearch}
+                />
+                {search.length > 0 ? (
+                  <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+                    <View style={[styles.clearBtn, { backgroundColor: c.border }]}>
+                      <Feather name="x" size={11} color={c.mutedForeground} />
+                    </View>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.filterBtn,
+                  {
+                    backgroundColor: activeFilterCount > 0 ? c.primary : c.background,
+                    borderColor: activeFilterCount > 0 ? c.primary : c.border,
+                    shadowColor: activeFilterCount > 0 ? c.primary : 'transparent',
+                  },
+                ]}
+                onPress={() => setFilterSheetOpen(true)}
+                activeOpacity={0.8}
+              >
+                <Feather name="sliders" size={16} color={activeFilterCount > 0 ? c.primaryForeground : c.foreground} />
+                {activeFilterCount > 0 ? (
+                  <View style={[styles.filterBadge, { backgroundColor: c.primaryForeground }]}>
+                    <Text style={[styles.filterBadgeText, { color: c.primary }]}>{activeFilterCount}</Text>
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+            </View>
 
-          <Text style={[styles.showingLine, { color: c.foreground }]}>
-            {currentMeta.count} result{currentMeta.count !== 1 ? 's' : ''}
-            {currentMeta.count !== currentMeta.total ? ` (of ${currentMeta.total})` : ''}
-          </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 2 }}>
+              <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: c.primary, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                {dateLabel}
+              </Text>
+              <Text style={[styles.showingLine, { color: c.foreground }]}>
+                {currentMeta.count} result{currentMeta.count !== 1 ? 's' : ''}
+                {currentMeta.count !== currentMeta.total ? ` (of ${currentMeta.total})` : ''}
+              </Text>
+            </View>
 
-          {tabContent()}
+            {otherFiltersLabel ? (
+              <Text style={[styles.filterLine, { color: c.mutedForeground, marginBottom: 8 }]} numberOfLines={1}>
+                {otherFiltersLabel}
+              </Text>
+            ) : null}
+
+            {tabContent()}
+          </View>
         </View>
       </ScrollView>
 
@@ -719,28 +1134,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    borderRadius: 14,
+    borderRadius: 11,
     borderWidth: 1,
-    paddingHorizontal: 13,
-    paddingVertical: 11,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter_400Regular',
     padding: 0,
   },
   clearBtn: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
   filterBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

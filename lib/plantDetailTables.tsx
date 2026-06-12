@@ -18,7 +18,7 @@ export function plantTractorColumns(): DataTableColumn<TractorPlantMetrics>[] {
       key: 'tractor',
       label: 'Tractor',
       flex: 1.35,
-      minWidth: 88,
+      minWidth: 99,
       render: m => m.tractor.displayName || m.tractor.model || m.tractor.tractorID,
     },
     {
@@ -177,7 +177,7 @@ export function plantRuntimeTractorColumns(
       key: 'tractor',
       label: 'Tractor',
       flex: 1.35,
-      minWidth: 88,
+      minWidth: 99,
       render: m => m.tractor.displayName || m.tractor.model,
     },
     {

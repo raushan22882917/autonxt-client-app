@@ -115,38 +115,6 @@ export default function TractorsScreen() {
 
   const ListHeader = (
     <View style={[styles.header, { paddingTop: topPad + 16 }]}>
-      {/* ── Fleet Management Hero Strip ── */}
-      <View style={[styles.heroStrip, { shadowColor: c.primary }]}>
-        <LinearGradient
-          colors={[c.gradientStart, c.gradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.heroGradient}
-        >
-          {/* Geometric decoration */}
-          <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-            <View style={styles.heroDotTR} />
-            <View style={styles.heroGridH} />
-          </View>
-
-          <View style={styles.heroLeft}>
-            <Text style={styles.heroSuper}>FLEET MANAGEMENT</Text>
-            <Text style={styles.heroTitle}>All Tractors</Text>
-          </View>
-
-          <View style={styles.heroRight}>
-            <View style={styles.heroBadge}>
-              <Feather name="truck" size={14} color="#FFFFFF" />
-              <Text style={styles.heroBadgeNum}>{filteredTractors.length}</Text>
-            </View>
-            {isLoadingMorePlants && (
-              <View style={styles.syncIndicator}>
-                <Text style={styles.syncLabel}>Syncing</Text>
-              </View>
-            )}
-          </View>
-        </LinearGradient>
-      </View>
 
       {/* ── Search + Filter area ── */}
       <View style={styles.controlBar}>

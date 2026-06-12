@@ -1,17 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
-import { SEVERITY_FILTERS, type SeverityFilter } from '@/lib/complaintFilters';
+import { SEVERITY_FILTERS, type SeverityFilter, COMPLAINT_PERIOD_OPTIONS, type ComplaintPeriod } from '@/lib/complaintFilters';
+import { TractorDetailMonthFilter } from '@/components/TractorDetailMonthFilter';
 import {
   DEFAULT_PLANT_DETAIL_FILTERS,
   TRACTOR_STATUS_OPTIONS,
@@ -98,10 +100,23 @@ export function PlantDetailFilterSheet({
   const c = useColors();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<PlantDetailFilterValues>(applied);
+  const [activeTab, setActiveTab] = useState<'date' | 'tractor'>('date');
+  const [tractorSearch, setTractorSearch] = useState('');
 
   useEffect(() => {
-    if (visible) setDraft(applied);
+    if (visible) {
+      setDraft(applied);
+      setActiveTab('date');
+      setTractorSearch('');
+    }
   }, [visible, applied]);
+
+  const filteredTractorOptions = useMemo(() => {
+    if (!tractorSearch.trim()) return tractorOptions;
+    return tractorOptions.filter(t =>
+      t.label.toLowerCase().includes(tractorSearch.trim().toLowerCase())
+    );
+  }, [tractorOptions, tractorSearch]);
 
   const handleApply = () => {
     onApply(draft);
@@ -140,77 +155,176 @@ export function PlantDetailFilterSheet({
             </TouchableOpacity>
           </View>
 
+          {/* Tab Switcher */}
+          <View style={[styles.tabContainer, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+            <TouchableOpacity
+              style={[
+                styles.tabBtn,
+                {
+                  backgroundColor: activeTab === 'date' ? c.primary : 'transparent',
+                },
+              ]}
+              onPress={() => setActiveTab('date')}
+              activeOpacity={0.8}
+            >
+              <Feather name="calendar" size={14} color={activeTab === 'date' ? c.primaryForeground : c.mutedForeground} />
+              <Text style={[styles.tabBtnText, { color: activeTab === 'date' ? c.primaryForeground : c.foreground }]}>
+                Date Range
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.tabBtn,
+                {
+                  backgroundColor: activeTab === 'tractor' ? c.primary : 'transparent',
+                },
+              ]}
+              onPress={() => setActiveTab('tractor')}
+              activeOpacity={0.8}
+            >
+              <Feather name="truck" size={14} color={activeTab === 'tractor' ? c.primaryForeground : c.mutedForeground} />
+              <Text style={[styles.tabBtnText, { color: activeTab === 'tractor' ? c.primaryForeground : c.foreground }]}>
+                Tractor Filters
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Tractor */}
-            <SectionHeader title="Tractor" c={c} />
-            <View style={styles.group}>
-              <OptionRow
-                label="All tractors"
-                checked={draft.tractorID === null}
-                onPress={() => setDraft(prev => ({ ...prev, tractorID: null }))}
-                c={c}
-              />
-              {tractorOptions.slice(0, 12).map(t => (
-                <OptionRow
-                  key={t.id}
-                  label={t.label}
-                  checked={draft.tractorID === t.id}
-                  onPress={() => setDraft(prev => ({ ...prev, tractorID: t.id }))}
-                  c={c}
-                />
-              ))}
-            </View>
-
-            {/* Status */}
-            <SectionHeader title="Tractor Status" c={c} />
-            <View style={styles.group}>
-              {TRACTOR_STATUS_OPTIONS.map(opt => (
-                <OptionRow
-                  key={opt.key}
-                  label={opt.label}
-                  checked={draft.tractorStatus === opt.key}
-                  onPress={() =>
-                    setDraft(prev => ({ ...prev, tractorStatus: opt.key as TractorStatusFilter }))
-                  }
-                  c={c}
-                />
-              ))}
-            </View>
-
-            {/* Severity */}
-            <SectionHeader title="Ticket Severity" c={c} />
-            <View style={styles.group}>
-              {SEVERITY_FILTERS.map(s => (
-                <OptionRow
-                  key={s}
-                  label={s === 'ALL' ? 'All severities' : s}
-                  checked={draft.severity === s}
-                  onPress={() => setDraft(prev => ({ ...prev, severity: s as SeverityFilter }))}
-                  c={c}
-                />
-              ))}
-            </View>
-
-            {/* Breakdown */}
-            {showBreakdownToggle ? (
+            {activeTab === 'date' ? (
               <>
-                <SectionHeader title="Ticket Type" c={c} />
+                {/* Date Range */}
+                <SectionHeader title="Date Range" c={c} />
+                <View style={styles.group}>
+                  {COMPLAINT_PERIOD_OPTIONS.map(opt => (
+                    <OptionRow
+                      key={opt.key}
+                      label={opt.label}
+                      checked={draft.period === opt.key}
+                      onPress={() => setDraft(prev => ({ ...prev, period: opt.key as ComplaintPeriod }))}
+                      c={c}
+                    />
+                  ))}
+                </View>
+
+                {draft.period === 'CUSTOM' ? (
+                  <View style={{
+                    marginTop: 10,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: c.border,
+                    padding: 12,
+                    backgroundColor: c.surfaceAlt,
+                    marginBottom: 10,
+                  }}>
+                    <TractorDetailMonthFilter
+                      month={draft.customMonth}
+                      onMonthChange={m => setDraft(prev => ({ ...prev, customMonth: m }))}
+                    />
+                  </View>
+                ) : null}
+              </>
+            ) : (
+              <>
+                {/* Tractor */}
+                <SectionHeader title="Tractor" c={c} />
+
+                {/* Tractor Search Bar */}
+                <View style={[styles.tractorSearchBox, { backgroundColor: c.background, borderColor: c.border }]}>
+                  <Feather name="search" size={14} color={c.mutedForeground} />
+                  <TextInput
+                    style={[styles.tractorSearchInput, { color: c.foreground }]}
+                    placeholder="Search tractors…"
+                    placeholderTextColor={c.mutedForeground + '88'}
+                    value={tractorSearch}
+                    onChangeText={setTractorSearch}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {tractorSearch.length > 0 ? (
+                    <TouchableOpacity onPress={() => setTractorSearch('')} hitSlop={8}>
+                      <View style={[styles.clearBtnMini, { backgroundColor: c.border }]}>
+                        <Feather name="x" size={10} color={c.mutedForeground} />
+                      </View>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
                 <View style={styles.group}>
                   <OptionRow
-                    label="Breakdown tickets only"
-                    checked={draft.breakdownOnly}
-                    onPress={() =>
-                      setDraft(prev => ({ ...prev, breakdownOnly: !prev.breakdownOnly }))
-                    }
+                    label="All tractors"
+                    checked={draft.tractorID === null}
+                    onPress={() => setDraft(prev => ({ ...prev, tractorID: null }))}
                     c={c}
                   />
+                  {filteredTractorOptions.slice(0, 15).map(t => (
+                    <OptionRow
+                      key={t.id}
+                      label={t.label}
+                      checked={draft.tractorID === t.id}
+                      onPress={() => setDraft(prev => ({ ...prev, tractorID: t.id }))}
+                      c={c}
+                    />
+                  ))}
+                  {filteredTractorOptions.length === 0 ? (
+                    <Text style={{ fontSize: 13, color: c.mutedForeground, textAlign: 'center', marginVertical: 8 }}>
+                      No matching tractors
+                    </Text>
+                  ) : null}
                 </View>
+
+                {/* Status */}
+                <SectionHeader title="Tractor Status" c={c} />
+                <View style={styles.group}>
+                  {TRACTOR_STATUS_OPTIONS.map(opt => (
+                    <OptionRow
+                      key={opt.key}
+                      label={opt.label}
+                      checked={draft.tractorStatus === opt.key}
+                      onPress={() =>
+                        setDraft(prev => ({ ...prev, tractorStatus: opt.key as TractorStatusFilter }))
+                      }
+                      c={c}
+                    />
+                  ))}
+                </View>
+
+                {/* Severity */}
+                <SectionHeader title="Ticket Severity" c={c} />
+                <View style={styles.group}>
+                  {SEVERITY_FILTERS.map(s => (
+                    <OptionRow
+                      key={s}
+                      label={s === 'ALL' ? 'All severities' : s}
+                      checked={draft.severity === s}
+                      onPress={() => setDraft(prev => ({ ...prev, severity: s as SeverityFilter }))}
+                      c={c}
+                    />
+                  ))}
+                </View>
+
+                {/* Breakdown */}
+                {showBreakdownToggle ? (
+                  <>
+                    <SectionHeader title="Ticket Type" c={c} />
+                    <View style={styles.group}>
+                      <OptionRow
+                        label="Breakdown tickets only"
+                        checked={draft.breakdownOnly}
+                        onPress={() =>
+                          setDraft(prev => ({ ...prev, breakdownOnly: !prev.breakdownOnly }))
+                        }
+                        c={c}
+                      />
+                    </View>
+                  </>
+                ) : null}
               </>
-            ) : null}
+            )}
           </ScrollView>
 
           {/* Footer */}
@@ -371,5 +485,51 @@ const styles = StyleSheet.create({
   applyText: {
     fontSize: 15,
     fontFamily: 'Inter_700Bold',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 18,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 4,
+    gap: 4,
+  },
+  tabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  tabBtnText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  tractorSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 9,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5.5,
+    marginBottom: 8,
+  },
+  tractorSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    padding: 0,
+  },
+  clearBtnMini: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

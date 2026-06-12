@@ -45,6 +45,8 @@ export interface DataTableProps<T> {
   titleBgGradient?: string[];
   headerBgGradient?: string[];
   backgroundColor?: string;
+  textColor?: string;
+  stickyFirstColumn?: boolean;
 }
 
 export function DataTable<T>({
@@ -69,8 +71,16 @@ export function DataTable<T>({
   titleBgGradient,
   headerBgGradient,
   backgroundColor,
+  textColor,
+  stickyFirstColumn = false,
 }: DataTableProps<T>) {
   const c = useColors();
+
+  const [rowHeights, setRowHeights] = React.useState<{ [key: string]: number }>({});
+
+  React.useEffect(() => {
+    setRowHeights({});
+  }, [data, columns, compact, stickyFirstColumn]);
 
   const cellAlign = (align?: 'left' | 'center' | 'right'): TextStyle['textAlign'] => {
     if (align === 'center') return 'center';
@@ -83,14 +93,14 @@ export function DataTable<T>({
     if (typeof content === 'string' || typeof content === 'number') {
       return (
         <Text
-          style={[styles.cellText, { color: c.foreground, textAlign: cellAlign(col.align) }]}
+          style={[styles.cellText, { color: textColor || c.foreground, textAlign: cellAlign(col.align) }]}
           numberOfLines={2}
         >
           {content}
         </Text>
       );
     }
-    return content ?? <Text style={[styles.cellText, { color: c.mutedForeground }]}>—</Text>;
+    return content ?? <Text style={[styles.cellText, { color: textColor || c.mutedForeground }]}>—</Text>;
   };
 
   const colStyle = (col: DataTableColumn<T>): ViewStyle => {
@@ -215,6 +225,295 @@ export function DataTable<T>({
     </View>
   );
 
+  const leftColStyle = (col: DataTableColumn<T>): ViewStyle => {
+    const w = col.minWidth ?? col.width ?? 80;
+    return {
+      width: w,
+      minWidth: w,
+    };
+  };
+
+  const firstCol = columns[0];
+  const otherCols = columns.slice(1);
+
+  const leftTableHeaderContent = firstCol ? (
+    <View style={[styles.headCell, compact && styles.headCellCompact, leftColStyle(firstCol)]}>
+      <Text
+        style={[
+          styles.headText,
+          compact && styles.headTextCompact,
+          { color: headerTextColor || c.mutedForeground, textAlign: cellAlign(firstCol.align) },
+        ]}
+        numberOfLines={1}
+      >
+        {firstCol.label}
+      </Text>
+    </View>
+  ) : null;
+
+  const leftTableHeader = firstCol ? (
+    headerBgGradient ? (
+      <LinearGradient
+        onLayout={e => {
+          const h = e.nativeEvent.layout.height;
+          setRowHeights(prev => {
+            const prevH = prev.header || 0;
+            if (h > prevH + 2) {
+              return { ...prev, header: h };
+            }
+            return prev;
+          });
+        }}
+        colors={headerBgGradient as [string, string, ...string[]]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[
+          styles.headRow,
+          compact && styles.headRowCompact,
+          {
+            borderBottomColor: borderColor || c.border,
+            paddingHorizontal: 0,
+            height: rowHeights.header || undefined,
+          }
+        ]}
+      >
+        {leftTableHeaderContent}
+      </LinearGradient>
+    ) : (
+      <View
+        onLayout={e => {
+          const h = e.nativeEvent.layout.height;
+          setRowHeights(prev => {
+            const prevH = prev.header || 0;
+            if (h > prevH + 2) {
+              return { ...prev, header: h };
+            }
+            return prev;
+          });
+        }}
+        style={[
+          styles.headRow,
+          compact && styles.headRowCompact,
+          {
+            backgroundColor: headerBgColor || c.surfaceAlt,
+            borderBottomColor: borderColor || c.border,
+            paddingHorizontal: 0,
+            height: rowHeights.header || undefined,
+          }
+        ]}
+      >
+        {leftTableHeaderContent}
+      </View>
+    )
+  ) : null;
+
+  const leftTable = firstCol ? (
+    <View style={{ zIndex: 2, backgroundColor: backgroundColor || c.card }}>
+      {/* Header cell for first column */}
+      {leftTableHeader}
+
+      {/* Body cells for first column */}
+      {data.map((row, rowIndex) => {
+        const key = keyExtractor(row, rowIndex);
+        const isLast = rowIndex === data.length - 1;
+        const RowWrap = onRowPress ? TouchableOpacity : View;
+        const rowProps = onRowPress ? { onPress: () => onRowPress(row, rowIndex), activeOpacity: 0.72 } : {};
+        const defaultRowBg = rowIndex % 2 === 1 ? c.surfaceAlt + '66' : c.card;
+        const customRowBg = rowIndex % 2 === 1 ? (rowBgColorOdd || defaultRowBg) : (rowBgColorEven || defaultRowBg);
+        
+        return (
+          <RowWrap
+            key={key}
+            onLayout={e => {
+              const h = e.nativeEvent.layout.height;
+              setRowHeights(prev => {
+                const k = String(rowIndex);
+                const prevH = prev[k] || 0;
+                if (h > prevH + 2) {
+                  return { ...prev, [k]: h };
+                }
+                return prev;
+              });
+            }}
+            style={[
+              styles.bodyRow,
+              compact && styles.bodyRowCompact,
+              {
+                backgroundColor: customRowBg,
+                borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
+                borderBottomColor: borderColor || c.hairline,
+                paddingHorizontal: 0,
+                height: rowHeights[String(rowIndex)] || undefined,
+              },
+            ]}
+            {...(rowProps as any)}
+          >
+            <View style={[styles.bodyCell, compact && styles.bodyCellCompact, leftColStyle(firstCol)]}>
+              {renderCell(row, firstCol, rowIndex)}
+            </View>
+          </RowWrap>
+        );
+      })}
+    </View>
+  ) : null;
+
+  const rightTableBody = (
+    <View style={{ minWidth: '100%' }}>
+      {/* Header row for remaining columns */}
+      {headerBgGradient ? (
+        <LinearGradient
+          onLayout={e => {
+            const h = e.nativeEvent.layout.height;
+            setRowHeights(prev => {
+              const prevH = prev.header || 0;
+              if (h > prevH + 2) {
+                return { ...prev, header: h };
+              }
+              return prev;
+            });
+          }}
+          colors={headerBgGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[
+            styles.headRow,
+            compact && styles.headRowCompact,
+            {
+              borderBottomColor: borderColor || c.border,
+              paddingLeft: 0,
+              height: rowHeights.header || undefined,
+            },
+          ]}
+        >
+          {otherCols.map(col => (
+            <View
+              key={col.key}
+              style={[styles.headCell, compact && styles.headCellCompact, colStyle(col)]}
+            >
+              <Text
+                style={[
+                  styles.headText,
+                  compact && styles.headTextCompact,
+                  { color: headerTextColor || c.mutedForeground, textAlign: cellAlign(col.align) },
+                ]}
+                numberOfLines={1}
+              >
+                {col.label}
+              </Text>
+            </View>
+          ))}
+          {showRowChevron ? <View style={styles.chevronCol} /> : null}
+        </LinearGradient>
+      ) : (
+        <View
+          onLayout={e => {
+            const h = e.nativeEvent.layout.height;
+            setRowHeights(prev => {
+              const prevH = prev.header || 0;
+              if (h > prevH + 2) {
+                return { ...prev, header: h };
+              }
+              return prev;
+            });
+          }}
+          style={[
+            styles.headRow,
+            compact && styles.headRowCompact,
+            {
+              backgroundColor: headerBgColor || c.surfaceAlt,
+              borderBottomColor: borderColor || c.border,
+              paddingLeft: 0,
+              height: rowHeights.header || undefined,
+            },
+          ]}
+        >
+          {otherCols.map(col => (
+            <View
+              key={col.key}
+              style={[styles.headCell, compact && styles.headCellCompact, colStyle(col)]}
+            >
+              <Text
+                style={[
+                  styles.headText,
+                  compact && styles.headTextCompact,
+                  { color: headerTextColor || c.mutedForeground, textAlign: cellAlign(col.align) },
+                ]}
+                numberOfLines={1}
+              >
+                {col.label}
+              </Text>
+            </View>
+          ))}
+          {showRowChevron ? <View style={styles.chevronCol} /> : null}
+        </View>
+      )}
+
+      {/* Body rows for remaining columns */}
+      {data.map((row, rowIndex) => {
+        const key = keyExtractor(row, rowIndex);
+        const isLast = rowIndex === data.length - 1;
+        const RowWrap = onRowPress ? TouchableOpacity : View;
+        const rowProps = onRowPress ? { onPress: () => onRowPress(row, rowIndex), activeOpacity: 0.72 } : {};
+        const defaultRowBg = rowIndex % 2 === 1 ? c.surfaceAlt + '66' : c.card;
+        const customRowBg = rowIndex % 2 === 1 ? (rowBgColorOdd || defaultRowBg) : (rowBgColorEven || defaultRowBg);
+
+        return (
+          <RowWrap
+            key={key}
+            onLayout={e => {
+              const h = e.nativeEvent.layout.height;
+              setRowHeights(prev => {
+                const k = String(rowIndex);
+                const prevH = prev[k] || 0;
+                if (h > prevH + 2) {
+                  return { ...prev, [k]: h };
+                }
+                return prev;
+              });
+            }}
+            style={[
+              styles.bodyRow,
+              compact && styles.bodyRowCompact,
+              {
+                backgroundColor: customRowBg,
+                borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
+                borderBottomColor: borderColor || c.hairline,
+                paddingLeft: 0,
+                height: rowHeights[String(rowIndex)] || undefined,
+              },
+            ]}
+            {...(rowProps as any)}
+          >
+            {otherCols.map(col => (
+              <View
+                key={col.key}
+                style={[styles.bodyCell, compact && styles.bodyCellCompact, colStyle(col)]}
+              >
+                {renderCell(row, col, rowIndex)}
+              </View>
+            ))}
+            {showRowChevron ? (
+              <View style={styles.chevronCol}>
+                <View style={[styles.chevronWrap, { backgroundColor: c.surfaceAlt }]}>
+                  <Feather name="chevron-right" size={13} color={c.mutedForeground} />
+                </View>
+              </View>
+            ) : null}
+          </RowWrap>
+        );
+      })}
+    </View>
+  );
+
+  const stickyTable = (
+    <View style={{ flexDirection: 'row' }}>
+      {leftTable}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {rightTableBody}
+      </ScrollView>
+    </View>
+  );
+
   return (
     <View style={[styles.wrap, { backgroundColor: backgroundColor || c.card, borderColor: outerBorderColor || c.border }]}>
       {title ? (
@@ -273,17 +572,19 @@ export function DataTable<T>({
       {loading ? (
         <View style={styles.loadingBox}>
           <LoadingRing size="md" color={c.primary} dual />
-          <Text style={[styles.loadingText, { color: c.mutedForeground }]}>Loading data…</Text>
+          <Text style={[styles.loadingText, { color: textColor || c.mutedForeground }]}>Loading data…</Text>
         </View>
       ) : data.length === 0 ? (
         <View style={styles.emptyBox}>
           <View style={[styles.emptyIcon, { backgroundColor: c.surfaceAlt }]}>
-            <Feather name="inbox" size={20} color={c.mutedForeground} />
+            <Feather name="inbox" size={20} color={textColor || c.mutedForeground} />
           </View>
-          <Text style={[styles.emptyText, { color: c.mutedForeground }]}>{emptyMessage}</Text>
+          <Text style={[styles.emptyText, { color: textColor || c.mutedForeground }]}>{emptyMessage}</Text>
         </View>
       ) : fitWidth ? (
         tableBody
+      ) : stickyFirstColumn ? (
+        stickyTable
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {tableBody}
