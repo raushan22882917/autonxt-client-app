@@ -42,6 +42,8 @@ interface AppState {
   refresh: () => void;
   /** Re-fetch live telemetry for all loaded tractors (fast). */
   refreshLiveTelemetry: () => Promise<void>;
+  tractorSearch: string;
+  setTractorSearch: (q: string) => void;
 }
 
 const AppContext = createContext<AppState>({
@@ -64,6 +66,8 @@ const AppContext = createContext<AppState>({
   error: null,
   refresh: () => {},
   refreshLiveTelemetry: async () => {},
+  tractorSearch: '',
+  setTractorSearch: () => {},
 });
 
 function mergeSlice(
@@ -106,6 +110,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loadingMessage, setLoadingMessage] = useState('Preparing your fleet…');
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const [tractorSearch, setTractorSearch] = useState('');
 
   const loadedSetRef = useRef(new Set<string>());
   const loadingPlantsRef = useRef(new Set<string>());
@@ -349,6 +354,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         error,
         refresh,
         refreshLiveTelemetry,
+        tractorSearch,
+        setTractorSearch,
       }}
     >
       {children}

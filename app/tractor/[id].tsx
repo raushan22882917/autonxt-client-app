@@ -890,7 +890,7 @@ function TabError({ message, c }: { message: string; c: ReturnType<typeof useCol
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F6F8',
   },
   headerContainer: {
     backgroundColor: '#7E152F',

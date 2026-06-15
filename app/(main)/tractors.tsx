@@ -28,31 +28,36 @@ const STATUS_FILTERS: {
   activeColor: string;
   activeBg: string;
 }[] = [
-  { key: 'ALL',         label: 'All',    icon: 'layers',    activeColor: '#FFFFFF', activeBg: '#D73220' },
-  { key: 'ACTIVE',      label: 'Active', icon: 'zap',       activeColor: '#FFFFFF', activeBg: '#10B981' },
-  { key: 'MAINTENANCE', label: 'Maint.', icon: 'tool',      activeColor: '#FFFFFF', activeBg: '#0B78B3' },
-  { key: 'IDLE',        label: 'Idle',   icon: 'clock',     activeColor: '#FFFFFF', activeBg: '#F59E0B' },
-  { key: 'OFFLINE',     label: 'Offline',icon: 'wifi-off',  activeColor: '#FFFFFF', activeBg: '#94A3B8' },
+  { key: 'ALL',         label: 'All',    icon: 'layers',    activeColor: '#FFFFFF', activeBg: '#7E152F' },
+  { key: 'ACTIVE',      label: 'Active', icon: 'zap',       activeColor: '#FFFFFF', activeBg: '#7E152F' },
+  { key: 'MAINTENANCE', label: 'Maint.', icon: 'tool',      activeColor: '#FFFFFF', activeBg: '#7E152F' },
+  { key: 'IDLE',        label: 'Idle',   icon: 'clock',     activeColor: '#FFFFFF', activeBg: '#7E152F' },
+  { key: 'OFFLINE',     label: 'Offline',icon: 'wifi-off',  activeColor: '#FFFFFF', activeBg: '#7E152F' },
 ];
 
 // ── Inline count label colors per status ────────────────────────────────────
 const STATUS_PILL_CONFIG: Record<StatusFilter, { bg: string; text: string }> = {
-  ALL:         { bg: '#FDE8E5', text: '#D73220' },
-  ACTIVE:      { bg: '#D1FAE5', text: '#065F46' },
-  MAINTENANCE: { bg: '#DBEAFE', text: '#1E40AF' },
-  IDLE:        { bg: '#FEF3C7', text: '#92400E' },
-  OFFLINE:     { bg: '#F1F5F9', text: '#475569' },
+  ALL:         { bg: '#FDF2F4', text: '#7E152F' },
+  ACTIVE:      { bg: '#E6F4EA', text: '#137333' },
+  MAINTENANCE: { bg: '#E8F0FE', text: '#1A73E8' },
+  IDLE:        { bg: '#FEF7E0', text: '#B06000' },
+  OFFLINE:     { bg: '#F1F3F4', text: '#5F6368' },
 };
 
 export default function TractorsScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { filteredTractors, isLoading, isLoadingMorePlants, refreshLiveTelemetry } = useApp();
-  const [search, setSearch] = useState('');
+  const {
+    filteredTractors,
+    isLoading,
+    isLoadingMorePlants,
+    refreshLiveTelemetry,
+    tractorSearch,
+    setTractorSearch,
+  } = useApp();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [refreshing, setRefreshing] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -74,7 +79,7 @@ export default function TractorsScreen() {
   const topPad = Platform.OS === 'web' ? 67 : 0;
 
   const displayed = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = tractorSearch.trim().toLowerCase();
     let list = filteredTractors;
 
     if (statusFilter !== 'ALL') {
@@ -95,7 +100,7 @@ export default function TractorsScreen() {
     }
 
     return list;
-  }, [filteredTractors, search, statusFilter]);
+  }, [filteredTractors, tractorSearch, statusFilter]);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -114,44 +119,7 @@ export default function TractorsScreen() {
   );
 
   const ListHeader = (
-    <View style={[styles.header, { paddingTop: topPad + 16 }]}>
-
-      {/* ── Search + Filter area ── */}
-      <View style={styles.controlBar}>
-        {/* Search bar */}
-        <View
-          style={[
-            styles.searchBox,
-            {
-              backgroundColor: c.card,
-              borderColor: searchFocused ? c.blue : c.border,
-              shadowColor: searchFocused ? c.blue : c.shadow,
-              shadowOpacity: searchFocused ? 0.12 : 0.04,
-            },
-          ]}
-        >
-          <Feather name="search" size={17} color={searchFocused ? c.blue : c.mutedForeground} />
-          <TextInput
-            style={[styles.searchInput, { color: c.foreground }]}
-            placeholder="Search by ID, model, location…"
-            placeholderTextColor={c.mutedForeground + '99'}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearch('')}
-              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-            >
-              <View style={[styles.clearBtn, { backgroundColor: c.border }]}>
-                <Feather name="x" size={12} color={c.mutedForeground} />
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
+    <View style={[styles.header, { paddingTop: topPad + 32 }]}>
 
         {/* Status filter chips */}
         <View style={styles.filterChips}>
@@ -165,13 +133,8 @@ export default function TractorsScreen() {
                 style={[
                   styles.filterChip,
                   {
-                    backgroundColor: active ? f.activeBg : c.card,
-                    borderColor: active ? f.activeBg : c.border,
-                    shadowColor: active ? f.activeBg : 'transparent',
-                    shadowOpacity: active ? 0.3 : 0,
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowRadius: 8,
-                    elevation: active ? 4 : 1,
+                    backgroundColor: active ? f.activeBg : '#FFFFFF',
+                    borderColor: active ? f.activeBg : '#E2E8F0',
                   },
                 ]}
                 onPress={() => setStatusFilter(f.key)}
@@ -180,12 +143,12 @@ export default function TractorsScreen() {
                 <Feather
                   name={f.icon as any}
                   size={12}
-                  color={active ? f.activeColor : c.mutedForeground}
+                  color={active ? f.activeColor : '#94A3B8'}
                 />
                 <Text
                   style={[
                     styles.filterChipLabel,
-                    { color: active ? f.activeColor : c.foreground },
+                    { color: active ? f.activeColor : '#0F172A' },
                   ]}
                 >
                   {f.label}
@@ -215,22 +178,15 @@ export default function TractorsScreen() {
 
         {/* Results info */}
         <View style={styles.resultsRow}>
-          <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
-          <Text style={[styles.resultsText, { color: c.foreground }]}>
-            <Text style={[styles.resultsBold, { color: c.foreground }]}>{displayed.length}</Text>
-            {' '}tractor{displayed.length !== 1 ? 's' : ''}
-            {statusFilter !== 'ALL' ? (
-              <Text style={[{ color: c.mutedForeground }]}> · {statusFilter.toLowerCase()}</Text>
-            ) : null}
-          </Text>
-          {isLoadingMorePlants && (
-            <View style={[styles.livePill, { backgroundColor: c.blue + '18', borderColor: c.blue + '35' }]}>
-              <Text style={[styles.livePillText, { color: c.blue }]}>Syncing…</Text>
-            </View>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+            <View style={[styles.sectionAccent, { backgroundColor: '#7E152F' }]} />
+            <Text style={[styles.resultsText, { color: '#0F172A' }]}>
+              <Text style={[styles.resultsBold, { color: '#0F172A' }]}>{displayed.length}</Text>
+              {' '}Tractor{displayed.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
   );
 
   return (
@@ -255,17 +211,17 @@ export default function TractorsScreen() {
               <Feather name="truck" size={32} color={c.mutedForeground} />
             </View>
             <Text style={[styles.emptyTitle, { color: c.foreground }]}>
-              {search ? 'No Results' : 'No Tractors'}
+              {tractorSearch ? 'No Results' : 'No Tractors'}
             </Text>
             <Text style={[styles.emptyText, { color: c.mutedForeground }]}>
-              {search
-                ? `No tractors match "${search}"`
+              {tractorSearch
+                ? `No tractors match "${tractorSearch}"`
                 : 'No tractors found for the selected plant'}
             </Text>
-            {search ? (
+            {tractorSearch ? (
               <TouchableOpacity
                 style={[styles.clearSearchBtn, { borderColor: c.border, backgroundColor: c.surfaceAlt }]}
-                onPress={() => setSearch('')}
+                onPress={() => setTractorSearch('')}
               >
                 <Feather name="x" size={14} color={c.primary} />
                 <Text style={[styles.clearSearchText, { color: c.primary }]}>Clear search</Text>
@@ -373,22 +329,36 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
   },
-  searchBox: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
+    width: '100%',
+  },
+  searchBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 17,
+    height: 34,
+    paddingHorizontal: 12,
+  },
+  filterCircleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F8D7DA',
+    backgroundColor: '#FDF2F4',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
     paddingVertical: 0,
   },
   clearBtn: {
@@ -402,15 +372,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     flexWrap: 'wrap',
+    marginTop: 6,
+    marginBottom: 6,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 24,
-    borderWidth: 1.5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   filterChipLabel: {
     fontSize: 12,
@@ -420,10 +392,11 @@ const styles = StyleSheet.create({
   filterChipCount: {
     minWidth: 20,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 5,
+    marginLeft: 2,
   },
   filterChipCountText: {
     fontSize: 10,
@@ -507,5 +480,66 @@ const styles = StyleSheet.create({
   clearSearchText: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(8, 16, 43, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  menu: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    maxHeight: '50%',
+    overflow: 'hidden',
+    shadowColor: '#120E10',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 12,
+    paddingBottom: 20,
+  },
+  sheetHandleWrap: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 4,
+    width: '100%',
+  },
+  sheetHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+  },
+  menuScroll: {
+    paddingVertical: 10,
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 12,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  optionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  optionBody: { flex: 1, gap: 2 },
+  optionLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.1,
+  },
+  optionSub: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
   },
 });

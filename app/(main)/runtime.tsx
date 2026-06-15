@@ -82,97 +82,37 @@ export default function PlantAnalysisScreen() {
     router.push(`/plant/${encodeURIComponent(plantID)}`);
 
   const ListHeader = (
-    <View style={[styles.header, { paddingTop: topPad + 16 }]}>
+    <View style={[styles.header, { paddingTop: topPad + 28 }]}>
       <View style={styles.headerTitleContainer}>
-        <View style={[styles.titleRow, { width: '100%' }]}>
-          <LinearGradient
-            colors={['transparent', '#7E152F1A', 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              width: '100%',
-              paddingVertical: 5,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={[styles.mainTitleText, { color: c.foreground, textAlign: 'center' }]}>All Plants</Text>
-          </LinearGradient>
-        </View>
+        <Text style={styles.mainTitleText}>All Plants</Text>
+        <Text style={styles.subtitleText}>
+          Manage and monitor all your plants in one place
+        </Text>
+      </View>
 
-        {/* Interactive Dropdown & Search Bar Controls wrapped in a single container with a red border */}
-        <View
+      <View style={[styles.searchBarContainer, { backgroundColor: '#F8FAFC', marginTop: 0, marginBottom: 10 }]}>
+        <Feather name="search" size={15} color="#94A3B8" style={{ marginRight: 8 }} />
+        <TextInput
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: c.card,
-            borderColor: c.border, // standard neutral border
-            borderWidth: 1.5,
-            borderRadius: 14,
-            height: 48,
-            paddingHorizontal: 12,
-            marginTop: 8,
-            marginBottom: 10,
-            shadowColor: c.shadow,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 6,
-            elevation: 2,
+            color: '#0F172A',
+            fontSize: 13,
+            fontFamily: 'Inter_500Medium',
+            flex: 1,
+            paddingVertical: 0,
+            height: '100%',
           }}
-        >
-          {/* Left Side: Distinct Inner Search Bar Div */}
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: c.surfaceAlt, // distinct search bar background
-              borderRadius: 10,
-              height: 34,
-              paddingHorizontal: 10,
-              marginRight: 12,
-            }}
-          >
-            <Feather name="search" size={14} color={c.mutedForeground} style={{ marginRight: 6 }} />
-            <TextInput
-              style={{
-                color: c.foreground,
-                fontSize: 13,
-                fontFamily: 'Inter_500Medium',
-                flex: 1,
-                paddingVertical: 0,
-                height: '100%',
-              }}
-              placeholder="Search..."
-              placeholderTextColor={c.mutedForeground + '99'}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
-                <Feather name="x" size={14} color={c.mutedForeground} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Right Side: Little Option for Dropdown (Symbol Only) */}
-          <TouchableOpacity
-            style={{
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: c.surfaceAlt,
-              borderRadius: 10,
-              height: 34,
-              width: 34,
-            }}
-            activeOpacity={0.75}
-            onPress={() => setPlantOpen(true)}
-          >
-            <Feather name="map-pin" size={15} color="#7E152F" />
+          placeholder="Search plants by name or location..."
+          placeholderTextColor="#94A3B8"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
+            <Feather name="x" size={15} color="#94A3B8" />
           </TouchableOpacity>
-        </View>
+        )}
       </View>
     </View>
   );
@@ -194,7 +134,7 @@ export default function PlantAnalysisScreen() {
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
         }
-        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         ListEmptyComponent={
           <View style={[styles.empty, { backgroundColor: c.card, borderColor: c.border }]}>
             <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
@@ -337,32 +277,54 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   list: { paddingHorizontal: 16 },
   header: {
-    gap: 14,
+    gap: 12,
     paddingBottom: 4,
     paddingHorizontal: 0,
   },
-
   headerTitleContainer: {
     flexDirection: 'column',
-    gap: 4,
-    marginBottom: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 2,
+    marginBottom: 0,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
   },
   mainTitleText: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: 'Inter_700Bold',
+    color: '#0F172A',
     letterSpacing: -0.5,
   },
   subtitleText: {
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    letterSpacing: -0.1,
+    fontSize: 11.5,
+    fontFamily: 'Inter_400Regular',
+    color: '#64748B',
+    lineHeight: 15,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+    marginBottom: 10,
+  },
+  searchBarContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 17,
+    height: 34,
+    paddingHorizontal: 12,
+  },
+  filterCircleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#F8D7DA',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // ── Empty ──

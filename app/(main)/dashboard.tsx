@@ -158,12 +158,11 @@ export default function DashboardScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <BackgroundAmbientGlows />
       <ScrollView
         style={[styles.root, { backgroundColor: 'transparent' }]}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: topPad + 16, paddingBottom: insets.bottom + 100 },
+          { paddingTop: topPad + 40, paddingBottom: insets.bottom + 100 },
         ]}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
@@ -171,41 +170,37 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Volt Hero Banner ── */}
-        <View style={[styles.voltHeroContainer, { backgroundColor: c.card }]}>
+        <View style={styles.voltHeroContainer}>
           <View style={styles.voltHeroContentRow}>
             <View style={styles.voltHeroContent}>
-              <View style={styles.voltHeroHeader}>
-                <View style={styles.voltLogoCircle}>
-                  <Feather name="zap" size={12} color={c.primary} />
-                </View>
-                <Text style={[styles.voltBrandText, { color: c.primary }]}>VOLT PRECISION</Text>
-              </View>
-
+              <Text style={styles.voltHeroTagline}>BUILT FOR TOMORROW</Text>
+              
               <Text style={styles.voltHeroTitle}>THE FUTURE OF PERFORMANCE</Text>
 
               <Text style={styles.voltHeroSubtitle}>
                 Engineered with precision. Driven by electricity. Experience the pinnacle of automotive innovation.
               </Text>
 
-              <TouchableOpacity
-                style={[styles.voltHeroButton, { backgroundColor: c.primary, shadowColor: c.primary }]}
-                activeOpacity={0.8}
-                onPress={() => {
-                  router.push('/(main)/tractors');
-                }}
-              >
-                <Text style={styles.voltHeroButtonText}>Experience Volt</Text>
-                <Feather name="arrow-right" size={14} color="#FFFFFF" />
+              <TouchableOpacity style={styles.voltHeroButton} activeOpacity={0.8}>
+                <Text style={styles.voltHeroButtonText}>Explore Insights</Text>
+                <Feather name="arrow-right" size={12} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.voltHeroImageWrap}>
               <Image
-                source={require('../../assets/images/small-logo-black.png')}
+                source={require('../../assets/images/hero-logo.png')}
                 style={styles.voltHeroImage}
                 resizeMode="contain"
               />
             </View>
+          </View>
+
+          {/* Carousel dots */}
+          <View style={styles.voltHeroDots}>
+            <View style={[styles.voltHeroDot, { backgroundColor: '#7E152F' }]} />
+            <View style={[styles.voltHeroDot, { backgroundColor: '#CBD5E1' }]} />
+            <View style={[styles.voltHeroDot, { backgroundColor: '#CBD5E1' }]} />
           </View>
         </View>
 
@@ -220,13 +215,14 @@ export default function DashboardScreen() {
           </View>
         ) : null}
 
-        {/* ── Stats Grid (Retainable Card-on-Card Layout) ── */}
-        <View style={styles.statsGrid}>
-          {/* Section 1: Cost Savings & Impact (Full Width) */}
-          <View style={[styles.mainSectionCard, { backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
+        {/* ── Stats Grid (Floating Premium Cards as in the Design) ── */}
+        <View style={{ gap: 12, width: '100%' }}>
+          
+          {/* Card 1: Cost Savings & Impact (Full Width) */}
+          <View style={styles.mainStatsCard}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconWrap, { backgroundColor: c.accent + '15' }]}>
-                <Feather name="trending-up" size={18} color={c.accent} />
+              <View style={[styles.sectionIconWrap, { backgroundColor: c.primary + '12' }]}>
+                <Feather name="trending-up" size={16} color={c.primary} />
               </View>
               <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>Cost Savings & Impact</Text>
@@ -234,25 +230,36 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            <View style={styles.floatingSubCardsRow}>
-              <View style={styles.floatingSubCard}>
-                <Text style={styles.subCardLabel}>Cumulative Saved</Text>
-                <Text style={styles.subCardValue}>{costLabel}</Text>
+            <View style={styles.savingsContainer}>
+              {/* Savings Left Column */}
+              <View style={styles.savingsHalf}>
+                <Text style={styles.subCardLabel}>Cumulative Savings</Text>
+                <Text style={[styles.subCardValue, { color: c.primary, fontSize: 18, marginVertical: 4 }]} numberOfLines={1}>
+                  {costLabel}
+                </Text>
               </View>
-              <View style={styles.floatingSubCard}>
+
+              {/* Vertical Divider Line */}
+              <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: c.border, height: '70%', alignSelf: 'center' }} />
+
+              {/* Impact Right Column */}
+              <View style={styles.savingsHalf}>
                 <Text style={styles.subCardLabel}>Trees Saved</Text>
-                <Text style={styles.subCardValue}>{treesLabel}</Text>
+                <Text style={[styles.subCardValue, { color: c.success, fontSize: 18, marginVertical: 4 }]} numberOfLines={1}>
+                  {treesLabel}
+                </Text>
               </View>
             </View>
           </View>
 
-          {/* Section 2: Fleet Overview (Split Cards) */}
-          <View style={styles.statsRow}>
+          {/* Row of side-by-side cards: Total Fleet and Status */}
+          <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+            
             {/* Split Card 1: Total Fleet */}
-            <View style={[styles.mainSectionCard, { flex: 1, backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
+            <View style={[styles.mainStatsCard, { flex: 1 }]}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconWrap, { backgroundColor: c.secondary + '15' }]}>
-                  <Feather name="truck" size={18} color={c.secondary} />
+                <View style={[styles.sectionIconWrap, { backgroundColor: c.primary + '12' }]}>
+                  <Feather name="truck" size={16} color={c.primary} />
                 </View>
                 <View style={styles.sectionHeaderText}>
                   <Text style={styles.sectionTitle}>Total Fleet</Text>
@@ -260,19 +267,40 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              <View style={styles.floatingSubCardsRow}>
-                <View style={styles.floatingSubCard}>
-                  <Text style={styles.subCardLabel}>In Service</Text>
-                  <Text style={styles.subCardValue}>{totalFleet}</Text>
+              <View style={{ marginTop: 10 }}>
+                {/* Large Number + Badge Row */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={{ fontSize: 26, fontFamily: 'Inter_700Bold', color: c.primary }}>
+                    {totalFleet}
+                  </Text>
+                  <View style={styles.totalUnitsBadge}>
+                    <Text style={styles.totalUnitsBadgeText}>Total Units</Text>
+                  </View>
+                </View>
+
+                {/* Separator line */}
+                <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginBottom: 10 }} />
+
+                {/* Tractors Row */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.primary }} />
+                    <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: c.foreground }}>
+                      Tractors
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 12, fontFamily: 'Inter_700Bold', color: c.primary }}>
+                    {totalFleet} units
+                  </Text>
                 </View>
               </View>
             </View>
 
             {/* Split Card 2: Operations Status */}
-            <View style={[styles.mainSectionCard, { flex: 1, backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
+            <View style={[styles.mainStatsCard, { flex: 1 }]}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconWrap, { backgroundColor: c.warning + '15' }]}>
-                  <Feather name="activity" size={18} color={c.warning} />
+                <View style={[styles.sectionIconWrap, { backgroundColor: c.warning + '12' }]}>
+                  <Feather name="activity" size={16} color={c.warning} />
                 </View>
                 <View style={styles.sectionHeaderText}>
                   <Text style={styles.sectionTitle}>Status</Text>
@@ -280,60 +308,137 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              <View style={styles.floatingSubCardsRow}>
-                <View style={[styles.floatingSubCard, { borderLeftWidth: 3, borderLeftColor: c.success }]}>
-                  <Text style={styles.subCardLabel}>Active</Text>
-                  <Text style={[styles.subCardValue, { color: c.success }]}>{inOperation}</Text>
+              <View style={{ marginTop: 10, gap: 8 }}>
+                {/* Active Row */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.success }} />
+                    <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: c.foreground }}>
+                      In Service
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 14, fontFamily: 'Inter_700Bold', color: c.success }}>
+                      {inOperation}
+                    </Text>
+                    <Text style={{ fontSize: 8, fontFamily: 'Inter_500Medium', color: '#94A3B8', marginTop: -2 }}>
+                      units
+                    </Text>
+                  </View>
                 </View>
-                <View style={[styles.floatingSubCard, { borderLeftWidth: 3, borderLeftColor: inMaintenance > 0 ? c.warning : c.border }]}>
-                  <Text style={styles.subCardLabel}>Maint</Text>
-                  <Text style={[styles.subCardValue, { color: inMaintenance > 0 ? c.warning : c.foreground }]}>{inMaintenance}</Text>
+
+                {/* Separator line */}
+                <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: c.border }} />
+
+                {/* Maintenance Row */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.warning }} />
+                    <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: c.foreground }}>
+                      Maintenance
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 14, fontFamily: 'Inter_700Bold', color: c.warning }}>
+                      {inMaintenance}
+                    </Text>
+                    <Text style={{ fontSize: 8, fontFamily: 'Inter_500Medium', color: '#94A3B8', marginTop: -2 }}>
+                      units
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
+
           </View>
 
-          {/* Section 3: Task Collaboration & Support (Full Width) */}
-          <View style={[styles.mainSectionCard, { backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
-            <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconWrap, { backgroundColor: c.primary + '15' }]}>
-                <Feather name="alert-circle" size={18} color={c.primary} />
+          {/* Card 3: Task Collaboration & Support (Full Width) */}
+          <TouchableOpacity
+            style={styles.mainStatsCard}
+            onPress={() => router.push('/(main)/complaints')}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.sectionHeader, { marginBottom: 10 }]}>
+              <View style={[styles.sectionIconWrap, { backgroundColor: c.primary + '12' }]}>
+                <Feather name="alert-circle" size={16} color={c.primary} />
               </View>
               <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>Task Collaboration</Text>
                 <Text style={styles.sectionSubtitle}>Recent complaints and active operator tickets</Text>
               </View>
+              <Feather name="chevron-right" size={16} color="#94A3B8" />
             </View>
 
-            <View style={styles.floatingSubCardsRow}>
-              <View style={styles.floatingSubCard}>
-                <Text style={styles.subCardLabel}>Open Tickets</Text>
-                <Text style={[styles.subCardValue, { color: openTickets > 0 ? c.primary : c.success }]}>
-                  {openTickets}
-                </Text>
+            <View style={styles.savingsContainer}>
+              {/* Open Tickets Column */}
+              <View style={[styles.savingsHalf, { flexDirection: 'row' }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.subCardLabel}>Open Tickets</Text>
+                  <Text style={[styles.subCardValue, { color: c.primary, fontSize: 20, marginVertical: 2 }]}>
+                    {openTickets}
+                  </Text>
+                </View>
+                <View style={{ justifyContent: 'center', alignItems: 'center', paddingLeft: 6 }}>
+                  <Feather name="file-text" size={22} color={c.primary + '35'} />
+                </View>
               </View>
-              <View style={styles.floatingSubCard}>
-                <Text style={styles.subCardLabel}>System Alert</Text>
-                <Text style={[styles.subCardValue, { fontSize: 13, color: openTickets > 0 ? c.primary : c.success, fontFamily: 'Inter_700Bold' }]}>
-                  {openTickets > 0 ? 'Requires Action' : 'All Systems Clear'}
-                </Text>
+
+              {/* Vertical Divider Line */}
+              <View style={{ width: StyleSheet.hairlineWidth, backgroundColor: c.border, height: '70%', alignSelf: 'center' }} />
+
+              {/* System Alert Column */}
+              <View style={[styles.savingsHalf, { flexDirection: 'row' }]}>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                  <Text style={styles.subCardLabel}>System Alert</Text>
+                  <Text style={[styles.subCardValue, { fontSize: 12, color: openTickets > 0 ? c.primary : c.success, fontFamily: 'Inter_700Bold', marginTop: 4 }]}>
+                    {openTickets > 0 ? 'Requires Action' : 'All Systems Clear'}
+                  </Text>
+                </View>
+                <View style={{ justifyContent: 'center', alignItems: 'center', paddingLeft: 6 }}>
+                  {openTickets > 0 ? (
+                    <Feather name="alert-triangle" size={22} color={c.primary + '35'} />
+                  ) : (
+                    <Feather name="check-circle" size={22} color={c.success + '35'} />
+                  )}
+                </View>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
+
         </View>
 
         {/* ── Recent Activity Section ── */}
-        <View style={styles.recentActivityHeader}>
-          <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
-            <Text style={[styles.sectionLabel, { color: c.foreground }]}>Recent Activity</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 12 }}>
+          <View style={{ gap: 2 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: c.primary }} />
+              <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: c.foreground }}>
+                Recent Activity
+              </Text>
+            </View>
+            <Text style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: c.mutedForeground, marginLeft: 12 }}>
+              Live updates from your fleet
+            </Text>
           </View>
+
           <TouchableOpacity
-            style={[styles.seeAllBtn, { backgroundColor: c.primary + '12', borderColor: c.primary + '30' }]}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: '#FDF2F4',
+              borderColor: '#FDA4AF',
+              borderWidth: 1,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 20,
+            }}
             onPress={() => router.push('/(main)/complaints')}
             activeOpacity={0.7}
           >
-            <Text style={[styles.seeAll, { color: c.primary }]}>All Tickets</Text>
+            <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: c.primary }}>
+              All Tickets
+            </Text>
             <Feather name="arrow-right" size={13} color={c.primary} />
           </TouchableOpacity>
         </View>
@@ -349,13 +454,12 @@ export default function DashboardScreen() {
             </Text>
           </View>
         ) : (
-          <View style={[styles.activityContainer, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadowStrong }]}>
-            {activity.map((item, idx) => (
+          <View style={{ gap: 10 }}>
+            {activity.map((item) => (
               <ActivityRow
                 key={item.id}
                 item={item}
                 c={c}
-                isLast={idx === activity.length - 1}
                 onPress={onActivityPress(item, router)}
               />
             ))}
@@ -377,12 +481,10 @@ function onActivityPress(item: ActivityItem, router: ReturnType<typeof useRouter
 function ActivityRow({
   item,
   c,
-  isLast,
   onPress,
 }: {
   item: ActivityItem;
   c: ReturnType<typeof useColors>;
-  isLast: boolean;
   onPress: () => void;
 }) {
   const iconColor =
@@ -394,71 +496,65 @@ function ActivityRow({
           ? c.primary
           : c.mutedForeground;
 
-  const isTicket = item.kind === 'ticket';
-  const isCritical = item.severity === 'critical';
+  const renderSubtitle = (sub: string) => {
+    // Look for percentage metrics (e.g. "97% SOC" or "97%")
+    const match = sub.match(/(.*?)(\d+%\s*SOC|\d+%\s*[A-Z]*)(\s*.*)/i);
+    if (match) {
+      return (
+        <Text style={styles.activitySubNew} numberOfLines={2}>
+          <Text style={{ color: c.mutedForeground }}>{match[1]}</Text>
+          <Text style={{ color: c.primary, fontFamily: 'Inter_700Bold' }}>{match[2]}</Text>
+          <Text style={{ color: c.mutedForeground }}>{match[3]}</Text>
+        </Text>
+      );
+    }
+    return (
+      <Text style={[styles.activitySubNew, { color: c.mutedForeground }]} numberOfLines={2}>
+        {sub}
+      </Text>
+    );
+  };
+
+  const getFeatherIconName = (icon: string) => {
+    if (icon === 'battery-charging') return 'zap';
+    return icon;
+  };
 
   return (
     <TouchableOpacity
-      style={[
-        styles.activityRow,
-        {
-          backgroundColor: c.card,
-          borderColor: isCritical ? c.red + '40' : c.border,
-          shadowColor: isCritical ? c.red : c.shadowStrong,
-          marginBottom: isLast ? 0 : 10,
-        },
-      ]}
+      style={styles.activityRowNew}
       onPress={onPress}
       activeOpacity={item.complaintID ? 0.75 : 1}
       disabled={!item.complaintID}
     >
-      {/* Severity stripe — 5px thick */}
-      <View style={[styles.activityStripe, { backgroundColor: iconColor }]} />
+      {/* Thick left stripe */}
+      <View style={[styles.activityStripeNew, { backgroundColor: iconColor }]} />
 
-      <View style={[styles.activityIcon, { backgroundColor: iconColor + '18', borderColor: iconColor + '25', borderWidth: 1 }]}>
-        <Feather name={item.icon} size={19} color={iconColor} />
+      {/* Brackets [⚡] icon wrap */}
+      <View style={styles.activityIconNew}>
+        <Text style={styles.bracketText}>[</Text>
+        <Feather name={getFeatherIconName(item.icon) as any} size={11} color={c.primary} />
+        <Text style={styles.bracketText}>]</Text>
       </View>
 
-      <View style={styles.activityBody}>
-        <View style={styles.activityTop}>
-          <Text style={[styles.activityTitle, { color: c.foreground }]} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <View
-            style={[
-              styles.kindPill,
-              {
-                backgroundColor: isTicket ? c.primary + '14' : c.surfaceAlt,
-                borderColor: isTicket ? c.primary + '30' : c.border,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.kindPillText,
-                { color: isTicket ? c.primary : c.mutedForeground },
-              ]}
-            >
-              {isTicket ? 'Ticket' : 'Alert'}
-            </Text>
-          </View>
-        </View>
-        <Text style={[styles.activitySub, { color: c.mutedForeground }]} numberOfLines={2}>
-          {item.subtitle}
+      <View style={styles.activityBodyNew}>
+        <Text style={[styles.activityTitleNew, { color: c.foreground }]} numberOfLines={1}>
+          {item.title}
         </Text>
-        <View style={styles.activityFooter}>
-          <Feather name="clock" size={11} color={c.mutedForeground} />
-          <Text style={[styles.activityTime, { color: c.mutedForeground }]}>
+        {renderSubtitle(item.subtitle)}
+        <View style={styles.activityFooterNew}>
+          <Feather name="clock" size={10} color="#94A3B8" />
+          <Text style={styles.activityTimeNew}>
             {formatRelativeTime(item.timestamp)}
           </Text>
         </View>
       </View>
 
-      {item.complaintID ? (
-        <View style={[styles.chevronWrap, { backgroundColor: c.surfaceAlt }]}>
-          <Feather name="chevron-right" size={16} color={c.mutedForeground} />
-        </View>
-      ) : null}
+      {/* Far Right Alert Badge */}
+      <View style={styles.alertBadge}>
+        <Feather name="bell" size={10} color={c.primary} />
+        <Text style={styles.alertBadgeText}>ALERT</Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -539,95 +635,83 @@ const styles = StyleSheet.create({
   // ── Volt Hero Banner ──
   voltHeroContainer: {
     width: '100%',
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
-    marginBottom: 4,
-    overflow: 'hidden',
+    position: 'relative',
+    marginTop: 8,
+    marginBottom: 8,
+    paddingBottom: 20,
   },
   voltHeroContentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'space-between',
   },
   voltHeroContent: {
     flex: 1,
-    gap: 6,
+    gap: 4,
+    paddingRight: 8,
   },
-  voltHeroHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  voltHeroTagline: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    color: '#7E152F', // Burgundy text
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
-  voltLogoCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#F2F3F8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#D73220',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  voltBrandText: {
-    fontSize: 11,
-    fontFamily: 'Inter_700Bold',
-    color: '#D73220',
-    letterSpacing: 1.5,
-  },
   voltHeroTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Inter_700Bold',
     color: '#0F172A',
-    letterSpacing: -0.5,
-    lineHeight: 24,
+    letterSpacing: -0.4,
+    lineHeight: 22,
+    marginBottom: 6,
   },
   voltHeroSubtitle: {
-    fontSize: 12,
-    fontFamily: 'Inter_500Medium',
-    color: '#475569',
-    lineHeight: 18,
-    marginBottom: 6,
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    color: '#64748B',
+    lineHeight: 15,
+    marginBottom: 12,
   },
   voltHeroButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#BE185D',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
+    backgroundColor: '#7E152F', // Burgundy button color
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
     alignSelf: 'flex-start',
-    shadowColor: '#BE185D',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 5,
   },
   voltHeroButtonText: {
-    fontSize: 13,
-    fontFamily: 'Inter_700Bold',
+    fontSize: 11.5,
+    fontFamily: 'Inter_600SemiBold',
     color: '#FFFFFF',
   },
   voltHeroImageWrap: {
-    width: 100,
-    height: 100,
+    width: 180,
+    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
+    marginLeft: 8,
   },
   voltHeroImage: {
-    width: 90,
-    height: 90,
+    width: 180,
+    height: 180,
+  },
+  voltHeroDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    transform: [{ translateX: -16 }],
+  },
+  voltHeroDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 
   // ── Sync pill ──
@@ -654,30 +738,31 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 
-  // ── Stats Grid ──
-  statsGrid: {
+  // ── Unified 3D Stats Grid ──
+  bigStatsContainer: {
+    backgroundColor: '#FFFFFF', // Clean white card tray
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1', // Highly visible 3D border boundary
+    padding: 16,
     gap: 16,
-    width: '100%',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 16,
-    width: '100%',
-  },
-
-  // ── Main Section Canvas Cards (Mockup Style) ──
-  mainSectionCard: {
-    width: '100%',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    padding: 20,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08, // Increased shadow opacity for depth
     shadowRadius: 24,
-    elevation: 4,
-    overflow: 'hidden',
+    elevation: 6,
+    width: '100%',
+  },
+  innerStatsCard: {
+    backgroundColor: '#F8FAFC', // Soft slate-gray contrast background for cards inside white container
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0', // Soft inner border
+    padding: 16,
+  },
+  innerStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -686,43 +771,43 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sectionHeaderText: {
     flex: 1,
-    gap: 1,
+    gap: 0,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Inter_700Bold',
     color: '#0F172A',
   },
   sectionSubtitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: 'Inter_500Medium',
     color: '#64748B',
   },
   floatingSubCardsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 10,
+    gap: 10,
+    marginTop: 8,
   },
   floatingSubCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#F1F5F9',
-    padding: 12,
+    padding: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 6,
+    elevation: 1,
   },
   subCardLabel: {
     fontSize: 9,
@@ -778,14 +863,17 @@ const styles = StyleSheet.create({
   // ── Activity Feed Container ──
   activityContainer: {
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderTopWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+    borderColor: '#CBD5E1', // highly visible border boundary
     overflow: 'hidden',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.04,
-    shadowRadius: 24,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08, // increased shadow opacity for depth
+    shadowRadius: 16,
+    elevation: 5, // increased elevation
   },
   activityRow: {
     flexDirection: 'row',
@@ -867,8 +955,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 36,
     borderRadius: 20,
-    borderWidth: 1,
+    borderTopWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
     gap: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   emptyIconWrap: {
     width: 64,
@@ -888,5 +984,143 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  mainStatsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9', // Subtle outline
+    padding: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03, // Soft shadow
+    shadowRadius: 8,
+    elevation: 1,
+    width: '100%',
+  },
+  greenBadge: {
+    backgroundColor: '#E6F4EA',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+    marginLeft: 6,
+  },
+  greenBadgeText: {
+    color: '#137333',
+    fontSize: 8,
+    fontFamily: 'Inter_700Bold',
+  },
+  subCardFooter: {
+    fontSize: 9,
+    fontFamily: 'Inter_400Regular',
+    color: '#94A3B8',
+  },
+  totalUnitsBadge: {
+    backgroundColor: '#FDF2F4',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 6,
+  },
+  totalUnitsBadgeText: {
+    color: '#7E152F',
+    fontSize: 9,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  savingsContainer: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    borderRadius: 12,
+    paddingVertical: 10,
+    marginTop: 8,
+    width: '100%',
+  },
+  savingsHalf: {
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+  activityRowNew: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+    gap: 12,
+  },
+  activityStripeNew: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 5,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  activityIconNew: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#FDF2F4', // Soft pinkish bg
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    flexShrink: 0,
+    marginLeft: 4, // Offset slightly to account for stripe
+  },
+  bracketText: {
+    color: '#7E152F', // Burgundy c.primary
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+  },
+  activityBodyNew: {
+    flex: 1,
+    gap: 2,
+  },
+  activityTitleNew: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.1,
+  },
+  activitySubNew: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 15,
+  },
+  activityFooterNew: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  activityTimeNew: {
+    fontSize: 10,
+    fontFamily: 'Inter_500Medium',
+    color: '#94A3B8',
+  },
+  alertBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FDF2F4', // Soft pinkish bg
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 12,
+    alignSelf: 'center',
+  },
+  alertBadgeText: {
+    color: '#7E152F', // Burgundy c.primary
+    fontSize: 8.5,
+    fontFamily: 'Inter_700Bold',
   },
 });

@@ -663,7 +663,7 @@ export default function ComplaintsScreen() {
         onRequestClose={() => setShowAllModal(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalContent, { backgroundColor: '#FAF5F0' }]}>
+          <View style={[styles.modalContent, { backgroundColor: c.background }]}>
             {/* Modal Header */}
             <View
               style={[

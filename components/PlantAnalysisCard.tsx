@@ -20,9 +20,9 @@ export function PlantAnalysisCard({ summary, onPress }: Props) {
       style={[
         styles.card,
         {
-          borderColor: c.border,
-          shadowColor: c.shadowStrong,
-          backgroundColor: c.card,
+          borderColor: 'rgba(0, 0, 0, 0.05)',
+          shadowColor: '#0F172A',
+          backgroundColor: '#FFFFFF',
         },
       ]}
       onPress={onPress}
@@ -33,31 +33,23 @@ export function PlantAnalysisCard({ summary, onPress }: Props) {
         <Text style={styles.leftBadgeText}>{tractorCount}</Text>
       </View>
 
-      {/* Middle section: Plant name and coordinate/location */}
+      {/* Middle section: Plant name */}
       <View style={styles.middleSection}>
-        <Text style={[styles.plantName, { color: c.foreground }]} numberOfLines={1}>
+        <Text style={[styles.plantName, { color: '#0F172A' }]} numberOfLines={1}>
           {plant.name}
         </Text>
-        {plant.location ? (
-          <Text style={[styles.coordinateText, { color: c.mutedForeground }]} numberOfLines={2}>
-            {plant.location}
-          </Text>
-        ) : (
-          <Text style={[styles.coordinateText, { color: c.mutedForeground }]} numberOfLines={1}>
-            No location set
-          </Text>
-        )}
       </View>
 
       {/* Vertical divider line */}
-      <View style={[styles.verticalDivider, { backgroundColor: c.border }]} />
+      <View style={[styles.verticalDivider, { backgroundColor: '#E2E8F0' }]} />
 
-      {/* Right section: Theme icon and plant type label */}
+      {/* Right section: Theme icon, plant type label, and chevron arrow (horizontal layout) */}
       <View style={styles.rightSection}>
-        <Feather name={theme.icon} size={18} color={accentColor} />
+        <Feather name={theme.icon} size={15} color={accentColor} style={{ marginRight: 6 }} />
         <Text style={[styles.plantTypeLabel, { color: c.mutedForeground }]} numberOfLines={1}>
           {plant.plantType === 'HUB_WAREHOUSE' ? 'Hub' : 'Site'}
         </Text>
+        <Feather name="chevron-right" size={14} color="#94A3B8" style={{ marginLeft: 6 }} />
       </View>
     </TouchableOpacity>
   );
@@ -68,12 +60,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
-    borderWidth: 1.5,
-    padding: 14,
+    borderWidth: 1,
+    padding: 12,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
   },
   leftBadgeWrap: {
     width: 36,
@@ -81,7 +73,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   leftBadgeText: {
     fontSize: 15,
@@ -91,34 +83,38 @@ const styles = StyleSheet.create({
   middleSection: {
     flex: 1,
     justifyContent: 'center',
-    gap: 3,
+    gap: 2,
     paddingRight: 8,
   },
   plantName: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Inter_700Bold',
     letterSpacing: -0.3,
   },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
   coordinateText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontFamily: 'Inter_400Regular',
-    lineHeight: 16,
+    flex: 1,
   },
   verticalDivider: {
-    width: 1.5,
-    height: '100%',
-    minHeight: 32,
+    width: 1,
+    height: 24,
     marginHorizontal: 12,
-    alignSelf: 'stretch',
+    alignSelf: 'center',
   },
   rightSection: {
-    width: 48,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    paddingLeft: 4,
   },
   plantTypeLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Inter_500Medium',
   },
 });
