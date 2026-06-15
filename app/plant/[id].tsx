@@ -355,59 +355,61 @@ export default function PlantDetailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }} showsVerticalScrollIndicator={false}>
-        {/* Red Gradient Header Area */}
-        <LinearGradient
-          colors={['#7E152F', '#BE185D']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={{
-            paddingTop: insets.top + 12,
-            paddingHorizontal: 20,
-            paddingBottom: 40,
-            borderBottomLeftRadius: 32,
-            borderBottomRightRadius: 32,
-          }}
-        >
-          {/* Top Navigation Bar inside Header */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 36, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textAlign: 'center' }}>
-                {plant.name}
-              </Text>
-              {plant.location ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                  <Feather name="map-pin" size={11} color="rgba(255, 255, 255, 0.75)" />
-                  <Text style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: 'rgba(255, 255, 255, 0.75)', textAlign: 'center' }} numberOfLines={1}>
-                    {plant.location}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
+      {/* Red Gradient Header Area */}
+      <LinearGradient
+        colors={['#7E152F', '#BE185D']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={{
+          paddingTop: insets.top + 12,
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+        }}
+      >
+        {/* Top Navigation Bar inside Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={{ fontSize: 36, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textAlign: 'center' }}>
+              {plant.name}
+            </Text>
+            {plant.location ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <Feather name="map-pin" size={11} color="rgba(255, 255, 255, 0.75)" />
+                <Text style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: 'rgba(255, 255, 255, 0.75)', textAlign: 'center' }} numberOfLines={1}>
+                  {plant.location}
+                </Text>
+              </View>
+            ) : null}
           </View>
+        </View>
 
+        {/* Progress / Slider Indicator */}
+        <View style={{ height: 4, backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 2, position: 'relative', marginTop: 16, marginBottom: 8 }}>
+          <View style={{ height: 4, backgroundColor: '#FFFFFF', borderRadius: 2, width: `${Math.min(100, summary.uptimePct)}%` }} />
+          <View
+            style={{
+              position: 'absolute',
+              top: -5,
+              left: `${Math.min(100, summary.uptimePct)}%`,
+              width: 14,
+              height: 14,
+              borderRadius: 7,
+              backgroundColor: '#FFFFFF',
+              borderWidth: 3,
+              borderColor: '#7E152F',
+              marginLeft: -7,
+            }}
+          />
+        </View>
+      </LinearGradient>
 
-
-          {/* Progress / Slider Indicator */}
-          <View style={{ height: 4, backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 2, position: 'relative', marginTop: 16, marginBottom: 8 }}>
-            <View style={{ height: 4, backgroundColor: '#FFFFFF', borderRadius: 2, width: `${Math.min(100, summary.uptimePct)}%` }} />
-            <View
-              style={{
-                position: 'absolute',
-                top: -5,
-                left: `${Math.min(100, summary.uptimePct)}%`,
-                width: 14,
-                height: 14,
-                borderRadius: 7,
-                backgroundColor: '#FFFFFF',
-                borderWidth: 3,
-                borderColor: '#7E152F',
-                marginLeft: -7,
-              }}
-            />
-          </View>
-        </LinearGradient>
-
+      <ScrollView
+        style={{ flex: 1, marginTop: -36 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Overlapping White Card */}
         {/* Giant Parent 3D Metrics Box containing all three metrics sections */}
         <View
@@ -420,7 +422,7 @@ export default function PlantDetailScreen() {
             borderBottomColor: c.border,
             padding: 12, // increased from 10
             marginHorizontal: 16,
-            marginTop: -36,
+            marginTop: 0,
             shadowColor: '#000000',
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.1,

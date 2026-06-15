@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Animated,
+  Dimensions,
+  Easing,
   Image,
   ScrollView,
   StyleSheet,
@@ -10,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import Svg, { Circle, RadialGradient, Stop, Defs } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
@@ -19,6 +23,82 @@ import { FleetLoader } from '@/components/FleetLoader';
 import { ComplaintDetail, fetchComplaintById } from '@/lib/appsync';
 import { getTractorListRowImageSource, defaultTractorImage } from '@/lib/tractorImages';
 import { isBreakdownComplaint } from '@/lib/isBreakdownComplaint';
+
+// ── Reflection Glow Component (White Scale) ──
+function ReflectionGlow({ size }: { size: number }) {
+  const anim = React.useRef(new Animated.Value(0)).current;
+  const { width: screenWidth } = Dimensions.get('window');
+  const scale = Math.max(0.75, Math.min(1.2, screenWidth / 412));
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [anim]);
+
+  const opacity = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.4, 0.7], // beautiful glowing base
+  });
+
+  const scaleX = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.95, 1.05],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        bottom: -size * 0.27,
+        width: size,
+        height: size,
+        opacity,
+        transform: [
+          { scaleY: 0.26 },
+          { scaleX },
+          { translateX: -2 * scale },
+          { translateY: 70 * scale },
+          { rotate: '-20deg' }
+        ],
+      }}
+    >
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <Defs>
+          <RadialGradient
+            id="whiteTireGlow"
+            cx="50%"
+            cy="50%"
+            rx="50%"
+            ry="50%"
+            fx="50%"
+            fy="50%"
+          >
+            <Stop offset="0%" stopColor="#FFFFFF" stopOpacity={0.9} />
+            <Stop offset="30%" stopColor="#FFFFFF" stopOpacity={0.65} />
+            <Stop offset="55%" stopColor="#FFFFFF" stopOpacity={0.45} />
+            <Stop offset="80%" stopColor="#FFFFFF" stopOpacity={0.25} />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill="url(#whiteTireGlow)" />
+      </Svg>
+    </Animated.View>
+  );
+}
 
 export default function ComplaintDetailScreen() {
   const c = useColors();
@@ -163,43 +243,10 @@ export default function ComplaintDetailScreen() {
         borderBottomRightRadius: 16,
       }}>
         {/* Hero Info inside the header */}
-        <View style={{ position: 'relative', paddingHorizontal: 16, paddingRight: 145, paddingTop: 2, paddingBottom: 8 }}>
-          {/* Premium Capsule showing screen title */}
-          <View style={{ flexDirection: 'row', marginBottom: 12 }}>
-            <LinearGradient
-              colors={['#7E152F', '#A82C48']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                borderColor: 'rgba(255, 255, 255, 0.25)',
-                borderWidth: 1,
-                borderRadius: 20,
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                overflow: 'hidden',
-              }}
-            >
-              {/* Brick background pattern (faint white brick lines) */}
-              <View style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]} pointerEvents="none">
-                <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                <View style={{ position: 'absolute', top: 0, bottom: '50%', left: '33%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                <View style={{ position: 'absolute', top: 0, bottom: '50%', left: '66%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                <View style={{ position: 'absolute', top: '50%', bottom: 0, left: '16%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                <View style={{ position: 'absolute', top: '50%', bottom: 0, left: '50%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                <View style={{ position: 'absolute', top: '50%', bottom: 0, left: '83%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-              </View>
+        <View style={{ position: 'relative', paddingHorizontal: 16, paddingRight: 160, paddingTop: 2, paddingBottom: 8 }}>
 
-              <Feather name="file-text" size={10} color="#FFFFFF" />
-              <Text style={{ fontSize: 9, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.8 }}>
-                Ticket Details
-              </Text>
-            </LinearGradient>
-          </View>
 
-          <Text style={[styles.heroTitle, { color: '#FFFFFF', textAlign: 'left', fontSize: 18, lineHeight: 24 }]}>
+          <Text style={[styles.heroTitle, { color: '#FFFFFF', textAlign: 'left', fontSize: 18, lineHeight: 24, marginTop: 12 }]}>
             {complaint.title}
           </Text>
           
@@ -230,18 +277,18 @@ export default function ComplaintDetailScreen() {
             )}
           </View>
 
-          {/* Tractor illustration positioned at bottom right */}
-          <Image
-            source={tractor ? getTractorListRowImageSource(tractor) || defaultTractorImage : defaultTractorImage}
-            style={{
-              position: 'absolute',
-              bottom: -5,
-              right: 0,
-              width: 150,
-              height: 107,
-            }}
-            resizeMode="contain"
-          />
+          {/* Tractor illustration positioned at top right */}
+          <View style={{ position: 'absolute', top: 2, right: 0, width: 160, height: 114, overflow: 'visible' }}>
+            <ReflectionGlow size={160} />
+            <Image
+              source={tractor ? getTractorListRowImageSource(tractor) || defaultTractorImage : defaultTractorImage}
+              style={{
+                width: 160,
+                height: 114,
+              }}
+              resizeMode="contain"
+            />
+          </View>
         </View>
       </View>
 
