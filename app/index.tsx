@@ -77,11 +77,7 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <TouchableOpacity
-      style={styles.container}
-      activeOpacity={1}
-      onPress={() => router.push('/login')}
-    >
+    <View style={styles.container}>
       <Image
         source={require('../assets/images/LaunchPage.png')}
         style={styles.backgroundImage}
@@ -133,8 +129,28 @@ export default function WelcomeScreen() {
           One <Text style={{ color: c.primary }}>Smart Vehicle</Text>{"\n"}
           at a Time.
         </Animated.Text>
+
+        {/* Spacer to push button to the bottom */}
+        <View style={{ flex: 1 }} />
+
+        {/* Sign In Button */}
+        <TouchableOpacity
+          style={[
+            styles.signInButton,
+            {
+              backgroundColor: 'transparent',
+              borderColor: 'rgba(255, 255, 255, 0.45)',
+              shadowColor: '#120E10',
+            },
+          ]}
+          activeOpacity={0.8}
+          onPress={() => router.push('/login')}
+        >
+          <Text style={[styles.signInButtonText, { color: c.primaryForeground }]}>Sign In</Text>
+          <Feather name="arrow-right" size={18} color={c.primaryForeground} />
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -147,9 +163,9 @@ const styles = StyleSheet.create({
   },
   backgroundImage: {
     position: 'absolute',
-    bottom: 0,
+    bottom: -12,
     width: '100%',
-    height: screenHeight * 0.65 + 35,
+    height: screenHeight * 0.65 + 60,
   },
   overlay: {
     flex: 1,
@@ -161,25 +177,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 28,
-    marginTop: -71,
+    marginTop: -84,
   },
   logoImage: {
-    width: 276,
-    height: 276,
-    borderRadius: 138,
+    width: 284,
+    height: 284,
+    borderRadius: 142,
     overflow: 'hidden',
   },
   logoTextMain: {
-    fontSize: 28,
+    fontSize: 32,
     fontFamily: 'Inter_800ExtraBold',
     fontWeight: '800',
     color: '#1E293B',
     letterSpacing: -0.5,
-    marginTop: -45,
+    marginTop: -62,
     textAlign: 'center',
   },
   logoTextSub: {
-    fontSize: 11,
+    fontSize: 15,
     fontFamily: 'Inter_800ExtraBold',
     fontWeight: '800',
     color: '#7E152F', // Brand red
@@ -190,12 +206,32 @@ const styles = StyleSheet.create({
   },
   sloganText: {
     width: '100%',
-    fontSize: 23,
+    fontSize: 19,
     fontFamily: 'Inter_700Bold',
     color: '#1E293B',
-    lineHeight: 32,
+    lineHeight: 26,
     letterSpacing: -0.2,
     textAlign: 'left',
-    marginTop: 12,
+    marginTop: -1,
+  },
+  signInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80%',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1.2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 8,
+  },
+  signInButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
   },
 });
