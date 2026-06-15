@@ -19,6 +19,7 @@ import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/context/AppContext';
 import { useDrawer } from '@/context/DrawerContext';
+import { countActiveComplaintFilters } from '@/lib/complaintFilters';
 
 export function FleetHeader() {
   const c = useColors();
@@ -36,7 +37,15 @@ export function FleetHeader() {
     organization,
     tractorSearch,
     setTractorSearch,
+    complaintSearch,
+    setComplaintSearch,
+    complaintFilters,
+    setComplaintFilterOpen,
   } = useApp();
+
+  const activeFilterCount = useMemo(() => {
+    return countActiveComplaintFilters(complaintFilters);
+  }, [complaintFilters]);
 
   const [plantOpen, setPlantOpen] = useState(false);
   const [plantQuery, setPlantQuery] = useState('');
@@ -138,7 +147,7 @@ export function FleetHeader() {
           styles.headerBar,
           {
             paddingTop: topPad,
-            paddingBottom: (pathname.includes('dashboard') || pathname.includes('runtime') || pathname.includes('tractors')) ? 0 : 16,
+            paddingBottom: (pathname.includes('dashboard') || pathname.includes('runtime') || pathname.includes('tractors') || pathname.includes('complaints')) ? 0 : 16,
           },
         ]}
       >
@@ -222,6 +231,79 @@ export function FleetHeader() {
                 </TouchableOpacity>
               )}
             </View>
+          </View>
+        )}
+
+        {/* ── Search & Filter Bar inside Header (Only on Complaints Page) ── */}
+        {pathname.includes('complaints') && (
+          <View style={[styles.headerPlantDropdown, { paddingRight: 0 }]}>
+            <View style={[styles.headerDropdownLeft, { paddingLeft: 0 }]}>
+              <View style={styles.headerDropdownIconWrap}>
+                <Feather name="search" size={11} color="#7E152F" />
+              </View>
+              <TextInput
+                style={{
+                  fontSize: 13,
+                  fontFamily: 'Inter_600SemiBold',
+                  color: '#1E293B',
+                  flex: 1,
+                  paddingVertical: 0,
+                  height: '100%',
+                }}
+                placeholder="Search complaints..."
+                placeholderTextColor="#94A3B8"
+                value={complaintSearch}
+                onChangeText={setComplaintSearch}
+                returnKeyType="search"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {complaintSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setComplaintSearch('')} hitSlop={8}>
+                  <Feather name="x" size={14} color="#94A3B8" style={{ paddingHorizontal: 4 }} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Divider between search area and filter button */}
+            <View style={{ width: 1, height: '60%', backgroundColor: 'rgba(0,0,0,0.08)', marginHorizontal: 4 }} />
+
+            {/* Filter button inside the container, attached to the right side */}
+            <TouchableOpacity
+              onPress={() => setComplaintFilterOpen(true)}
+              style={{
+                width: 48, // Match height for perfect square
+                height: '100%',
+                backgroundColor: '#7E152F', // Burgundy background
+                borderTopRightRadius: 11, // Match container corner minus border width
+                borderBottomRightRadius: 11,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              activeOpacity={0.8}
+            >
+              <Feather name="sliders" size={15} color="#FFFFFF" />
+              {activeFilterCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 2,
+                    right: 2,
+                    backgroundColor: '#E2A93E', // Gold badge
+                    borderRadius: 7,
+                    minWidth: 14,
+                    height: 14,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 1,
+                  }}
+                >
+                  <Text style={{ fontSize: 8, fontFamily: 'Inter_700Bold', color: '#7E152F' }}>
+                    {activeFilterCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -440,9 +522,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 12,
     paddingHorizontal: 12,
-    height: 40,
+    height: 48,
     marginTop: 6,
-    marginBottom: -20, // floating overlap bottom edge
+    marginBottom: -24, // floating overlap bottom edge
     shadowColor: '#120E10',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,

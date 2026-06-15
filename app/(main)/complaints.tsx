@@ -93,7 +93,17 @@ export default function ComplaintsScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { filteredComplaints, isLoading, refresh } = useApp();
+  const {
+    filteredComplaints,
+    isLoading,
+    refresh,
+    complaintSearch: search,
+    setComplaintSearch: setSearch,
+    complaintFilters: filters,
+    setComplaintFilters: setFilters,
+    complaintFilterOpen: filterSheetOpen,
+    setComplaintFilterOpen: setFilterSheetOpen,
+  } = useApp();
   const { width: screenWidth } = useWindowDimensions();
 
   // Responsive scaling based on device screen width (standard base is 375px)
@@ -110,9 +120,6 @@ export default function ComplaintsScreen() {
   const dotSize = Math.round(9 * scaleFactor);
 
 
-  const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState<ComplaintFilterValues>(DEFAULT_COMPLAINT_FILTERS);
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [showAllModal, setShowAllModal] = useState(false);
 
   const { period, customMonth, statusTab, severity, breakdownOnly } = filters;
@@ -212,6 +219,13 @@ export default function ComplaintsScreen() {
         <View style={[styles.sevStripe, { backgroundColor: c.primary }]} />
 
         <View style={styles.cardBody}>
+          <View style={styles.dateRow}>
+            <Feather name="calendar" size={11} color={c.mutedForeground} />
+            <Text style={[styles.date, { color: c.mutedForeground }]}>
+              {formatDate(item.createdAt)}
+            </Text>
+          </View>
+
           {/* Header row */}
           <View style={styles.cardTop}>
             <View style={[styles.iconWrap, { backgroundColor: sev + '18', borderColor: sev + '30', borderWidth: 1 }]}>
@@ -245,12 +259,6 @@ export default function ComplaintsScreen() {
                 <Text style={[styles.breakdownPillText, { color: c.red }]}>Breakdown</Text>
               </View>
             ) : null}
-            <View style={styles.dateRow}>
-              <Feather name="calendar" size={11} color={c.mutedForeground} />
-              <Text style={[styles.date, { color: c.mutedForeground }]}>
-                {formatDate(item.createdAt)}
-              </Text>
-            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -258,107 +266,18 @@ export default function ComplaintsScreen() {
   };
 
   const ListHeader = (
-    <View style={[styles.header, { paddingTop: topPad + 16 }]}>
+    <View style={[styles.header, { paddingTop: topPad + 28 }]}>
 
-      {/* ── Unified Search & Filter Bar ── */}
-      <View style={styles.controlArea}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: c.card,
-            borderColor: c.border,
-            borderWidth: 1.5,
-            borderRadius: 14,
-            height: 48,
-            paddingHorizontal: 12,
-            marginBottom: 6,
-            shadowColor: c.shadow,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 6,
-            elevation: 2,
-          }}
-        >
-          {/* Left Side: Distinct Inner Search Bar */}
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: c.surfaceAlt, // distinct search bar background
-              borderRadius: 10,
-              height: 34,
-              paddingHorizontal: 10,
-              marginRight: 12,
-            }}
-          >
-            <Feather name="search" size={14} color={c.mutedForeground} style={{ marginRight: 6 }} />
-            <TextInput
-              style={[
-                styles.searchInput,
-                {
-                  color: c.foreground,
-                  height: '100%',
-                  fontSize: 13,
-                  paddingVertical: 0,
-                  flex: 1,
-                },
-              ]}
-              placeholder="Search..."
-              placeholderTextColor={c.mutedForeground + '88'}
-              value={search}
-              onChangeText={setSearch}
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
-                <Feather name="x" size={14} color={c.mutedForeground} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Right Side: Clickable Filter Icon + Date Period Text */}
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              height: '100%',
-            }}
-            activeOpacity={0.7}
-            onPress={() => setFilterSheetOpen(true)}
-          >
-
-
-            {/* Filter icon with badge on top-right */}
-            <View style={{ position: 'relative' }}>
-              <Feather name="sliders" size={15} color={c.primary} />
-              {activeFilterCount > 0 && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: -5,
-                    right: -7,
-                    backgroundColor: c.primary,
-                    borderRadius: 6,
-                    minWidth: 12,
-                    height: 12,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingHorizontal: 2,
-                  }}
-                >
-                  <Text style={{ fontSize: 7, fontFamily: 'Inter_700Bold', color: c.primaryForeground }}>
-                    {activeFilterCount}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
+        {/* Section Heading */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <View style={[styles.sectionAccent, { backgroundColor: c.primary, height: 24 }]} />
+          <Text style={[styles.periodHint, { color: c.foreground, fontSize: 21 }]}>
+            Complaint Summary
+          </Text>
         </View>
 
         {/* Parent container wrapping the parent 3D box and its overlapping capsule */}
-        <View style={{ position: 'relative', marginTop: 18, marginBottom: 20 }}>
+        <View style={{ position: 'relative', marginTop: 14, marginBottom: 20 }}>
           
           {/* Overlapping top-middle capsule showing month/year */}
           <View
@@ -413,194 +332,180 @@ export default function ComplaintsScreen() {
             </LinearGradient>
           </View>
 
-          {/* Parent 3D container card with colorless background and brick texture */}
+          {/* Parent container card styled like the image */}
           <View
             style={{
-              borderRadius: 28,
-              borderWidth: 0,
-              borderColor: 'transparent',
+              borderRadius: 24,
+              borderWidth: 1,
+              borderColor: 'rgba(0, 0, 0, 0.05)',
               paddingTop: parentPadding + 14,
               paddingBottom: parentPadding,
-              paddingHorizontal: parentPadding,
+              paddingHorizontal: parentPadding - 4, // slightly less padding for quadrants space
               overflow: 'visible', // Allow capsule to overlap top border
-              backgroundColor: c.background,
-              // Protrusion 3D effect with increased depth (from all four sides)
-              shadowColor: '#000000',
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.42,
-              shadowRadius: 48,
-              elevation: 24,
+              backgroundColor: '#FFFFFF', // solid white background
+              shadowColor: '#120E10',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.04,
+              shadowRadius: 16,
+              elevation: 4,
             }}
           >
-            {/* Brick background pattern (faint neutral brick lines) */}
-            <View style={[StyleSheet.absoluteFillObject, { borderRadius: 28, overflow: 'hidden' }]} pointerEvents="none">
-            {/* Horizontal rows */}
-            <View style={{ position: 'absolute', top: '20%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: '40%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: '60%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: '80%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            
-            {/* Vertical joints (alternating brick pattern) */}
-            <View style={{ position: 'absolute', top: 0, bottom: '80%', left: '33%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: 0, bottom: '80%', left: '66%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            
-            <View style={{ position: 'absolute', top: '20%', bottom: '60%', left: '16%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: '20%', bottom: '60%', left: '50%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: '20%', bottom: '60%', left: '83%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            
-            <View style={{ position: 'absolute', top: '40%', bottom: '40%', left: '33%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: '40%', bottom: '40%', left: '66%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            
-            <View style={{ position: 'absolute', top: '60%', bottom: '20%', left: '16%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: '60%', bottom: '20%', left: '50%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: '60%', bottom: '20%', left: '83%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-
-            <View style={{ position: 'absolute', top: '80%', bottom: 0, left: '33%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-            <View style={{ position: 'absolute', top: '80%', bottom: 0, left: '66%', width: 1, backgroundColor: 'rgba(18, 14, 16, 0.04)' }} />
-          </View>
- 
-          {/* Individual cards inside the parent view, in a 2x2 grid layout */}
-          <View style={{ gap: childGap }}>
             {/* Row 1 */}
-            <View style={{ flexDirection: 'row', gap: childGap }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               {/* Box 1: Raised */}
               <TouchableOpacity
                 style={{
                   flex: 1,
-                  backgroundColor: c.card,
-                  borderRadius: 16,
-                  borderWidth: 1.5,
-                  borderColor: c.border,
-                  borderBottomWidth: 5,
-                  borderBottomColor: c.border,
-                  paddingHorizontal: childPaddingH,
-                  paddingVertical: childPaddingV,
-                  gap: 8 * scaleFactor,
-                  shadowColor: c.shadow,
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 6,
-                  elevation: 2,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10 * scaleFactor,
+                  paddingVertical: 12 * scaleFactor,
+                  paddingHorizontal: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
                 onPress={() => handleBoxPress('RAISED')}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ width: dotSize, height: dotSize, borderRadius: dotSize / 2, backgroundColor: '#3B82F6', marginRight: 8 * scaleFactor }} />
-                  <Text style={{ fontSize: labelFontSize, fontFamily: 'Inter_600SemiBold', color: c.foreground }}>
+                <View
+                  style={{
+                    width: 38 * scaleFactor,
+                    height: 38 * scaleFactor,
+                    borderRadius: 19 * scaleFactor,
+                    backgroundColor: '#3B82F6', // Blue
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Feather name="file-text" size={17 * scaleFactor} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1, gap: 1 }}>
+                  <Text style={{ fontSize: 11 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={1}>
                     Raised Complaints
                   </Text>
+                  <Text style={{ fontSize: 20 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 24 * scaleFactor }}>
+                    {raisedCount}
+                  </Text>
                 </View>
-                <Text style={{ fontSize: numberFontSize, fontFamily: 'Inter_700Bold', color: c.foreground }}>
-                  {raisedCount}
-                </Text>
               </TouchableOpacity>
- 
+
+              {/* Vertical Divider */}
+              <View style={{ width: 1, backgroundColor: c.border, height: 48 * scaleFactor, alignSelf: 'center' }} />
+
               {/* Box 2: Critical */}
               <TouchableOpacity
                 style={{
                   flex: 1,
-                  backgroundColor: c.card,
-                  borderRadius: 16,
-                  borderWidth: 1.5,
-                  borderColor: c.border,
-                  borderBottomWidth: 5,
-                  borderBottomColor: c.border,
-                  paddingHorizontal: childPaddingH,
-                  paddingVertical: childPaddingV,
-                  gap: 8 * scaleFactor,
-                  shadowColor: c.shadow,
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 6,
-                  elevation: 2,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10 * scaleFactor,
+                  paddingVertical: 12 * scaleFactor,
+                  paddingHorizontal: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
                 onPress={() => handleBoxPress('CRITICAL')}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ width: dotSize, height: dotSize, borderRadius: dotSize / 2, backgroundColor: '#EF4444', marginRight: 8 * scaleFactor }} />
-                  <Text style={{ fontSize: labelFontSize, fontFamily: 'Inter_600SemiBold', color: c.foreground }}>
+                <View
+                  style={{
+                    width: 38 * scaleFactor,
+                    height: 38 * scaleFactor,
+                    borderRadius: 19 * scaleFactor,
+                    backgroundColor: '#EF4444', // Red
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Feather name="alert-triangle" size={17 * scaleFactor} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1, gap: 1 }}>
+                  <Text style={{ fontSize: 11 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={1}>
                     Critical Tickets
                   </Text>
+                  <Text style={{ fontSize: 20 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 24 * scaleFactor }}>
+                    {critCount}
+                  </Text>
                 </View>
-                <Text style={{ fontSize: numberFontSize, fontFamily: 'Inter_700Bold', color: '#EF4444' }}>
-                  {critCount}
-                </Text>
               </TouchableOpacity>
             </View>
- 
+
+            {/* Horizontal Divider */}
+            <View style={{ height: 1, backgroundColor: c.border, marginVertical: 4 * scaleFactor }} />
+
             {/* Row 2 */}
-            <View style={{ flexDirection: 'row', gap: childGap }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               {/* Box 3: Open */}
               <TouchableOpacity
                 style={{
                   flex: 1,
-                  backgroundColor: c.card,
-                  borderRadius: 16,
-                  borderWidth: 1.5,
-                  borderColor: c.border,
-                  borderBottomWidth: 5,
-                  borderBottomColor: c.border,
-                  paddingHorizontal: childPaddingH,
-                  paddingVertical: childPaddingV,
-                  gap: 8 * scaleFactor,
-                  shadowColor: c.shadow,
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 6,
-                  elevation: 2,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10 * scaleFactor,
+                  paddingVertical: 12 * scaleFactor,
+                  paddingHorizontal: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
                 onPress={() => handleBoxPress('OPEN')}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ width: dotSize, height: dotSize, borderRadius: dotSize / 2, backgroundColor: '#E2A93E', marginRight: 8 * scaleFactor }} />
-                  <Text style={{ fontSize: labelFontSize, fontFamily: 'Inter_600SemiBold', color: c.foreground }}>
+                <View
+                  style={{
+                    width: 38 * scaleFactor,
+                    height: 38 * scaleFactor,
+                    borderRadius: 19 * scaleFactor,
+                    backgroundColor: '#E2A93E', // Yellow/Orange
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Feather name="clock" size={17 * scaleFactor} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1, gap: 1 }}>
+                  <Text style={{ fontSize: 11 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={1}>
                     Awaiting Resolution
                   </Text>
+                  <Text style={{ fontSize: 20 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 24 * scaleFactor }}>
+                    {openCount}
+                  </Text>
                 </View>
-                <Text style={{ fontSize: numberFontSize, fontFamily: 'Inter_700Bold', color: '#E2A93E' }}>
-                  {openCount}
-                </Text>
               </TouchableOpacity>
- 
+
+              {/* Vertical Divider */}
+              <View style={{ width: 1, backgroundColor: c.border, height: 48 * scaleFactor, alignSelf: 'center' }} />
+
               {/* Box 4: Breakdown */}
               <TouchableOpacity
                 style={{
                   flex: 1,
-                  backgroundColor: c.card,
-                  borderRadius: 16,
-                  borderWidth: 1.5,
-                  borderColor: c.border,
-                  borderBottomWidth: 5,
-                  borderBottomColor: c.border,
-                  paddingHorizontal: childPaddingH,
-                  paddingVertical: childPaddingV,
-                  gap: 8 * scaleFactor,
-                  shadowColor: c.shadow,
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 6,
-                  elevation: 2,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10 * scaleFactor,
+                  paddingVertical: 12 * scaleFactor,
+                  paddingHorizontal: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
                 onPress={() => handleBoxPress('BREAKDOWN')}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ width: dotSize, height: dotSize, borderRadius: dotSize / 2, backgroundColor: '#7E152F', marginRight: 8 * scaleFactor }} />
-                  <Text style={{ fontSize: labelFontSize, fontFamily: 'Inter_600SemiBold', color: c.foreground }}>
+                <View
+                  style={{
+                    width: 38 * scaleFactor,
+                    height: 38 * scaleFactor,
+                    borderRadius: 19 * scaleFactor,
+                    backgroundColor: '#7E152F', // Burgundy
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Feather name="bar-chart-2" size={17 * scaleFactor} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1, gap: 1 }}>
+                  <Text style={{ fontSize: 11 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={1}>
                     Breakdowns Reported
                   </Text>
+                  <Text style={{ fontSize: 20 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 24 * scaleFactor }}>
+                    {breakdownRaised}
+                  </Text>
                 </View>
-                <Text style={{ fontSize: numberFontSize, fontFamily: 'Inter_700Bold', color: '#7E152F' }}>
-                  {breakdownRaised}
-                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      </View>
 
         {/* Results count + period */}
         <View style={styles.resultsRow}>
@@ -617,7 +522,6 @@ export default function ComplaintsScreen() {
           )}
         </View>
       </View>
-    </View>
   );
 
   return (
@@ -1219,7 +1123,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginLeft: 'auto',
   },
   date: {
     fontSize: 11,

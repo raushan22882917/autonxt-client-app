@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { type ComplaintFilterValues, DEFAULT_COMPLAINT_FILTERS } from '@/lib/complaintFilters';
 import {
   Organization,
   Plant,
@@ -44,6 +45,12 @@ interface AppState {
   refreshLiveTelemetry: () => Promise<void>;
   tractorSearch: string;
   setTractorSearch: (q: string) => void;
+  complaintSearch: string;
+  setComplaintSearch: (q: string) => void;
+  complaintFilters: ComplaintFilterValues;
+  setComplaintFilters: React.Dispatch<React.SetStateAction<ComplaintFilterValues>>;
+  complaintFilterOpen: boolean;
+  setComplaintFilterOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppState>({
@@ -68,6 +75,12 @@ const AppContext = createContext<AppState>({
   refreshLiveTelemetry: async () => {},
   tractorSearch: '',
   setTractorSearch: () => {},
+  complaintSearch: '',
+  setComplaintSearch: () => {},
+  complaintFilters: DEFAULT_COMPLAINT_FILTERS,
+  setComplaintFilters: () => {},
+  complaintFilterOpen: false,
+  setComplaintFilterOpen: () => {},
 });
 
 function mergeSlice(
@@ -111,6 +124,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const [tractorSearch, setTractorSearch] = useState('');
+  const [complaintSearch, setComplaintSearch] = useState('');
+  const [complaintFilters, setComplaintFilters] = useState<ComplaintFilterValues>(DEFAULT_COMPLAINT_FILTERS);
+  const [complaintFilterOpen, setComplaintFilterOpen] = useState(false);
 
   const loadedSetRef = useRef(new Set<string>());
   const loadingPlantsRef = useRef(new Set<string>());
@@ -356,6 +372,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         refreshLiveTelemetry,
         tractorSearch,
         setTractorSearch,
+        complaintSearch,
+        setComplaintSearch,
+        complaintFilters,
+        setComplaintFilters,
+        complaintFilterOpen,
+        setComplaintFilterOpen,
       }}
     >
       {children}
