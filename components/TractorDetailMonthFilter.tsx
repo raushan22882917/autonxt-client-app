@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, Modal, Pressable, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { monthLabel, startOfMonth } from '@/lib/periodFilter';
 
@@ -44,36 +45,42 @@ export function TractorDetailMonthFilter({ month, onMonthChange }: Props) {
   const yearsToRender = Array.from({ length: 12 }, (_, i) => baseYear + i);
 
   return (
-    <View style={[styles.wrap, { backgroundColor: c.redSoft, borderColor: c.redBorder }]}>
+    <LinearGradient
+      colors={['#FFFFFF', '#FAF8F5']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.wrap}
+    >
       <TouchableOpacity
-        style={[styles.navBtn, { backgroundColor: c.card, borderColor: c.border }]}
+        style={styles.navBtn}
         onPress={() => shift(-1)}
         accessibilityLabel="Previous month"
       >
-        <Feather name="chevron-left" size={17} color={c.foreground} />
+        <Feather name="chevron-left" size={18} color="#7E152F" />
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.center, { backgroundColor: c.card, borderColor: c.border }]}
+        style={styles.center}
         onPress={() => setPickerOpen(true)}
         activeOpacity={0.75}
       >
         <View style={styles.centerRow}>
-          <View style={[styles.calIcon, { backgroundColor: c.primary + '14' }]}>
-            <Feather name="calendar" size={13} color={c.primary} />
+          <View style={styles.calIcon}>
+            <Feather name="calendar" size={12} color="#7E152F" />
           </View>
-          <Text style={[styles.monthText, { color: c.foreground }]}>
+          <Text style={styles.monthText}>
             {monthLabel(month)}
           </Text>
+          <Feather name="chevron-down" size={13} color="#7E152F" />
         </View>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.navBtn, { backgroundColor: c.card, borderColor: c.border }]}
+        style={styles.navBtn}
         onPress={() => shift(1)}
         accessibilityLabel="Next month"
       >
-        <Feather name="chevron-right" size={17} color={c.foreground} />
+        <Feather name="chevron-right" size={18} color="#7E152F" />
       </TouchableOpacity>
 
       <Modal
@@ -225,7 +232,7 @@ export function TractorDetailMonthFilter({ month, onMonthChange }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -233,44 +240,48 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 14,
+    justifyContent: 'space-between',
     borderWidth: 1,
-    gap: 10,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+    shadowColor: '#120E10',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   navBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    borderWidth: 1,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   center: {
     flex: 1,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
   centerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
   },
   calIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: '#FDF2F4', // soft burgundy wash
     alignItems: 'center',
     justifyContent: 'center',
   },
   monthText: {
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.2,
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#1E293B',
   },
   hint: {
     fontSize: 10,

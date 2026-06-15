@@ -40,7 +40,7 @@ function SegmentCard({
   c: ReturnType<typeof useColors>;
 }) {
   const iconName = kind === 'trip' ? 'navigation' : 'battery-charging';
-  const accentColor = kind === 'trip' ? c.primary : c.success;
+  const accentColor = c.primary;
 
   return (
     <View style={[styles.segCard, { backgroundColor: c.card, borderColor: accentColor + '25' }]}>
@@ -85,7 +85,7 @@ export function UsageSegmentDetailSheet({ visible, group, kind, onClose }: Props
   const isTrip = kind === 'trip';
   const title = isTrip ? 'Trip Details' : 'Charge Sessions';
   const icon = isTrip ? 'navigation' : 'battery-charging';
-  const accentColor = isTrip ? c.primary : c.success;
+  const accentColor = c.primary;
   const fieldsFor = isTrip ? tripDetailFields : chargeDetailFields;
 
   const totalDuration = group.durationSec;

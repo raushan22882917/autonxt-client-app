@@ -111,16 +111,38 @@ function GlassCard({
   );
 }
 
-// ── Grid cell card ──────────────────────────────────────────────────────────
-function MetricGridCard({ label, value, icon }: { label: string; value: string; icon: keyof typeof Feather.glyphMap }) {
+
+// ── Redesigned Telemetry Card ────────────────────────────────────────────────
+function MetricGridCard({
+  label,
+  value,
+  iconName,
+  iconText,
+  circleBg,
+}: {
+  label: string;
+  value: string;
+  iconName?: keyof typeof Feather.glyphMap;
+  iconText?: string;
+  circleBg: string;
+}) {
   return (
-    <GlassCard style={styles.gridCard}>
-      <View style={styles.gridCardHeader}>
-        <Text style={styles.gridCardLabel}>{label}</Text>
-        <Feather name={icon} size={11} color="#44474E" opacity={0.6} />
+    <View style={styles.metricCard}>
+      {/* Left Circle Icon */}
+      <View style={[styles.metricCircle, { backgroundColor: circleBg }]}>
+        {iconText ? (
+          <Text style={styles.metricCircleText}>{iconText}</Text>
+        ) : (
+          <Feather name={iconName} size={13} color="#FFFFFF" />
+        )}
       </View>
-      <Text style={styles.gridCardValue}>{value}</Text>
-    </GlassCard>
+      
+      {/* Middle info */}
+      <View style={styles.metricMiddle}>
+        <Text style={styles.metricLabel}>{label}</Text>
+        <Text style={styles.metricValue} numberOfLines={1}>{value}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -169,7 +191,7 @@ function ReflectionGlow({ size }: { size: number }) {
         width: size,
         height: size,
         opacity,
-        transform: [{ scaleY: 0.26 }, { scaleX }, { translateX: -20 * scale }], // squashes and shifts the plate left
+        transform: [{ scaleY: 0.26 }, { scaleX }, { translateX: -2 * scale }, { translateY: -70 * scale }, { rotate: '-20deg' }], // squashes, shifts, and rotates by -20deg
       }}
     >
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -214,8 +236,8 @@ function WellnessHeroCard({
   // Smooth scale factor based on screenWidth relative to standard 412
   const scale = Math.max(0.75, Math.min(1.2, screenWidth / 412));
 
-  const gaugeSize = Math.round(140 * scale);
-  const strokeWidth = Math.round(10 * scale);
+  const gaugeSize = Math.round(98 * scale);
+  const strokeWidth = Math.round(7 * scale);
   const radius = (gaugeSize - strokeWidth) / 2 - 4;
   const circumference = 2 * Math.PI * radius;
   const gapAngle = 40;
@@ -229,15 +251,52 @@ function WellnessHeroCard({
   const idLabel = displayTractor.serialNumber || displayTractor.registerNumber || '';
 
   // Responsive sizes for the right section
-  const rightWidth = Math.round(170 * scale);
-  const discSize = Math.round(210 * scale);
-  const tractorImgSize = Math.round(210 * scale);
-  const tractorImgHeight = Math.round(195 * scale); // taller vertically!
+  const rightWidth = Math.round(180 * scale);
+  const discSize = Math.round(225 * scale);
+  const tractorImgSize = Math.round(225 * scale);
+  const tractorImgHeight = Math.round(210 * scale); // taller vertically!
 
   // Spacing helper to guarantee a uniform gap of exactly 14px between gauge and disc
   const desiredGap = 14;
-  const rightShift = desiredGap + gaugeSize + (rightWidth + discSize) / 2 - cardContentWidth - 10 * scale;
+  const rightShift = desiredGap + gaugeSize + (rightWidth + discSize) / 2 - cardContentWidth + 22 * scale;
   const isSmallScreen = screenWidth < 380;
+
+  const renderStatusPill = () => {
+    let pillBg = '#F1F3F4';
+    let dotColor = '#5F6368';
+    let textColor = '#5F6368';
+    let label = 'Offline';
+
+    const status = displayTractor.status;
+    if (status === 'ACTIVE') {
+      pillBg = '#E6F4EA';
+      dotColor = '#137333';
+      textColor = '#137333';
+      label = 'Active';
+    } else if (status === 'MAINTENANCE') {
+      pillBg = '#E8F0FE';
+      dotColor = '#1A73E8';
+      textColor = '#1A73E8';
+      label = 'Maint.';
+    } else if (status === 'IDLE') {
+      pillBg = '#FEF7E0';
+      dotColor = '#B06000';
+      textColor = '#B06000';
+      label = 'Idle';
+    } else if (status === 'OFFLINE') {
+      pillBg = '#F1F3F4';
+      dotColor = '#5F6368';
+      textColor = '#5F6368';
+      label = 'Offline';
+    }
+
+    return (
+      <View style={[styles.wellnessStatusPill, { backgroundColor: pillBg }]}>
+        <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
+        <Text style={[styles.statusText, { color: textColor }]}>{label}</Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.wellnessCard}>
@@ -245,14 +304,19 @@ function WellnessHeroCard({
       {/* ── LEFT: heading + gauge ── */}
       <View style={styles.wellnessLeft}>
 
-        {/* Big title — register number / serial number */}
-        <Text style={[styles.wellnessMainTitle, { fontSize: isSmallScreen ? 16 : 20 }]} numberOfLines={2}>
-          {idLabel}
-        </Text>
-        {/* Sub-heading — tractor display name / ID */}
-        <Text style={styles.wellnessSubTitle} numberOfLines={1}>
-          {tractorLabel}
-        </Text>
+        <View style={styles.wellnessTitleContainer}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {/* Big title — register number / serial number */}
+            <Text style={[styles.wellnessMainTitle, { fontSize: isSmallScreen ? 16 : 20 }]}>
+              {idLabel}
+            </Text>
+            {renderStatusPill()}
+          </View>
+          {/* Sub-heading — tractor display name / ID */}
+          <Text style={styles.wellnessSubTitle} numberOfLines={1}>
+            {tractorLabel}
+          </Text>
+        </View>
 
         {/* Section label */}
         <Text style={styles.wellnessLabel}>Battery Status</Text>
@@ -283,8 +347,8 @@ function WellnessHeroCard({
             />
           </Svg>
           <View style={styles.wellnessGaugeCenter}>
-            <Text style={[styles.wellnessSocValue, { color: socColor, fontSize: isSmallScreen ? 24 : 32 }]}>{soc}%</Text>
-            <Text style={styles.wellnessSocLabel}>SOC</Text>
+            <Text style={[styles.wellnessSocValue, { color: socColor, fontSize: isSmallScreen ? 17 : 22 }]}>{soc}%</Text>
+            <Text style={[styles.wellnessSocLabel, { fontSize: 9 }]}>SOC</Text>
           </View>
         </View>
 
@@ -306,8 +370,11 @@ function WellnessHeroCard({
 
       {/* ── RIGHT: Tractor image with nested reflection glow ── */}
       <View style={[styles.wellnessRight, { width: rightWidth, transform: [{ translateX: rightShift }] }]} pointerEvents="none">
+        {/* Reflection Glow (3D Depth floor shadow with red outward gradient) */}
+        <ReflectionGlow size={discSize} />
+
         {/* Tractor image */}
-        <View style={[styles.wellnessTractorImg, { width: tractorImgSize, height: tractorImgHeight, transform: [{ translateY: -30 * scale }] }]}>
+        <View style={[styles.wellnessTractorImg, { width: tractorImgSize, height: tractorImgHeight, transform: [{ translateY: -10 * scale }] }]}>
           <TractorImage tractor={displayTractor} resizeMode="contain" colorful={false} />
         </View>
       </View>
@@ -316,74 +383,6 @@ function WellnessHeroCard({
   );
 }
 
-// ── Lightweight Smooth bezier area/line chart ────────────────────────────────
-function SmoothLineChart({ data, width, height }: { data: number[]; width: number; height: number }) {
-  if (data.length === 0) return null;
-  const paddingX = 16;
-  const paddingY = 12;
-  const chartWidth = width - paddingX * 2;
-  const chartHeight = height - paddingY * 2;
-
-  const maxVal = Math.max(...data, 4);
-  const minVal = 0;
-  const range = maxVal - minVal;
-
-  const points = data.map((val, idx) => {
-    const x = paddingX + (idx / Math.max(data.length - 1, 1)) * chartWidth;
-    const y = paddingY + chartHeight - ((val - minVal) / range) * chartHeight;
-    return { x, y };
-  });
-
-  // Calculate smooth cubic Bezier path
-  let pathD = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const curr = points[i];
-    const next = points[i + 1];
-    const cpX1 = curr.x + (next.x - curr.x) / 3;
-    const cpY1 = curr.y;
-    const cpX2 = curr.x + (2 * (next.x - curr.x)) / 3;
-    const cpY2 = next.y;
-    pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${next.x} ${next.y}`;
-  }
-
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${height - paddingY} L ${points[0].x} ${height - paddingY} Z`;
-
-  return (
-    <Svg width={width} height={height}>
-      <Defs>
-        <SvgLinearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor="#be1e2d" stopOpacity={0.2} />
-          <Stop offset="100%" stopColor="#be1e2d" stopOpacity={0.0} />
-        </SvgLinearGradient>
-      </Defs>
-
-      {/* Grid lines */}
-      {[0, 0.5, 1].map((ratio, idx) => {
-        const y = paddingY + ratio * chartHeight;
-        return (
-          <Path
-            key={idx}
-            d={`M ${paddingX} ${y} L ${width - paddingX} ${y}`}
-            stroke="rgba(0, 0, 0, 0.04)"
-            strokeWidth={1}
-            strokeDasharray="4, 4"
-          />
-        );
-      })}
-
-      {/* Area */}
-      <Path d={areaD} fill="url(#chartGradient)" />
-
-      {/* Line */}
-      <Path d={pathD} fill="none" stroke="#be1e2d" strokeWidth={2.5} strokeLinecap="round" />
-
-      {/* Data Points */}
-      {points.map((p, idx) => (
-        <Circle key={idx} cx={p.x} cy={p.y} r={3} fill="#FFFFFF" stroke="#be1e2d" strokeWidth={1.5} />
-      ))}
-    </Svg>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -407,7 +406,6 @@ export default function TractorDetailScreen() {
   const [manualRuntimeLoading, setManualRuntimeLoading] = useState(false);
   const [filterMonth, setFilterMonth] = useState(() => startOfMonth(new Date()));
   const [tripsDeviceKey, setTripsDeviceKey] = useState<string | null>(null);
-  const [chartWidth, setChartWidth] = useState(320);
   const [segmentSheet, setSegmentSheet] = useState<{
     group: DailySegmentGroup;
     kind: 'trip' | 'charge';
@@ -501,11 +499,6 @@ export default function TractorDetailScreen() {
     else router.replace('/(main)/tractors');
   };
 
-  const onChartLayout = (event: any) => {
-    const { width } = event.nativeEvent.layout;
-    if (width > 0) setChartWidth(width);
-  };
-
   const Header = (
     <View style={styles.headerContainer}>
       <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
@@ -568,12 +561,6 @@ export default function TractorDetailScreen() {
 
   const live = !isTelemetryDisconnected(displayTractor.telemetryAt);
 
-  // Sorting chronological runtime entries for historical trend log
-  const sortedRuntime = [...tractorRuntime]
-    .sort((a, b) => a.date.localeCompare(b.date));
-  const chartData = sortedRuntime.map(r => r.todaysRuntime ?? 0);
-  const finalChartData = chartData.length > 0 ? chartData : [2.5, 4.0, 3.1, 5.5, 3.8, 4.8, 3.5]; // Fallback mock curve
-
   return (
     <View style={styles.root}>
       {Header}
@@ -596,13 +583,10 @@ export default function TractorDetailScreen() {
           />
         </GlassCard>
 
-        {/* ── Visual Section 2: Featured Metric (Primary Battery Card) ── */}
+        {/* ── Visual Section 2: Battery Overview ── */}
         <GlassCard style={styles.featuredCard}>
           <View style={styles.cardHeaderRow}>
-            <Text style={styles.cardTitle}>Featured Metric</Text>
-            <TouchableOpacity style={styles.circularActionBtn}>
-              <Feather name="chevron-right" size={14} color="#be1e2d" />
-            </TouchableOpacity>
+            <Text style={styles.cardTitle}>Battery Overview</Text>
           </View>
           
           <View style={styles.featuredContent}>
@@ -614,44 +598,86 @@ export default function TractorDetailScreen() {
             <View style={styles.featuredDivider} />
             
             <View style={styles.featuredSubMetrics}>
-              <View style={styles.subMetricRow}>
-                <Feather name="shield" size={14} color="#be1e2d" />
-                <Text style={styles.subMetricText}>SOH Health: <Text style={styles.boldText}>{displayTractor.soh ?? 94}%</Text></Text>
+              {/* SOH Health */}
+              <View style={styles.featuredRow}>
+                <View style={styles.featuredIconBadge}>
+                  <Feather name="shield" size={13} color="#be1e2d" />
+                </View>
+                <Text style={styles.featuredRowLabel}>SOH Health</Text>
+                <Text style={styles.featuredRowValue}>{displayTractor.soh ?? 95}%</Text>
               </View>
-              <View style={styles.subMetricRow}>
-                <Feather name={displayTractor.isCharging ? "zap" : "zap-off"} size={14} color={displayTractor.isCharging ? "#10B981" : "#be1e2d"} />
-                <Text style={styles.subMetricText}>Status: <Text style={styles.boldText}>{displayTractor.isCharging ? "Charging" : "Discharging"}</Text></Text>
+
+              {/* Hairline Divider */}
+              <View style={styles.featuredRowDivider} />
+
+              {/* Status */}
+              <View style={styles.featuredRow}>
+                <View style={styles.featuredIconBadge}>
+                  <Feather name={displayTractor.isCharging ? "zap" : "battery"} size={13} color="#be1e2d" />
+                </View>
+                <Text style={styles.featuredRowLabel}>Status</Text>
+                <Text style={styles.featuredRowValue}>{displayTractor.isCharging ? "Charging" : "Discharging"}</Text>
               </View>
             </View>
           </View>
         </GlassCard>
 
-        {/* ── Visual Section 3: Supporting Grid (2-Column Secondary Metrics) ── */}
+        {/* ── Visual Section 3: Supporting Telemetry (Horizontal Sparkline Cards) ── */}
         <View style={styles.gridSection}>
           <Text style={styles.sectionTitle}>Supporting Telemetry</Text>
           <View style={styles.metricGrid}>
             <View style={styles.gridRow}>
-              <View style={{ flex: 1, marginRight: 6 }}>
-                <MetricGridCard label="VOLTAGE" value={`${fmtMetric(displayTractor.voltage, 1)} V`} icon="activity" />
+              <View style={{ flex: 1, marginRight: 4 }}>
+                <MetricGridCard
+                  label="VOLTAGE"
+                  value={`${fmtMetric(displayTractor.voltage, 1)} V`}
+                  iconName="zap"
+                  circleBg="#10B981"
+                />
               </View>
-              <View style={{ flex: 1, marginLeft: 6 }}>
-                <MetricGridCard label="CURRENT" value={`${fmtMetric(displayTractor.current, 1)} A`} icon="zap" />
+              <View style={{ flex: 1, marginLeft: 4 }}>
+                <MetricGridCard
+                  label="CURRENT"
+                  value={`${fmtMetric(displayTractor.current, 1)} A`}
+                  iconText="A"
+                  circleBg="#1A73E8"
+                />
               </View>
             </View>
             <View style={styles.gridRow}>
-              <View style={{ flex: 1, marginRight: 6 }}>
-                <MetricGridCard label="PACK TEMP" value={`${fmtMetric(displayTractor.temp, 1)} °C`} icon="thermometer" />
+              <View style={{ flex: 1, marginRight: 4 }}>
+                <MetricGridCard
+                  label="PACK TEMP"
+                  value={`${fmtMetric(displayTractor.temp, 1)} °C`}
+                  iconName="thermometer"
+                  circleBg="#F59E0B"
+                />
               </View>
-              <View style={{ flex: 1, marginLeft: 6 }}>
-                <MetricGridCard label="MOTOR RPM" value={`${fmtMetric(displayTractor.rpm)} rpm`} icon="cpu" />
+              <View style={{ flex: 1, marginLeft: 4 }}>
+                <MetricGridCard
+                  label="MOTOR RPM"
+                  value={`${fmtMetric(displayTractor.rpm)} rpm`}
+                  iconName="cpu"
+                  circleBg="#6366F1"
+                />
               </View>
             </View>
             <View style={styles.gridRow}>
-              <View style={{ flex: 1, marginRight: 6 }}>
-                <MetricGridCard label="MOTOR TEMP" value={`${fmtMetric(displayTractor.motorTemp, 1)} °C`} icon="compass" />
+              <View style={{ flex: 1, marginRight: 4 }}>
+                <MetricGridCard
+                  label="MOTOR TEMP"
+                  value={`${fmtMetric(displayTractor.motorTemp, 1)} °C`}
+                  iconName="compass"
+                  circleBg="#EF4444"
+                />
               </View>
-              <View style={{ flex: 1, marginLeft: 6 }}>
-                <MetricGridCard label="TOTAL RUNTIME" value={`${displayTractor.totalRuntime} h`} icon="clock" />
+              <View style={{ flex: 1, marginLeft: 4 }}>
+                <MetricGridCard
+                  label="TOTAL RUNTIME"
+                  value={`${displayTractor.totalRuntime} h`}
+                  iconName="clock"
+                  circleBg="#64748B"
+                />
               </View>
             </View>
           </View>
@@ -666,10 +692,6 @@ export default function TractorDetailScreen() {
             </TouchableOpacity>
           </View>
           <Text style={styles.chartSubtitle}>{monthSubtitle}</Text>
-          
-          <View style={styles.chartWrapper} onLayout={onChartLayout}>
-            <SmoothLineChart data={finalChartData} width={chartWidth} height={120} />
-          </View>
           
           {/* Tab bar */}
           <View style={styles.tabContainer}>
@@ -894,6 +916,14 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: '#7E152F',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#7E152F',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+    zIndex: 5,
   },
   topBar: {
     flexDirection: 'row',
@@ -925,10 +955,12 @@ const styles = StyleSheet.create({
   },
   monthFilterContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    marginBottom: -24,
+    zIndex: 10,
   },
   content: {
     padding: 16,
+    paddingTop: 36,
     gap: 16,
   },
   
@@ -1052,13 +1084,24 @@ const styles = StyleSheet.create({
   wellnessCard: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    minHeight: 260,
+    minHeight: 220,
   },
   wellnessLeft: {
     flex: 1,
     gap: 6,
     paddingTop: 4,
-    paddingBottom: 18,
+    paddingBottom: 8,
+  },
+  wellnessTitleContainer: {
+    gap: 0,
+  },
+  wellnessStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    height: 18,
+    borderRadius: 5,
   },
   // Big title — like "Wellness Score" in reference
   wellnessMainTitle: {
@@ -1075,6 +1118,7 @@ const styles = StyleSheet.create({
     color: '#44474E',
     opacity: 0.6,
     marginBottom: 4,
+    marginTop: -2,
   },
   // Small section label above gauge
   wellnessLabel: {
@@ -1205,7 +1249,8 @@ const styles = StyleSheet.create({
 
   // Featured Metric Card
   featuredCard: {
-    gap: 12,
+    gap: 4,
+    padding: 12,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -1230,17 +1275,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    marginTop: 4,
+    marginTop: 0,
   },
   featuredHeroRow: {
     flex: 1.1,
     gap: 2,
   },
   featuredHeroValue: {
-    fontSize: 36,
+    fontSize: 46,
     fontFamily: 'Inter_700Bold',
     color: '#be1e2d',
-    letterSpacing: -1,
+    letterSpacing: -1.5,
   },
   featuredHeroLabel: {
     fontSize: 11,
@@ -1255,21 +1300,42 @@ const styles = StyleSheet.create({
   },
   featuredSubMetrics: {
     flex: 1.5,
-    gap: 8,
+    gap: 6,
   },
-  subMetricRow: {
+
+  featuredRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingVertical: 4,
   },
-  subMetricText: {
+  featuredIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FDF2F4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  featuredRowLabel: {
+    flex: 1,
     fontSize: 12,
     fontFamily: 'Inter_500Medium',
     color: '#44474E',
+    opacity: 0.8,
   },
-  boldText: {
+  featuredRowValue: {
+    fontSize: 13,
     fontFamily: 'Inter_700Bold',
     color: '#1A1C1E',
+  },
+  featuredRowDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    marginVertical: 4,
+    width: '100%',
   },
 
   // Grid list
@@ -1283,32 +1349,53 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
   },
   metricGrid: {
-    gap: 12,
+    gap: 8,
   },
   gridRow: {
     flexDirection: 'row',
   },
-  gridCard: {
-    padding: 12,
-    gap: 6,
-  },
-  gridCardHeader: {
+  metricCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 16,
+    padding: 10,
+    gap: 10,
+    shadowColor: '#120E10',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  gridCardLabel: {
-    fontSize: 9,
-    fontFamily: 'Inter_700Bold',
-    color: '#44474E',
-    opacity: 0.65,
-    letterSpacing: 0.8,
+  metricCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  gridCardValue: {
-    fontSize: 18,
+  metricCircleText: {
+    color: '#FFFFFF',
+    fontSize: 13,
     fontFamily: 'Inter_700Bold',
-    color: '#1A1C1E',
-    letterSpacing: -0.3,
+  },
+  metricMiddle: {
+    flex: 1,
+    gap: 1,
+  },
+  metricLabel: {
+    fontSize: 8,
+    fontFamily: 'Inter_700Bold',
+    color: '#64748B',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  metricValue: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    color: '#0F172A',
   },
 
   // Visual Log Chart
@@ -1321,18 +1408,6 @@ const styles = StyleSheet.create({
     color: '#44474E',
     opacity: 0.7,
     marginTop: -8,
-  },
-  chartWrapper: {
-    width: '100%',
-    height: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    marginVertical: 4,
   },
 
   // Tabbed system
