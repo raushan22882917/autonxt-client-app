@@ -290,46 +290,37 @@ export default function ComplaintsScreen() {
               zIndex: 10,
             }}
           >
-            <LinearGradient
-              colors={['#7E152F', '#A82C48']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-                borderColor: 'transparent',
-                borderWidth: 0,
-                borderRadius: 20,
-                paddingHorizontal: 14,
-                paddingVertical: 5,
-                overflow: 'hidden',
-                shadowColor: '#000000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.12,
-                shadowRadius: 6,
-                elevation: 4,
-              }}
+            <TouchableOpacity
+              onPress={() => setFilterSheetOpen(true)}
+              activeOpacity={0.8}
             >
-              {/* Brick background pattern (faint white brick lines for mini scale) */}
-              <View style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]} pointerEvents="none">
-                {/* Horizontal row in middle */}
-                <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                
-                {/* Vertical joints (alternating brick pattern) */}
-                <View style={{ position: 'absolute', top: 0, bottom: '50%', left: '33%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                <View style={{ position: 'absolute', top: 0, bottom: '50%', left: '66%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                
-                <View style={{ position: 'absolute', top: '50%', bottom: 0, left: '16%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                <View style={{ position: 'absolute', top: '50%', bottom: 0, left: '50%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-                <View style={{ position: 'absolute', top: '50%', bottom: 0, left: '83%', width: 1, backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
-              </View>
-
-              <Feather name="calendar" size={12} color="#FFFFFF" />
-              <Text style={{ fontSize: 11, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-                {periodLabel}
-              </Text>
-            </LinearGradient>
+              <LinearGradient
+                colors={['#7E152F', '#A82C48']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  borderColor: 'transparent',
+                  borderWidth: 0,
+                  borderRadius: 20,
+                  paddingHorizontal: 14,
+                  paddingVertical: 5,
+                  overflow: 'hidden',
+                  shadowColor: '#000000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 6,
+                  elevation: 4,
+                }}
+              >
+                <Feather name="calendar" size={12} color="#FFFFFF" />
+                <Text style={{ fontSize: 11, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                  {periodLabel}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
 
           {/* Parent container card styled like the image */}
@@ -398,7 +389,8 @@ export default function ComplaintsScreen() {
                   alignItems: 'center',
                   gap: 10 * scaleFactor,
                   paddingVertical: 12 * scaleFactor,
-                  paddingHorizontal: 4 * scaleFactor,
+                  paddingLeft: 14 * scaleFactor,
+                  paddingRight: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
                 onPress={() => handleBoxPress('CRITICAL')}
@@ -477,7 +469,8 @@ export default function ComplaintsScreen() {
                   alignItems: 'center',
                   gap: 10 * scaleFactor,
                   paddingVertical: 12 * scaleFactor,
-                  paddingHorizontal: 4 * scaleFactor,
+                  paddingLeft: 14 * scaleFactor,
+                  paddingRight: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
                 onPress={() => handleBoxPress('BREAKDOWN')}
@@ -508,7 +501,7 @@ export default function ComplaintsScreen() {
         </View>
 
         {/* Results count + period */}
-        <View style={styles.resultsRow}>
+        <View style={[styles.resultsRow, { marginBottom: 10 * scaleFactor }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
             <Text style={[styles.periodHint, { color: c.foreground }]}>

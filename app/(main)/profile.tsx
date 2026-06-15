@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -14,52 +16,165 @@ import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/context/AppContext';
 import { useDrawer } from '@/context/DrawerContext';
+import { ConfirmModal } from '@/components/ConfirmModal';
 
-// ── Option Row Component ───────────────────────────────────────────────────
-function OptionRow({
-  icon,
-  iconColor,
-  iconBg,
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: string }) {
+  return <Text style={styles.sectionLabel}>{children}</Text>;
+}
+
+function BadgePill({
   label,
-  value,
-  onPress,
-  isLast,
-  isDanger,
+  color,
+  bg,
 }: {
+  label: string;
+  color: string;
+  bg: string;
+}) {
+  return (
+    <View style={[styles.badge, { backgroundColor: bg }]}>
+      <Feather name="shield" size={10} color={color} style={{ marginRight: 4 }} />
+      <Text style={[styles.badgeText, { color }]}>{label}</Text>
+    </View>
+  );
+}
+
+function CountPill({ label, color }: { label: string; color: string }) {
+  return (
+    <View style={[styles.countPill, { borderColor: color }]}>
+      <Text style={[styles.countPillText, { color }]}>{label}</Text>
+    </View>
+  );
+}
+
+// ── Row Components ────────────────────────────────────────────────────────────
+
+type InfoRowProps = {
   icon: keyof typeof Feather.glyphMap;
   iconColor: string;
   iconBg: string;
-  label: string;
-  value?: string;
-  onPress?: () => void;
+  title: string;
+  subtitle: string;
+  rightLabel?: string;
+  rightBadge?: { label: string; color: string; bg: string };
+  rightCount?: { label: string; color: string };
   isLast?: boolean;
   isDanger?: boolean;
-}) {
-  const c = useColors();
+  onPress?: () => void;
+  gradientColors?: string[];
+  useWhiteText?: boolean;
+  hideChevron?: boolean;
+  style?: any;
+};
+
+function InfoRow({
+  icon,
+  iconColor,
+  iconBg,
+  title,
+  subtitle,
+  rightLabel,
+  rightBadge,
+  rightCount,
+  isLast,
+  isDanger,
+  onPress,
+  gradientColors,
+  useWhiteText,
+  hideChevron = !onPress,
+  style,
+}: InfoRowProps) {
+  const finalIconColor = useWhiteText ? '#FFFFFF' : iconColor;
+  const finalIconBg = useWhiteText ? 'rgba(255, 255, 255, 0.15)' : iconBg;
+  const titleColor = useWhiteText ? '#FFFFFF' : (isDanger ? '#7E152F' : '#0F172A');
+  const subtitleColor = useWhiteText ? 'rgba(255, 255, 255, 0.7)' : '#94A3B8';
+  const chevronColor = useWhiteText ? '#FFFFFF' : (isDanger ? '#7E152F' : '#CBD5E1');
+
   return (
     <TouchableOpacity
-      style={[
-        styles.row,
-        !isLast && { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-      ]}
+      style={[styles.infoRow, !isLast && styles.infoRowDivider, { overflow: 'hidden' }, style]}
+      activeOpacity={onPress ? 0.7 : 1}
       onPress={onPress}
       disabled={!onPress}
-      activeOpacity={onPress ? 0.7 : 1}
     >
-      <View style={[styles.rowIconWrap, { backgroundColor: iconBg }]}>
-        <Feather name={icon} size={15} color={iconColor} />
+      {gradientColors && (
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+      )}
+
+      {/* Left icon */}
+      <View style={[styles.infoRowIcon, { backgroundColor: finalIconBg, zIndex: 1 }]}>
+        <Feather name={icon} size={16} color={finalIconColor} />
       </View>
-      <View style={styles.rowBody}>
-        <Text style={[styles.rowLabel, isDanger && { color: c.primary, fontFamily: 'Inter_700Bold' }]}>
-          {label}
-        </Text>
+
+      {/* Text block */}
+      <View style={[styles.infoRowBody, { zIndex: 1 }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 8 }}>
+          <Text
+            style={[
+              styles.infoRowTitle,
+              { color: titleColor },
+              isDanger && { fontFamily: 'Inter_700Bold' },
+            ]}
+          >
+            {title}
+          </Text>
+          
+          {rightLabel && (
+            <Text 
+              style={[
+                styles.infoRowValue, 
+                { 
+                  zIndex: 1, 
+                  color: useWhiteText ? 'rgba(255, 255, 255, 0.8)' : '#64748B',
+                  maxWidth: undefined,
+                }
+              ]} 
+              numberOfLines={1}
+            >
+              {rightLabel}
+            </Text>
+          )}
+        </View>
+
+        {subtitle ? (
+          <Text style={[styles.infoRowSubtitle, { color: subtitleColor, marginTop: 2 }]}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
-      {value ? (
-        <Text style={styles.rowValue} numberOfLines={1}>
-          {value}
-        </Text>
-      ) : null}
-      <Feather name="chevron-right" size={16} color={isDanger ? c.primary : '#94A3B8'} />
+
+      {/* Right area for Badge or Count */}
+      {rightCount && (
+        <View style={{ zIndex: 1 }}>
+          <CountPill label={rightCount.label} color={rightCount.color} />
+        </View>
+      )}
+      {rightBadge && (
+        <View style={{ zIndex: 1 }}>
+          <BadgePill
+            label={rightBadge.label}
+            color={rightBadge.color}
+            bg={rightBadge.bg}
+          />
+        </View>
+      )}
+
+      {/* Chevron */}
+      {!hideChevron && (
+        <Feather
+          name="chevron-right"
+          size={16}
+          color={chevronColor}
+          style={{ zIndex: 1 }}
+        />
+      )}
     </TouchableOpacity>
   );
 }
@@ -72,15 +187,14 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, isAdmin, signOut } = useAuth();
   const { organization, plants, tractors } = useApp();
+  const { isDrawerOpen, closeDrawer } = useDrawer();
+  const [signOutModalVisible, setSignOutModalVisible] = React.useState(false);
 
-  const topPad = Platform.OS === 'web' ? 12 : insets.top;
+  const topPad = Platform.OS === 'web' ? 12 : Math.max(0, insets.top + 3);
   const roleLabel = isAdmin ? 'Administrator' : user?.role?.trim() || 'User';
 
-  // Redirect to login when user signs out
   useEffect(() => {
-    if (!user) {
-      router.replace('/login');
-    }
+    if (!user) router.replace('/login');
   }, [user]);
 
   const displayName = user?.name?.trim() || user?.email || 'User';
@@ -91,8 +205,6 @@ export default function ProfileScreen() {
     .slice(0, 2)
     .toUpperCase();
 
-  const { isDrawerOpen, closeDrawer } = useDrawer();
-
   const goBack = () => {
     if (isDrawerOpen) {
       closeDrawer();
@@ -102,12 +214,19 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleSignOut = () => {
+    setSignOutModalVisible(true);
+  };
+
   return (
-    <View style={[styles.root, { backgroundColor: c.background }]}>
-      
-      {/* ── Dark Header Section ── */}
-      <View style={[styles.darkHeader, { paddingTop: Math.max(4, topPad - 12) }]}>
-        {/* Navigation Row */}
+    <View style={styles.root}>
+      <StatusBar style="light" />
+
+      {/* ── Burgundy Header (matches Fleet page) ── */}
+      <View
+        style={[styles.header, { paddingTop: topPad }]}
+      >
+        {/* Top nav row */}
         <View style={styles.navRow}>
           <TouchableOpacity
             style={styles.backBtn}
@@ -117,285 +236,412 @@ export default function ProfileScreen() {
           >
             <Feather name="chevron-left" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Account</Text>
-          <View style={{ width: 32 }} />
-        </View>
 
-        {/* Circular Avatar with Camera Badge */}
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatarOuter}>
-            <View style={styles.avatarInner}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
-            {/* Camera badge overlay */}
-            <TouchableOpacity style={styles.cameraBadge} activeOpacity={0.8}>
-              <Feather name="camera" size={8} color="#FFFFFF" />
-            </TouchableOpacity>
+          {/* AutoNxt Fleet brand */}
+          <View style={styles.brandBlock}>
+            <Text style={styles.brandAuto}>Auto</Text>
+            <Text style={styles.brandNxt}>Nxt</Text>
+            <Text style={styles.brandFleet}>{'  '}FLEET</Text>
           </View>
-        </View>
 
-        {/* Name and Email */}
-        <Text style={styles.userName}>{displayName}</Text>
-        {user?.email ? <Text style={styles.userEmail}>{user.email}</Text> : null}
-      </View>
-
-      {/* ── Scrollable Options Body ── */}
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        
-        {/* Group 1: Fleet Assets */}
-        <View style={[styles.optionsGroupCard, { backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
-          <OptionRow
-            icon="layers"
-            iconColor={c.accent}
-            iconBg={c.accent + '15'}
-            label="Registered Plants"
-            value={`${plants.length} plant(s)`}
-          />
-          <OptionRow
-            icon="truck"
-            iconColor={c.secondary}
-            iconBg={c.secondary + '15'}
-            label="Registered Tractors"
-            value={`${tractors.length} tractor(s)`}
-          />
-          <OptionRow
-            icon="activity"
-            iconColor={c.success}
-            iconBg={c.success + '15'}
-            label="Access Status"
-            value={roleLabel}
-            isLast={true}
-          />
-        </View>
-
-        {/* Group 2: Personal Account details */}
-        <View style={[styles.optionsGroupCard, { backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
-          <OptionRow
-            icon="mail"
-            iconColor={c.secondary}
-            iconBg={c.secondary + '15'}
-            label="Email Address"
-            value={user?.email || '—'}
-          />
-          <OptionRow
-            icon="user"
-            iconColor={c.primary}
-            iconBg={c.primary + '15'}
-            label="Display Name"
-            value={user?.name?.trim() || '—'}
-          />
-          <OptionRow
-            icon="shield"
-            iconColor={c.accent}
-            iconBg={c.accent + '15'}
-            label="Access Role"
-            value={roleLabel}
-            isLast={true}
-          />
-        </View>
-
-        {/* Group 3: Organization Details */}
-        <View style={[styles.optionsGroupCard, { backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
-          <OptionRow
-            icon="briefcase"
-            iconColor={c.accent}
-            iconBg={c.accent + '15'}
-            label="Organization"
-            value={organization?.name || '—'}
-          />
-          {organization?.location ? (
-            <OptionRow
-              icon="map-pin"
-              iconColor={c.secondary}
-              iconBg={c.secondary + '15'}
-              label="Location"
-              value={organization.location}
-            />
-          ) : null}
-          <OptionRow
-            icon="hash"
-            iconColor={c.primary}
-            iconBg={c.primary + '15'}
-            label="Org Identifier"
-            value={organization?.orgID || '—'}
-            isLast={true}
-          />
-        </View>
-
-        {/* Group 4: Admin Tools */}
-        {isAdmin ? (
-          <View style={[styles.optionsGroupCard, { backgroundColor: c.card, shadowColor: c.shadowStrong }]}>
-            <OptionRow
-              icon="users"
-              iconColor={c.primary}
-              iconBg={c.primary + '15'}
-              label="Manage Organization Users"
-              onPress={() => router.push('/(main)/users')}
-              isLast={true}
-            />
-          </View>
-        ) : null}
-
-        {/* Group 5: Sign Out */}
-        <View style={[styles.optionsGroupCard, { backgroundColor: c.primary, borderColor: c.primary, shadowColor: c.primary, shadowOpacity: 0.12 }]}>
           <TouchableOpacity
-            style={styles.row}
-            onPress={signOut}
-            activeOpacity={0.8}
+            style={styles.backBtn}
+            activeOpacity={0.7}
+            accessibilityLabel="Profile"
           >
-            <View style={[styles.rowIconWrap, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
-              <Feather name="log-out" size={15} color="#FFFFFF" />
-            </View>
-            <View style={styles.rowBody}>
-              <Text style={[styles.rowLabel, { color: '#FFFFFF', fontFamily: 'Inter_700Bold' }]}>
-                Logout
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={16} color="#FFFFFF" />
+            <Feather name="user" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
+        {/* Account title */}
+        <View style={styles.accountTitleBlock}>
+          <Text style={styles.accountTitle}>Account</Text>
+          <Text style={styles.accountSubtitle}>
+            Manage your profile and preferences
+          </Text>
+        </View>
+      </View>
+
+      {/* ── Scrollable Content ── */}
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 100 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ─ Profile Card (scrolls with content) ─ */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileCardInner}>
+            <View style={styles.avatarWrap}>
+              <LinearGradient
+                colors={['#7E152F', '#A82C48']}
+                style={styles.avatarGradient}
+              >
+                <Text style={styles.avatarInitials}>{initials}</Text>
+              </LinearGradient>
+              <View style={styles.cameraBadge}>
+                <Feather name="camera" size={8} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.profileCardTextBlock}>
+              <Text style={styles.profileName} numberOfLines={1}>
+                {displayName}
+              </Text>
+              {user?.email ? (
+                <Text style={styles.profileEmail} numberOfLines={1}>
+                  {user.email}
+                </Text>
+              ) : null}
+              <BadgePill label={roleLabel} color="#10B981" bg="#D1FAE5" />
+            </View>
+          </View>
+        </View>
+
+        {/* ─ Assets & Access ─ */}
+        <SectionLabel>ASSETS & ACCESS</SectionLabel>
+        <View style={[styles.card, { backgroundColor: c.card }]}>
+          <InfoRow
+            icon="layers"
+            iconColor="#7E152F"
+            iconBg="#FDF2F4"
+            title="Registered Plants"
+            subtitle="View and manage your plants"
+            rightCount={{
+              label: `${plants.length} plant(s)`,
+              color: '#7E152F',
+            }}
+            onPress={() => router.push('/(main)/runtime?from=profile')}
+          />
+          <InfoRow
+            icon="truck"
+            iconColor="#E2A93E"
+            iconBg="#FEF3C7"
+            title="Registered Tractors"
+            subtitle="View and manage your tractors"
+            rightCount={{
+              label: `${tractors.length} tractor(s)`,
+              color: '#E2A93E',
+            }}
+            onPress={() => router.push('/(main)/tractors?from=profile')}
+          />
+          <InfoRow
+            icon="activity"
+            iconColor="#10B981"
+            iconBg="#D1FAE5"
+            title="Access Status"
+            subtitle="Your current access level"
+            rightBadge={{
+              label: roleLabel,
+              color: '#10B981',
+              bg: '#D1FAE5',
+            }}
+            isLast
+          />
+        </View>
+
+        {/* ─ Profile Information ─ */}
+        <SectionLabel>PROFILE INFORMATION</SectionLabel>
+        <View style={[styles.card, { backgroundColor: c.card }]}>
+          <InfoRow
+            icon="mail"
+            iconColor="#E2A93E"
+            iconBg="#FEF3C7"
+            title="Email Address"
+            subtitle="Your registered email"
+            rightLabel={user?.email || '—'}
+          />
+          <InfoRow
+            icon="user"
+            iconColor="#7E152F"
+            iconBg="#FDF2F4"
+            title="Display Name"
+            subtitle="Name shown in the app"
+            rightLabel={user?.name?.trim() || '—'}
+          />
+          <InfoRow
+            icon="shield"
+            iconColor="#3B82F6"
+            iconBg="#DBEAFE"
+            title="Access Role"
+            subtitle="Your role in the organization"
+            rightLabel={roleLabel}
+            isLast={true}
+          />
+        </View>
+
+        {/* Sign Out (standalone block with red border) */}
+        <InfoRow
+          icon="log-out"
+          iconColor="#7E152F"
+          iconBg="#FDF2F4"
+          title="Sign Out"
+          subtitle=""
+          isDanger
+          isLast
+          onPress={handleSignOut}
+          hideChevron={true}
+          style={{
+            borderWidth: 1.5,
+            borderColor: '#7E152F',
+            borderRadius: 18,
+            backgroundColor: '#FFFFFF',
+            marginTop: 12,
+          }}
+        />
       </ScrollView>
+
+      <ConfirmModal
+        visible={signOutModalVisible}
+        title="Sign Out"
+        message="Are you sure you want to sign out?"
+        onCancel={() => setSignOutModalVisible(false)}
+        onConfirm={() => {
+          setSignOutModalVisible(false);
+          signOut();
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  
-  // ── Dark Header Section ──
-  darkHeader: {
-    backgroundColor: '#2A1A1D',
-    paddingBottom: 12,
-    alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+  root: { flex: 1, backgroundColor: '#F5F6F8' },
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  header: {
+    backgroundColor: '#7E152F',
+    paddingHorizontal: 16,
+    paddingBottom: 44, // visual space for the overlapping card
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#7E152F',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
   },
   navRow: {
-    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
     marginBottom: 8,
   },
   backBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    color: '#FFFFFF',
-    letterSpacing: -0.2,
+
+  // Brand
+  brandBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
   },
-  avatarContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  avatarOuter: {
-    position: 'relative',
-  },
-  avatarInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: 'rgba(126, 21, 47, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  avatarText: {
+  brandAuto: {
     fontSize: 18,
     fontFamily: 'Inter_700Bold',
-    color: '#7E152F',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
+  },
+  brandNxt: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: '#E2A93E',
+    letterSpacing: -0.4,
+  },
+  brandFleet: {
+    fontSize: 9,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#E2A93E',
+    letterSpacing: 2.5,
+    marginBottom: 2,
+  },
+
+  // Account title block
+  accountTitleBlock: {
+    marginBottom: 14,
+  },
+  accountTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
+  },
+  accountSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 2,
+  },
+
+  // Profile card — first scroll item, pulled up with negative marginTop to overlap header
+  profileCard: {
+    marginTop: 0,
+    marginHorizontal: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 16,   // must exceed header's elevation:6 to draw on top on Android
+    zIndex: 20,
+  },
+  profileCardInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  avatarWrap: {
+    position: 'relative',
+  },
+  avatarGradient: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitials: {
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
   },
   cameraBadge: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
+    bottom: -3,
+    right: -3,
     width: 18,
     height: 18,
     borderRadius: 9,
     backgroundColor: '#7E152F',
-    borderWidth: 1.5,
-    borderColor: '#2A1A1D',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  userName: {
-    fontSize: 17,
+  profileCardTextBlock: {
+    flex: 1,
+    gap: 3,
+  },
+  profileName: {
+    fontSize: 15,
     fontFamily: 'Inter_700Bold',
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
-    textAlign: 'center',
-    marginBottom: 1,
+    color: '#0F172A',
+    letterSpacing: -0.2,
   },
-  userEmail: {
+  profileEmail: {
     fontSize: 12,
-    fontFamily: 'Inter_500Medium',
-    color: '#94A3B8',
-    textAlign: 'center',
+    fontFamily: 'Inter_400Regular',
+    color: '#64748B',
   },
 
-  // ── Options Cards ──
-  content: {
-    padding: 16,
-    gap: 16,
-  },
-  optionsGroupCard: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    overflow: 'hidden',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.04,
-    shadowRadius: 20,
-    elevation: 4,
-  },
-
-  // ── Option Rows ──
-  row: {
+  // ── Badge / Pills ─────────────────────────────────────────────────────────
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    paddingHorizontal: 16,
-    gap: 14,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
   },
-  rowIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
+  badgeText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  countPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    marginRight: 6,
+  },
+  countPillText: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+  },
+
+  // ── Scroll area ────────────────────────────────────────────────────────────
+  scrollArea: { flex: 1, zIndex: 10, elevation: 12, marginTop: -44 },
+  scrollContent: {
+    paddingTop: 0,
+    paddingHorizontal: 16,
+    gap: 12,
+    paddingBottom: 0,
+  },
+
+  // ── Section label ─────────────────────────────────────────────────────────
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginTop: 8,
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+
+  // ── Card container ────────────────────────────────────────────────────────
+  card: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+    marginBottom: 4,
+  },
+
+  // ── Info rows ─────────────────────────────────────────────────────────────
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    gap: 12,
+  },
+  infoRowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  infoRowIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowBody: {
+  infoRowBody: {
     flex: 1,
+    gap: 2,
   },
-  rowLabel: {
+  infoRowTitle: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     color: '#0F172A',
   },
-  rowValue: {
+  infoRowSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    color: '#94A3B8',
+  },
+  infoRowValue: {
     fontSize: 13,
     fontFamily: 'Inter_500Medium',
-    color: '#94A3B8',
+    color: '#64748B',
+    maxWidth: 120,
+    textAlign: 'right',
     marginRight: 4,
   },
 });

@@ -255,8 +255,8 @@ export default function ComplaintDetailScreen() {
           </Text>
 
           <View style={[styles.badgeRow, { justifyContent: 'flex-start', marginTop: 10 }]}>
-            <StatusBadge status={complaint.severity} />
-            <StatusBadge status={complaint.status} />
+            <StatusBadge status={complaint.severity} small />
+            <StatusBadge status={complaint.status} small />
             {isBreakdownComplaint(complaint) && (
               <View style={{
                 flexDirection: 'row',

@@ -5,6 +5,8 @@ import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/hooks/useColors';
 import { useDrawer } from '@/context/DrawerContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ConfirmModal } from './ConfirmModal';
 
 export function NavigationDrawerContent() {
   const c = useColors();
@@ -12,6 +14,7 @@ export function NavigationDrawerContent() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { closeDrawer } = useDrawer();
+  const [signOutModalVisible, setSignOutModalVisible] = React.useState(false);
 
   const displayName = user?.name?.trim() || user?.email || 'User';
   const initials = displayName
@@ -30,10 +33,7 @@ export function NavigationDrawerContent() {
   };
 
   const handleSignOut = () => {
-    closeDrawer();
-    setTimeout(() => {
-      signOut();
-    }, 250);
+    setSignOutModalVisible(true);
   };
 
   const menuItems = [
@@ -84,10 +84,10 @@ export function NavigationDrawerContent() {
               <Feather
                 name={item.icon as any}
                 size={18}
-                color={active ? '#FFFFFF' : '#94A3B8'}
+                color={active ? '#7E152F' : '#64748B'}
                 style={styles.menuIcon}
               />
-              <Text style={[styles.menuLabel, active ? styles.menuLabelActive : { color: '#94A3B8' }]}>
+              <Text style={[styles.menuLabel, active ? styles.menuLabelActive : { color: '#64748B' }]}>
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -106,10 +106,10 @@ export function NavigationDrawerContent() {
           <Feather
             name="log-out"
             size={18}
-            color="#94A3B8"
+            color="#7E152F"
             style={styles.menuIcon}
           />
-          <Text style={[styles.menuLabel, { color: '#94A3B8' }]}>
+          <Text style={[styles.menuLabel, { color: '#7E152F' }]}>
             Sign Out
           </Text>
         </TouchableOpacity>
@@ -117,12 +117,26 @@ export function NavigationDrawerContent() {
 
       {/* ── Footer Section ── */}
       <View style={styles.footer}>
-        <Text style={styles.versionText}>App v.3.4.30</Text>
+        <Text style={styles.versionText}>App v.1.0.0</Text>
         <View style={styles.logoRow}>
           <Text style={styles.logoMain}>Auto</Text>
           <Text style={styles.logoSub}>Nxt</Text>
         </View>
       </View>
+
+      <ConfirmModal
+        visible={signOutModalVisible}
+        title="Sign Out"
+        message="Are you sure you want to sign out?"
+        onCancel={() => setSignOutModalVisible(false)}
+        onConfirm={() => {
+          setSignOutModalVisible(false);
+          closeDrawer();
+          setTimeout(() => {
+            signOut();
+          }, 250);
+        }}
+      />
     </View>
   );
 }
@@ -130,11 +144,12 @@ export function NavigationDrawerContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2A1A1D',
     paddingTop: 64,
-    paddingHorizontal: 24,
+    paddingLeft: 8,
+    paddingRight: 24,
     justifyContent: 'space-between',
     paddingBottom: 40,
+    backgroundColor: '#FFFFFF',
   },
   profileHeader: {
     flexDirection: 'row',
@@ -142,22 +157,20 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: '#F1F5F9',
   },
   avatarInner: {
     width: 52,
     height: 52,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: 'rgba(126, 21, 47, 0.3)',
+    backgroundColor: '#7E152F',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 16,
     fontFamily: 'Inter_700Bold',
-    color: '#7E152F', // Burgundy brand color
+    color: '#FFFFFF',
   },
   profileInfo: {
     flex: 1,
@@ -166,13 +179,13 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 16,
     fontFamily: 'Inter_700Bold',
-    color: '#FFFFFF',
+    color: '#0F172A',
     letterSpacing: -0.2,
   },
   viewProfile: {
     fontSize: 12,
     fontFamily: 'Inter_500Medium',
-    color: '#E2A93E', // gold view profile link
+    color: '#7E152F',
   },
   menuList: {
     flex: 1,
@@ -188,7 +201,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   menuItemActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(126, 21, 47, 0.08)',
   },
   menuIcon: {
     width: 20,
@@ -198,11 +211,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
   menuLabelActive: {
-    color: '#FFFFFF',
+    color: '#7E152F',
   },
   separator: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#E2E8F0',
     marginVertical: 12,
   },
   footer: {
@@ -211,7 +224,7 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 11,
     fontFamily: 'Inter_500Medium',
-    color: '#475569',
+    color: '#94A3B8',
   },
   logoRow: {
     flexDirection: 'row',
@@ -220,7 +233,7 @@ const styles = StyleSheet.create({
   logoMain: {
     fontSize: 18,
     fontFamily: 'SpaceMono_700Bold',
-    color: '#475569',
+    color: '#7E152F',
   },
   logoSub: {
     fontSize: 18,

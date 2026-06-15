@@ -111,7 +111,7 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
         {
           backgroundColor: cardBg,
           borderColor: cardBorder,
-          shadowColor: '#0F172A',
+          shadowColor: '#7E152F',
         },
       ]}
     >

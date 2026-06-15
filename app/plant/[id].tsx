@@ -375,12 +375,9 @@ export default function PlantDetailScreen() {
               {plant.name}
             </Text>
             {plant.location ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                <Feather name="map-pin" size={11} color="rgba(255, 255, 255, 0.75)" />
-                <Text style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: 'rgba(255, 255, 255, 0.75)', textAlign: 'center' }} numberOfLines={1}>
-                  {plant.location}
-                </Text>
-              </View>
+              <Text style={{ fontSize: 12, fontFamily: 'Inter_500Medium', color: 'rgba(255, 255, 255, 0.7)', marginTop: 4, textAlign: 'center' }}>
+                {plant.location}
+              </Text>
             ) : null}
           </View>
         </View>

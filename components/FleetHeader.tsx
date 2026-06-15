@@ -13,19 +13,21 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, usePathname } from 'expo-router';
+import { useRouter, usePathname, useGlobalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/context/AppContext';
 import { useDrawer } from '@/context/DrawerContext';
 import { countActiveComplaintFilters } from '@/lib/complaintFilters';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export function FleetHeader() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
+  const { from } = useGlobalSearchParams<{ from?: string }>();
   const { user } = useAuth();
   const { toggleDrawer } = useDrawer();
   const {
@@ -53,42 +55,40 @@ export function FleetHeader() {
 
   // ── Entry & Breathing Animations ──
   const entryOpacity = useRef(new Animated.Value(0)).current;
-  const entryTranslateY = useRef(new Animated.Value(12)).current;
-  const entryScale = useRef(new Animated.Value(0.9)).current;
+  const entryTranslateY = useRef(new Animated.Value(4)).current;
+  const entryScale = useRef(new Animated.Value(0.97)).current;
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // 1. Spring-based entrance animation
+    // Snappy entrance fade-in and scale-in
     Animated.parallel([
       Animated.timing(entryOpacity, {
         toValue: 1,
-        duration: 800,
+        duration: 300,
         useNativeDriver: true,
       }),
-      Animated.spring(entryTranslateY, {
+      Animated.timing(entryTranslateY, {
         toValue: 0,
-        friction: 6,
-        tension: 40,
+        duration: 300,
         useNativeDriver: true,
       }),
-      Animated.spring(entryScale, {
+      Animated.timing(entryScale, {
         toValue: 1,
-        friction: 6,
-        tension: 40,
+        duration: 300,
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // 2. Continuous breathing loop
+      // Continuous breathing loop - slow (10s total cycle) so it is obvious but not frequent/frantic
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 2200,
+            duration: 5000,
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 0,
-            duration: 2200,
+            duration: 5000,
             useNativeDriver: true,
           }),
         ])
@@ -98,12 +98,12 @@ export function FleetHeader() {
 
   const pulseScale = pulseAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.97, 1.03],
+    outputRange: [0.96, 1.04],
   });
 
   const pulseOpacity = pulseAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.88, 1],
+    outputRange: [0.90, 1],
   });
 
   const combinedScale = Animated.multiply(entryScale, pulseScale);
@@ -134,7 +134,7 @@ export function FleetHeader() {
     setPlantQuery('');
   };
 
-  const topPad = Platform.OS === 'web' ? 10 : Math.max(0, insets.top + 8);
+  const topPad = Platform.OS === 'web' ? 6 : Math.max(0, insets.top + 3);
 
   return (
     <>
@@ -152,8 +152,27 @@ export function FleetHeader() {
         ]}
       >
         <View style={styles.headerTopRow}>
-          {/* Left Side Placeholder (to keep brand logo centered) */}
-          <View style={{ width: 36 }} />
+          {/* Left Side: Back button on Plants/Tractors, placeholder elsewhere */}
+          {(pathname.includes('runtime') || pathname.includes('tractors')) ? (
+            <TouchableOpacity
+              style={styles.headerCircleBtn}
+              onPress={() => {
+                if (from === 'profile') {
+                  router.replace('/(main)/profile');
+                } else if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(main)/dashboard');
+                }
+              }}
+              activeOpacity={0.75}
+              accessibilityLabel="Go back"
+            >
+              <Feather name="chevron-left" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 36 }} />
+          )}
 
           {/* Center: Animated Brand Logo */}
           <Animated.View style={[styles.logoContainer, { transform: [{ scale: combinedScale }, { translateY: entryTranslateY }], opacity: combinedOpacity }]}>
@@ -181,6 +200,12 @@ export function FleetHeader() {
             activeOpacity={0.8}
             disabled={plants.length === 0}
           >
+            <LinearGradient
+              colors={['#FFFFFF', '#FAF8F5']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
             <View style={styles.headerDropdownLeft}>
               <View style={styles.headerDropdownIconWrap}>
                 <Feather name="layers" size={11} color="#7E152F" />
@@ -204,6 +229,12 @@ export function FleetHeader() {
         {/* ── Search Bar inside Header (Only on Tractors Page) ── */}
         {pathname.includes('tractors') && (
           <View style={styles.headerPlantDropdown}>
+            <LinearGradient
+              colors={['#FFFFFF', '#FAF8F5']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
             <View style={styles.headerDropdownLeft}>
               <View style={styles.headerDropdownIconWrap}>
                 <Feather name="search" size={11} color="#7E152F" />
@@ -237,6 +268,12 @@ export function FleetHeader() {
         {/* ── Search & Filter Bar inside Header (Only on Complaints Page) ── */}
         {pathname.includes('complaints') && (
           <View style={[styles.headerPlantDropdown, { paddingRight: 0 }]}>
+            <LinearGradient
+              colors={['#FFFFFF', '#FAF8F5']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
             <View style={[styles.headerDropdownLeft, { paddingLeft: 0 }]}>
               <View style={styles.headerDropdownIconWrap}>
                 <Feather name="search" size={11} color="#7E152F" />
@@ -274,7 +311,7 @@ export function FleetHeader() {
               style={{
                 width: 48, // Match height for perfect square
                 height: '100%',
-                backgroundColor: '#7E152F', // Burgundy background
+                backgroundColor: 'transparent', // Transparent background
                 borderTopRightRadius: 11, // Match container corner minus border width
                 borderBottomRightRadius: 11,
                 alignItems: 'center',
@@ -282,7 +319,7 @@ export function FleetHeader() {
               }}
               activeOpacity={0.8}
             >
-              <Feather name="sliders" size={15} color="#FFFFFF" />
+              <Feather name="sliders" size={15} color="#7E152F" />
               {activeFilterCount > 0 && (
                 <View
                   style={{
@@ -499,6 +536,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: -3,
   },
   brandLogo: {
     fontSize: 24,
@@ -517,7 +555,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 12,
@@ -531,6 +568,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     zIndex: 10,
+    overflow: 'hidden',
   },
   headerDropdownLeft: {
     flexDirection: 'row',

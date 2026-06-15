@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, BackHandler, Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs, usePathname, useRouter } from 'expo-router';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
 import { Feather } from '@expo/vector-icons';
@@ -170,6 +171,8 @@ function ClassicTabsLayout() {
 const { width: screenWidth } = Dimensions.get('window');
 
 function MainShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
   const colors = useColors();
   const {
     isLoading,
@@ -182,6 +185,22 @@ function MainShell({ children }: { children: React.ReactNode }) {
 
   const { isDrawerOpen, closeDrawer } = useDrawer();
   const slideAnim = useRef(new Animated.Value(0)).current;
+
+  // Intercept Android hardware back when drawer is open
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+
+    const onBackPress = () => {
+      closeDrawer();
+      if (!pathname.includes('dashboard')) {
+        router.push('/(main)/dashboard');
+      }
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [isDrawerOpen, closeDrawer, pathname, router]);
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -222,7 +241,9 @@ function MainShell({ children }: { children: React.ReactNode }) {
     plants.length > 0 ? loadedPlantIDs.length / plants.length : undefined;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#2A1A1D' }}>
+    <View
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }}
+    >
       {/* ── Side Drawer Panel ── */}
       <Animated.View
         style={[
@@ -247,7 +268,7 @@ function MainShell({ children }: { children: React.ReactNode }) {
           },
         ]}
       >
-        <FleetHeader />
+        {!pathname.endsWith('/profile') && <FleetHeader />}
         <FleetLoadingBar
           visible={isLoadingMorePlants && !isLoading}
           loaded={loadedPlantIDs.length}
@@ -314,7 +335,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
     zIndex: 1,
-    backgroundColor: '#2A1A1D',
+    backgroundColor: 'transparent',
   },
   mainContentContainer: {
     flex: 1,

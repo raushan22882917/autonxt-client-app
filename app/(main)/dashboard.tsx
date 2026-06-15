@@ -162,7 +162,7 @@ export default function DashboardScreen() {
         style={[styles.root, { backgroundColor: 'transparent' }]}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: topPad + 40, paddingBottom: insets.bottom + 100 },
+          { paddingTop: topPad + 22, paddingBottom: insets.bottom + 48 },
         ]}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
@@ -171,36 +171,22 @@ export default function DashboardScreen() {
       >
         {/* ── Volt Hero Banner ── */}
         <View style={styles.voltHeroContainer}>
-          <View style={styles.voltHeroContentRow}>
-            <View style={styles.voltHeroContent}>
-              <Text style={styles.voltHeroTagline}>BUILT FOR TOMORROW</Text>
-              
-              <Text style={styles.voltHeroTitle}>THE FUTURE OF PERFORMANCE</Text>
-
-              <Text style={styles.voltHeroSubtitle}>
-                Engineered with precision. Driven by electricity. Experience the pinnacle of automotive innovation.
-              </Text>
-
-              <TouchableOpacity style={styles.voltHeroButton} activeOpacity={0.8}>
-                <Text style={styles.voltHeroButtonText}>Explore Insights</Text>
-                <Feather name="arrow-right" size={12} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.voltHeroImageWrap}>
-              <Image
-                source={require('../../assets/images/hero-logo.png')}
-                style={styles.voltHeroImage}
-                resizeMode="contain"
-              />
-            </View>
+          <View style={styles.voltHeroImageWrap}>
+            <Image
+              source={require('../../assets/images/hero-logo.png')}
+              style={styles.voltHeroImage}
+              resizeMode="contain"
+            />
           </View>
 
-          {/* Carousel dots */}
-          <View style={styles.voltHeroDots}>
-            <View style={[styles.voltHeroDot, { backgroundColor: '#7E152F' }]} />
-            <View style={[styles.voltHeroDot, { backgroundColor: '#CBD5E1' }]} />
-            <View style={[styles.voltHeroDot, { backgroundColor: '#CBD5E1' }]} />
+          <View style={styles.voltHeroContent}>
+            <Text style={styles.voltHeroTagline}>BUILT FOR TOMORROW</Text>
+            
+            <Text style={styles.voltHeroTitle}>THE FUTURE OF{"\n"}PERFORMANCE</Text>
+
+            <Text style={styles.voltHeroSubtitle}>
+              Engineered with precision.{"\n"}Driven by electricity.{"\n"}Experience the pinnacle of automotive innovation.
+            </Text>
           </View>
         </View>
 
@@ -408,63 +394,65 @@ export default function DashboardScreen() {
         </View>
 
         {/* ── Recent Activity Section ── */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, marginBottom: 12 }}>
-          <View style={{ gap: 2 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: c.primary }} />
-              <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: c.foreground }}>
-                Recent Activity
+        <View style={{ gap: 7, marginTop: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ gap: 2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: c.primary }} />
+                <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: c.foreground }}>
+                  Recent Activity
+                </Text>
+              </View>
+              <Text style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: c.mutedForeground, marginLeft: 12 }}>
+                Live updates from your fleet
               </Text>
             </View>
-            <Text style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: c.mutedForeground, marginLeft: 12 }}>
-              Live updates from your fleet
-            </Text>
+
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: '#FDF2F4',
+                borderColor: '#FDA4AF',
+                borderWidth: 1,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 20,
+              }}
+              onPress={() => router.push('/(main)/complaints')}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: c.primary }}>
+                All Tickets
+              </Text>
+              <Feather name="arrow-right" size={13} color={c.primary} />
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-              backgroundColor: '#FDF2F4',
-              borderColor: '#FDA4AF',
-              borderWidth: 1,
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 20,
-            }}
-            onPress={() => router.push('/(main)/complaints')}
-            activeOpacity={0.7}
-          >
-            <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: c.primary }}>
-              All Tickets
-            </Text>
-            <Feather name="arrow-right" size={13} color={c.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {activity.length === 0 ? (
-          <View style={[styles.emptyActivity, { backgroundColor: c.card, borderColor: c.border }]}>
-            <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
-              <Feather name="inbox" size={28} color={c.mutedForeground} />
+          {activity.length === 0 ? (
+            <View style={[styles.emptyActivity, { backgroundColor: c.card, borderColor: c.border }]}>
+              <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
+                <Feather name="inbox" size={28} color={c.mutedForeground} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: c.foreground }]}>All Quiet</Text>
+              <Text style={[styles.emptySub, { color: c.mutedForeground }]}>
+                No recent alerts or tickets. Fleet is operating normally.
+              </Text>
             </View>
-            <Text style={[styles.emptyTitle, { color: c.foreground }]}>All Quiet</Text>
-            <Text style={[styles.emptySub, { color: c.mutedForeground }]}>
-              No recent alerts or tickets. Fleet is operating normally.
-            </Text>
-          </View>
-        ) : (
-          <View style={{ gap: 10 }}>
-            {activity.map((item) => (
-              <ActivityRow
-                key={item.id}
-                item={item}
-                c={c}
-                onPress={onActivityPress(item, router)}
-              />
-            ))}
-          </View>
-        )}
+          ) : (
+            <View style={{ gap: 10 }}>
+              {activity.map((item) => (
+                <ActivityRow
+                  key={item.id}
+                  item={item}
+                  c={c}
+                  onPress={onActivityPress(item, router)}
+                />
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -528,7 +516,7 @@ function ActivityRow({
       disabled={!item.complaintID}
     >
       {/* Thick left stripe */}
-      <View style={[styles.activityStripeNew, { backgroundColor: iconColor }]} />
+      <View style={[styles.activityStripeNew, { backgroundColor: c.primary }]} />
 
       {/* Brackets [⚡] icon wrap */}
       <View style={styles.activityIconNew}>
@@ -636,9 +624,11 @@ const styles = StyleSheet.create({
   voltHeroContainer: {
     width: '100%',
     position: 'relative',
-    marginTop: 8,
-    marginBottom: 8,
-    paddingBottom: 20,
+    marginTop: 0,
+    marginBottom: -16,
+    paddingBottom: 0,
+    minHeight: 180,
+    justifyContent: 'center',
   },
   voltHeroContentRow: {
     flexDirection: 'row',
@@ -646,9 +636,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   voltHeroContent: {
-    flex: 1,
     gap: 4,
-    paddingRight: 8,
+    paddingRight: 100,
+    zIndex: 2,
   },
   voltHeroTagline: {
     fontSize: 10,
@@ -688,15 +678,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   voltHeroImageWrap: {
-    width: 180,
-    height: 180,
+    position: 'absolute',
+    right: -20,
+    bottom: -10,
+    width: 210,
+    height: 210,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
+    zIndex: 1,
   },
   voltHeroImage: {
-    width: 180,
-    height: 180,
+    width: 210,
+    height: 210,
   },
   voltHeroDots: {
     flexDirection: 'row',

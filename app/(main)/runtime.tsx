@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
+  BackHandler,
   FlatList,
   Modal,
   Platform,
@@ -13,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
@@ -39,6 +40,21 @@ export default function PlantAnalysisScreen() {
   const [plantOpen, setPlantOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownSearch, setDropdownSearch] = useState('');
+
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const fromProfile = from === 'profile';
+
+  // Intercept Android hardware back → return to Profile when navigated from there
+  useFocusEffect(
+    useCallback(() => {
+      if (!fromProfile) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        router.replace('/(main)/profile');
+        return true;
+      });
+      return () => sub.remove();
+    }, [fromProfile, router])
+  );
 
   const filteredPlantsForDropdown = useMemo(() => {
     const q = dropdownSearch.toLowerCase().trim();
@@ -83,6 +99,17 @@ export default function PlantAnalysisScreen() {
 
   const ListHeader = (
     <View style={[styles.header, { paddingTop: topPad + 28 }]}>
+      {/* Back to Profile button */}
+      {fromProfile && (
+        <TouchableOpacity
+          style={styles.backToProfile}
+          onPress={() => router.replace('/(main)/profile')}
+          activeOpacity={0.75}
+        >
+          <Feather name="chevron-left" size={16} color="#7E152F" />
+          <Text style={styles.backToProfileText}>Back to Account</Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.headerTitleContainer}>
         <Text style={styles.mainTitleText}>All Plants</Text>
         <Text style={styles.subtitleText}>
@@ -280,6 +307,19 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: 4,
     paddingHorizontal: 0,
+  },
+  backToProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    marginBottom: 4,
+  },
+  backToProfileText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#7E152F',
   },
   headerTitleContainer: {
     flexDirection: 'column',

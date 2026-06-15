@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
+  BackHandler,
   FlatList,
   Platform,
   RefreshControl,
@@ -11,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
@@ -59,12 +60,27 @@ export default function TractorsScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [refreshing, setRefreshing] = useState(false);
 
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const fromProfile = from === 'profile';
+
   useFocusEffect(
     useCallback(() => {
       refreshLiveTelemetry();
       const timer = setInterval(() => refreshLiveTelemetry(), 120_000);
       return () => clearInterval(timer);
     }, [refreshLiveTelemetry])
+  );
+
+  // Intercept Android hardware back → return to Profile when navigated from there
+  useFocusEffect(
+    useCallback(() => {
+      if (!fromProfile) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        router.replace('/(main)/profile');
+        return true;
+      });
+      return () => sub.remove();
+    }, [fromProfile, router])
   );
 
   const onPullRefresh = async () => {
@@ -120,6 +136,17 @@ export default function TractorsScreen() {
 
   const ListHeader = (
     <View style={[styles.header, { paddingTop: topPad + 32 }]}>
+      {/* Back to Profile button */}
+      {fromProfile && (
+        <TouchableOpacity
+          style={styles.backToProfile}
+          onPress={() => router.replace('/(main)/profile')}
+          activeOpacity={0.75}
+        >
+          <Feather name="chevron-left" size={16} color="#7E152F" />
+          <Text style={styles.backToProfileText}>Back to Account</Text>
+        </TouchableOpacity>
+      )}
 
         {/* Status filter chips */}
         <View style={styles.filterChips}>
@@ -242,6 +269,19 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingBottom: 4,
     paddingHorizontal: 0,
+  },
+  backToProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    marginBottom: -4,
+  },
+  backToProfileText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#7E152F',
   },
 
   // ── Hero strip ──
