@@ -4,6 +4,7 @@ import {
   Modal,
   Platform,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -103,7 +104,16 @@ export default function ComplaintsScreen() {
     setComplaintFilters: setFilters,
     complaintFilterOpen: filterSheetOpen,
     setComplaintFilterOpen: setFilterSheetOpen,
+    setSelectedPlantID,
+    selectedPlantID,
+    plants,
   } = useApp();
+
+  React.useEffect(() => {
+    setSelectedPlantID(null);
+  }, []);
+
+  const [pagePlantOpen, setPagePlantOpen] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
 
   // Responsive scaling based on device screen width (standard base is 375px)
@@ -269,11 +279,51 @@ export default function ComplaintsScreen() {
     <View style={[styles.header, { paddingTop: topPad + 28 }]}>
 
         {/* Section Heading */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <View style={[styles.sectionAccent, { backgroundColor: c.primary, height: 24 }]} />
-          <Text style={[styles.periodHint, { color: c.foreground, fontSize: 21 }]}>
-            Complaint Summary
-          </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={[styles.sectionAccent, { backgroundColor: c.primary, height: 24 }]} />
+            <Text style={[styles.periodHint, { color: c.foreground, fontSize: 21 }]}>
+              Complaint Summary
+            </Text>
+          </View>
+
+          {/* Plant Dropdown Button next to Section Title */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: '#FFFFFF',
+              borderColor: '#E2E8F0',
+              borderWidth: 1,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 14,
+              shadowColor: '#000000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.04,
+              shadowRadius: 4,
+              elevation: 1,
+            }}
+            onPress={() => setPagePlantOpen(true)}
+            activeOpacity={0.7}
+            disabled={plants.length === 0}
+          >
+            <View style={{
+              width: 18,
+              height: 18,
+              borderRadius: 5,
+              backgroundColor: '#FDF2F4',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Feather name="layers" size={10} color="#7E152F" />
+            </View>
+            <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#1E293B' }} numberOfLines={1}>
+              {selectedPlantID ? (plants.find(p => p.plantID === selectedPlantID)?.name ?? 'Selected Plant') : 'All Plants'}
+            </Text>
+            <Feather name="chevron-down" size={11} color="#7E152F" />
+          </TouchableOpacity>
         </View>
 
         {/* Parent container wrapping the parent 3D box and its overlapping capsule */}
@@ -551,6 +601,138 @@ export default function ComplaintsScreen() {
           </View>
         }
       />
+
+      {/* Page Plant Selector Modal */}
+      <Modal
+        visible={pagePlantOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPagePlantOpen(false)}
+      >
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(18, 14, 16, 0.45)', // dim overlay
+            justifyContent: 'flex-end',
+          }}
+          activeOpacity={1}
+          onPress={() => setPagePlantOpen(false)}
+        >
+          <View
+            style={{
+              backgroundColor: c.background,
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              paddingBottom: insets.bottom + 20,
+              paddingTop: 16,
+              paddingHorizontal: 20,
+              maxHeight: '60%',
+              width: '100%',
+              shadowColor: '#000000',
+              shadowOffset: { width: 0, height: -6 },
+              shadowOpacity: 0.15,
+              shadowRadius: 16,
+              elevation: 20,
+            }}
+          >
+            {/* Sheet Handle */}
+            <View style={{ width: 38, height: 5, borderRadius: 2.5, backgroundColor: c.border, alignSelf: 'center', marginBottom: 16 }} />
+            
+            {/* Title */}
+            <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: c.primary, marginBottom: 16 }}>
+              Select Plant
+            </Text>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Option: All Plants */}
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: !selectedPlantID ? c.primary + '35' : c.border,
+                  backgroundColor: !selectedPlantID ? c.primary + '0E' : 'transparent',
+                  marginBottom: 10,
+                  gap: 12,
+                }}
+                onPress={() => {
+                  setSelectedPlantID(null);
+                  setPagePlantOpen(false);
+                }}
+                activeOpacity={0.75}
+              >
+                <View style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: !selectedPlantID ? c.primary : c.surfaceAlt,
+                }}>
+                  <Feather name={!selectedPlantID ? 'check' : 'map-pin'} size={14} color={!selectedPlantID ? '#FFFFFF' : c.mutedForeground} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: c.foreground }}>
+                    All Plants
+                  </Text>
+                  <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, marginTop: 1 }}>
+                    Entire fleet complaints
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Individual Plants */}
+              {plants.map(p => {
+                const active = selectedPlantID === p.plantID;
+                return (
+                  <TouchableOpacity
+                    key={p.plantID}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: active ? c.primary + '35' : c.border,
+                      backgroundColor: active ? c.primary + '0E' : 'transparent',
+                      marginBottom: 10,
+                      gap: 12,
+                    }}
+                    onPress={() => {
+                      setSelectedPlantID(p.plantID);
+                      setPagePlantOpen(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 10,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: active ? c.primary : c.surfaceAlt,
+                    }}>
+                      <Feather name={active ? 'check' : 'map-pin'} size={14} color={active ? '#FFFFFF' : c.mutedForeground} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: c.foreground }} numberOfLines={1}>
+                        {p.name}
+                      </Text>
+                      <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, marginTop: 1 }} numberOfLines={1}>
+                        {p.location || 'Site'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Pop Window / Bottom Sheet for See All scrollable tickets */}
       <Modal
