@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Defs, RadialGradient, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
@@ -261,43 +261,6 @@ function WellnessHeroCard({
   const rightShift = desiredGap + gaugeSize + (rightWidth + discSize) / 2 - cardContentWidth + 22 * scale;
   const isSmallScreen = screenWidth < 380;
 
-  const renderStatusPill = () => {
-    let pillBg = '#F1F3F4';
-    let dotColor = '#5F6368';
-    let textColor = '#5F6368';
-    let label = 'Offline';
-
-    const status = displayTractor.status;
-    if (status === 'ACTIVE') {
-      pillBg = '#E6F4EA';
-      dotColor = '#137333';
-      textColor = '#137333';
-      label = 'Active';
-    } else if (status === 'MAINTENANCE') {
-      pillBg = '#E8F0FE';
-      dotColor = '#1A73E8';
-      textColor = '#1A73E8';
-      label = 'Maint.';
-    } else if (status === 'IDLE') {
-      pillBg = '#FEF7E0';
-      dotColor = '#B06000';
-      textColor = '#B06000';
-      label = 'Idle';
-    } else if (status === 'OFFLINE') {
-      pillBg = '#F1F3F4';
-      dotColor = '#5F6368';
-      textColor = '#5F6368';
-      label = 'Offline';
-    }
-
-    return (
-      <View style={[styles.wellnessStatusPill, { backgroundColor: pillBg }]}>
-        <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
-        <Text style={[styles.statusText, { color: textColor }]}>{label}</Text>
-      </View>
-    );
-  };
-
   return (
     <View style={styles.wellnessCard}>
 
@@ -305,13 +268,10 @@ function WellnessHeroCard({
       <View style={styles.wellnessLeft}>
 
         <View style={styles.wellnessTitleContainer}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {/* Big title — register number / serial number */}
-            <Text style={[styles.wellnessMainTitle, { fontSize: isSmallScreen ? 16 : 20 }]}>
-              {idLabel}
-            </Text>
-            {renderStatusPill()}
-          </View>
+          {/* Big title — register number / serial number */}
+          <Text style={[styles.wellnessMainTitle, { fontSize: isSmallScreen ? 16 : 20 }]}>
+            {idLabel}
+          </Text>
           {/* Sub-heading — tractor display name / ID */}
           <Text style={styles.wellnessSubTitle} numberOfLines={1}>
             {tractorLabel}
@@ -358,14 +318,6 @@ function WellnessHeroCard({
             : soc >= 35 ? 'Moderate charge remaining'
             : 'Low battery — charge soon'}
         </Text>
-
-        {/* Live pill */}
-        <View style={[styles.wellnessLivePill, { borderColor: live ? '#10B981' : '#94A3B8' }]}>
-          <View style={[styles.wellnessLiveDot, { backgroundColor: live ? '#10B981' : '#94A3B8' }]} />
-          <Text style={[styles.wellnessLiveText, { color: live ? '#10B981' : '#64748B' }]}>
-            {live ? 'Live' : 'Offline'}
-          </Text>
-        </View>
       </View>
 
       {/* ── RIGHT: Tractor image with nested reflection glow ── */}
@@ -391,7 +343,7 @@ export default function TractorDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { tractors, complaints, plants } = useApp();
+  const { tractors, complaints, plants, refreshLiveTelemetry } = useApp();
   const [tab, setTab] = useState<TabKey>('runtime');
   const [tractor, setTractor] = useState<Tractor | undefined>();
   const [analytics, setAnalytics] = useState<TractorAnalytics | null>(null);
@@ -427,6 +379,12 @@ export default function TractorDetailScreen() {
       cancelled = true;
     };
   }, [id, tractors, plants]);
+
+  useEffect(() => {
+    refreshLiveTelemetry();
+    const timer = setInterval(() => refreshLiveTelemetry(), 30_000);
+    return () => clearInterval(timer);
+  }, [refreshLiveTelemetry]);
 
   useEffect(() => {
     if (!tractor) return;
@@ -587,6 +545,68 @@ export default function TractorDetailScreen() {
         <GlassCard style={styles.featuredCard}>
           <View style={styles.cardHeaderRow}>
             <Text style={styles.cardTitle}>Battery Overview</Text>
+            <View style={styles.cardIndicatorRow}>
+              {live ? (
+                <LinearGradient
+                  colors={['#F59E0B', '#D97706']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cardLiveBadge}
+                >
+                  <Feather
+                    name="wifi"
+                    size={11}
+                    color="#FFFFFF"
+                  />
+                </LinearGradient>
+              ) : (
+                <Feather
+                  name="wifi-off"
+                  size={13}
+                  color="#94A3B8"
+                />
+              )}
+              {displayTractor.isCharging ? (
+                <LinearGradient
+                  colors={['#3B82F6', '#1A73E8']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cardPluggedBadge}
+                >
+                  <MaterialCommunityIcons
+                    name="power-plug"
+                    size={11}
+                    color="#FFFFFF"
+                  />
+                </LinearGradient>
+              ) : (
+                <MaterialCommunityIcons
+                  name="power-plug-off"
+                  size={14}
+                  color="#94A3B8"
+                />
+              )}
+              {(displayTractor.current != null && displayTractor.current > 1) ? (
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.cardModelBadge, styles.cardModelBadgeGlow]}
+                >
+                  <Feather name="power" size={11} color="#FFFFFF" />
+                  <Text style={styles.cardModelBadgeText} numberOfLines={1}>
+                    {displayTractor.model}
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <View style={[styles.cardModelBadge, { backgroundColor: '#7E152F' }]}>
+                  <Feather name="power" size={11} color="#FFFFFF" />
+                  <Text style={styles.cardModelBadgeText} numberOfLines={1}>
+                    {displayTractor.model}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
           
           <View style={styles.featuredContent}>
@@ -1096,14 +1116,6 @@ const styles = StyleSheet.create({
   wellnessTitleContainer: {
     gap: 0,
   },
-  wellnessStatusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    height: 18,
-    borderRadius: 5,
-  },
   // Big title — like "Wellness Score" in reference
   wellnessMainTitle: {
     fontSize: 20,
@@ -1162,26 +1174,6 @@ const styles = StyleSheet.create({
     opacity: 0.65,
     lineHeight: 16,
   },
-  wellnessLivePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-  },
-  wellnessLiveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  wellnessLiveText: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-  },
   wellnessRight: {
     width: 170,
     marginRight: -6,
@@ -1235,17 +1227,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 160,
     height: 160,
-  },
-
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusText: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#1A1C1E',
   },
 
   // Featured Metric Card
@@ -1500,5 +1481,54 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     color: '#44474E',
     textAlign: 'center',
+  },
+  cardIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cardModelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2.5,
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 4,
+  },
+  cardModelBadgeGlow: {
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardModelBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 8.5,
+    fontFamily: 'Inter_700Bold',
+  },
+  cardPluggedBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#1A73E8',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardLiveBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });

@@ -23,6 +23,24 @@ export interface TelemetryRow {
   tractorID?: string | null;
 }
 
+/** Helper to parse raw telemetry timestamps explicitly into correct local Indian Standard Time (IST, UTC+05:30) epoch ms */
+export function parseTelemetryTime(timestamp: string | null | undefined): number {
+  if (!timestamp?.trim()) return NaN;
+  let cleaned = timestamp.trim();
+  
+  // Replace space with 'T'
+  if (cleaned.includes(' ') && !cleaned.includes('+') && !cleaned.includes('-')) {
+    cleaned = cleaned.replace(' ', 'T');
+  }
+  
+  // If the timestamp does not explicitly mention timezone offset, append '+05:30' (IST)
+  if (!cleaned.endsWith('Z') && !cleaned.includes('+') && !cleaned.includes('-')) {
+    cleaned = cleaned + '+05:30';
+  }
+  
+  return new Date(cleaned).getTime();
+}
+
 /** API returns an array — take the newest sample by timestamp. */
 export function pickLatestTelemetry(
   rows: TelemetryRow[] | null | undefined
@@ -31,7 +49,10 @@ export function pickLatestTelemetry(
   let latest = rows[0];
   for (const row of rows) {
     if (!row?.timestamp) continue;
-    if (!latest?.timestamp || new Date(row.timestamp) > new Date(latest.timestamp)) {
+    const rowTime = parseTelemetryTime(row.timestamp);
+    const latestTime = parseTelemetryTime(latest?.timestamp);
+    if (Number.isNaN(rowTime)) continue;
+    if (Number.isNaN(latestTime) || rowTime > latestTime) {
       latest = row;
     }
   }
@@ -42,15 +63,7 @@ export function isTelemetryDisconnected(
   timestamp?: string | null,
   nowMs = Date.now()
 ): boolean {
-  if (!timestamp?.trim()) return true;
-  let cleaned = timestamp.trim();
-  // Ensure the date is parsed in UTC to prevent timezone offsets
-  if (cleaned.includes(' ') && !cleaned.includes('+') && !cleaned.includes('-')) {
-    cleaned = cleaned.replace(' ', 'T') + 'Z';
-  } else if (!cleaned.endsWith('Z') && !cleaned.includes('+') && !cleaned.includes('-')) {
-    cleaned = cleaned + 'Z';
-  }
-  const t = new Date(cleaned).getTime();
+  const t = parseTelemetryTime(timestamp);
   if (Number.isNaN(t)) return true;
   return nowMs - t > 30_000;
 }

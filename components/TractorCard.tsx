@@ -185,6 +185,9 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
               )}
             </View>
           </View>
+          <View style={styles.chevronAbsolute}>
+            <Feather name="chevron-right" size={16} color="#94A3B8" />
+          </View>
         </TouchableOpacity>
       ) : (
         <View style={styles.headerRow}>
@@ -320,6 +323,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    position: 'relative',
+  },
+  chevronAbsolute: {
+    position: 'absolute',
+    right: 0,
+    bottom: 2,
   },
   headerInfo: {
     flex: 1,
