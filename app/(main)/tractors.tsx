@@ -30,7 +30,6 @@ const STATUS_FILTERS: {
   activeBg: string;
 }[] = [
   { key: 'ALL',         label: 'All',    icon: 'layers',    activeColor: '#FFFFFF', activeBg: '#7E152F' },
-  { key: 'ACTIVE',      label: 'Active', icon: 'zap',       activeColor: '#FFFFFF', activeBg: '#7E152F' },
   { key: 'MAINTENANCE', label: 'Maint.', icon: 'tool',      activeColor: '#FFFFFF', activeBg: '#7E152F' },
   { key: 'IDLE',        label: 'Idle',   icon: 'clock',     activeColor: '#FFFFFF', activeBg: '#7E152F' },
   { key: 'OFFLINE',     label: 'Offline',icon: 'wifi-off',  activeColor: '#FFFFFF', activeBg: '#7E152F' },
@@ -148,60 +147,7 @@ export default function TractorsScreen() {
         </TouchableOpacity>
       )}
 
-        {/* Status filter chips */}
-        <View style={styles.filterChips}>
-          {STATUS_FILTERS.map(f => {
-            const active = statusFilter === f.key;
-            const count = counts[f.key] ?? 0;
-            const pill = STATUS_PILL_CONFIG[f.key];
-            return (
-              <TouchableOpacity
-                key={f.key}
-                style={[
-                  styles.filterChip,
-                  {
-                    backgroundColor: active ? f.activeBg : '#FFFFFF',
-                    borderColor: active ? f.activeBg : '#E2E8F0',
-                  },
-                ]}
-                onPress={() => setStatusFilter(f.key)}
-                activeOpacity={0.75}
-              >
-                <Feather
-                  name={f.icon as any}
-                  size={12}
-                  color={active ? f.activeColor : '#94A3B8'}
-                />
-                <Text
-                  style={[
-                    styles.filterChipLabel,
-                    { color: active ? f.activeColor : '#0F172A' },
-                  ]}
-                >
-                  {f.label}
-                </Text>
-                {/* Count pill */}
-                <View
-                  style={[
-                    styles.filterChipCount,
-                    {
-                      backgroundColor: active ? 'rgba(255,255,255,0.25)' : pill.bg,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipCountText,
-                      { color: active ? '#FFFFFF' : pill.text },
-                    ]}
-                  >
-                    {count}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+
 
         {/* Results info */}
         <View style={styles.resultsRow}>
@@ -449,17 +395,17 @@ const styles = StyleSheet.create({
   },
   sectionAccent: {
     width: 4,
-    height: 16,
+    height: 22,
     borderRadius: 2,
   },
   resultsText: {
-    fontSize: 13,
+    fontSize: 18,
     fontFamily: 'Inter_500Medium',
     flex: 1,
   },
   resultsBold: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 14,
+    fontSize: 19,
   },
   livePill: {
     paddingHorizontal: 10,

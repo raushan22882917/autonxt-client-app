@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { Tractor } from '@/lib/appsync';
 import { getImplementFeetLabel } from '@/lib/tractorImages';
@@ -30,41 +31,6 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
   const cardBorder = 'rgba(0, 0, 0, 0.05)';
   const accentColor = '#7E152F'; // Brand burgundy
 
-  const renderStatusPill = () => {
-    let pillBg = '#F1F3F4';
-    let dotColor = '#5F6368';
-    let textColor = '#5F6368';
-    let label = 'Off';
-
-    if (t.status === 'ACTIVE') {
-      pillBg = '#E6F4EA';
-      dotColor = '#137333';
-      textColor = '#137333';
-      label = 'Active';
-    } else if (t.status === 'MAINTENANCE') {
-      pillBg = '#E8F0FE';
-      dotColor = '#1A73E8';
-      textColor = '#1A73E8';
-      label = 'Maint.';
-    } else if (t.status === 'IDLE') {
-      pillBg = '#FEF7E0';
-      dotColor = '#B06000';
-      textColor = '#B06000';
-      label = 'Idle';
-    } else if (t.status === 'OFFLINE') {
-      pillBg = '#F1F3F4';
-      dotColor = '#5F6368';
-      textColor = '#5F6368';
-      label = 'Offline';
-    }
-
-    return (
-      <View style={[styles.statusPill, { backgroundColor: pillBg }]}>
-        <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
-        <Text style={[styles.statusText, { color: textColor }]}>{label}</Text>
-      </View>
-    );
-  };
 
   const chips: { key: string; icon: React.ReactNode; label: string }[] = [
     {
@@ -104,6 +70,22 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
     },
   ];
 
+  const renderFastChargingBadge = () => {
+    if (t.fastCharging !== true) return null;
+
+    return (
+      <LinearGradient
+        colors={['#00C6FF', '#0072FF']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.fastChargingBadge}
+      >
+        <Feather name="zap" size={10} color="#FFFFFF" />
+        <Text style={styles.fastChargingText}>Fast</Text>
+      </LinearGradient>
+    );
+  };
+
   return (
     <View
       style={[
@@ -128,19 +110,80 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
             <TractorImage tractor={t} resizeMode="contain" colorful={false} />
           </View>
           <View style={styles.headerInfo}>
-            <Text
-              style={[styles.headlineId, { color: '#0F172A' }]}
-              numberOfLines={1}
-            >
-              {headlineId}
-            </Text>
+            <View style={styles.headlineRow}>
+              <Text
+                style={[styles.headlineId, { color: '#0F172A', flexShrink: 1 }]}
+                numberOfLines={1}
+              >
+                {headlineId}
+              </Text>
+              {renderFastChargingBadge()}
+            </View>
             <Text style={[styles.displayName, { color: '#64748B' }]} numberOfLines={1}>
               {t.displayName || t.tractorID}
             </Text>
-          </View>
-
-          <View style={styles.chevronWrap}>
-            <Feather name="chevron-right" size={14} color="#64748B" />
+            <View style={styles.cardIndicatorRow}>
+              {live ? (
+                <LinearGradient
+                  colors={['#F59E0B', '#D97706']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cardLiveBadge}
+                >
+                  <Feather
+                    name="wifi"
+                    size={13}
+                    color="#FFFFFF"
+                  />
+                </LinearGradient>
+              ) : (
+                <Feather
+                  name="wifi-off"
+                  size={14}
+                  color="#94A3B8"
+                />
+              )}
+              {t.isCharging ? (
+                <LinearGradient
+                  colors={['#3B82F6', '#1A73E8']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cardPluggedBadge}
+                >
+                  <MaterialCommunityIcons
+                    name="power-plug"
+                    size={13}
+                    color="#FFFFFF"
+                  />
+                </LinearGradient>
+              ) : (
+                <MaterialCommunityIcons
+                  name="power-plug-off"
+                  size={15}
+                  color="#94A3B8"
+                />
+              )}
+              {(t.current != null && t.current > 1) ? (
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.cardModelBadge, styles.cardModelBadgeGlow]}
+                >
+                  <Feather name="power" size={12} color="#FFFFFF" />
+                  <Text style={styles.cardModelBadgeText} numberOfLines={1}>
+                    {t.model}
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <View style={[styles.cardModelBadge, { backgroundColor: '#7E152F' }]}>
+                  <Feather name="power" size={12} color="#FFFFFF" />
+                  <Text style={styles.cardModelBadgeText} numberOfLines={1}>
+                    {t.model}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </TouchableOpacity>
       ) : (
@@ -149,15 +192,80 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
             <TractorImage tractor={t} resizeMode="contain" colorful={false} />
           </View>
           <View style={styles.headerInfo}>
-            <Text
-              style={[styles.headlineId, { color: '#0F172A' }]}
-              numberOfLines={1}
-            >
-              {headlineId}
-            </Text>
+            <View style={styles.headlineRow}>
+              <Text
+                style={[styles.headlineId, { color: '#0F172A', flexShrink: 1 }]}
+                numberOfLines={1}
+              >
+                {headlineId}
+              </Text>
+              {renderFastChargingBadge()}
+            </View>
             <Text style={[styles.displayName, { color: '#64748B' }]} numberOfLines={1}>
               {t.displayName || t.tractorID}
             </Text>
+            <View style={styles.cardIndicatorRow}>
+              {live ? (
+                <LinearGradient
+                  colors={['#F59E0B', '#D97706']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cardLiveBadge}
+                >
+                  <Feather
+                    name="wifi"
+                    size={13}
+                    color="#FFFFFF"
+                  />
+                </LinearGradient>
+              ) : (
+                <Feather
+                  name="wifi-off"
+                  size={14}
+                  color="#94A3B8"
+                />
+              )}
+              {t.isCharging ? (
+                <LinearGradient
+                  colors={['#3B82F6', '#1A73E8']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cardPluggedBadge}
+                >
+                  <MaterialCommunityIcons
+                    name="power-plug"
+                    size={13}
+                    color="#FFFFFF"
+                  />
+                </LinearGradient>
+              ) : (
+                <MaterialCommunityIcons
+                  name="power-plug-off"
+                  size={15}
+                  color="#94A3B8"
+                />
+              )}
+              {(t.current != null && t.current > 1) ? (
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.cardModelBadge, styles.cardModelBadgeGlow]}
+                >
+                  <Feather name="power" size={12} color="#FFFFFF" />
+                  <Text style={styles.cardModelBadgeText} numberOfLines={1}>
+                    {t.model}
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <View style={[styles.cardModelBadge, { backgroundColor: '#7E152F' }]}>
+                  <Feather name="power" size={12} color="#FFFFFF" />
+                  <Text style={styles.cardModelBadgeText} numberOfLines={1}>
+                    {t.model}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       )}
@@ -167,25 +275,6 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
 
       {/* Features & Status Badges */}
       <View style={styles.featuresContainer}>
-        {/* Status row: Live status pill, alert mute, model badge */}
-        <View style={styles.statusRow}>
-          {/* Status pill */}
-          {renderStatusPill()}
-
-          {/* Mute button */}
-          <View style={styles.muteBtn}>
-            <Feather name="volume-x" size={12} color="#64748B" />
-          </View>
-
-          {/* Model pill (burgundy badge) */}
-          <View style={styles.modelPill}>
-            <Feather name="zap" size={10} color="#FFFFFF" />
-            <Text style={styles.modelPillText} numberOfLines={1}>
-              {t.model}
-            </Text>
-          </View>
-        </View>
-
         {/* Telemetry Chips Grid */}
         <View style={styles.chipGrid}>
           {chips.map(chip => (
@@ -238,61 +327,70 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   imageBox: {
-    width: 50,
-    height: 50,
+    width: 105,
+    height: 70,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  cardIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 5,
+  },
+  cardModelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+  },
+  cardModelBadgeGlow: {
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  cardModelBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontFamily: 'Inter_700Bold',
+  },
+  cardPluggedBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#1A73E8',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  cardLiveBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
+  },
   featuresContainer: {
     gap: 8,
   },
-  statusRow: {
-    flexDirection: 'row',
-    gap: 6,
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  statusPill: {
+  headlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    height: 24,
-    borderRadius: 6,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusText: {
-    fontSize: 11,
-    fontFamily: 'Inter_700Bold',
-  },
-  muteBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modelPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: '#7E152F',
-  },
-  modelPillText: {
-    fontSize: 10.5,
-    fontFamily: 'Inter_700Bold',
-    color: '#FFFFFF',
+    justifyContent: 'space-between',
+    width: '100%',
   },
   headlineId: {
     fontSize: 16,
@@ -339,16 +437,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'center',
   },
-  chevronWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   divider: {
     height: 1,
     width: '100%',
+  },
+  fastChargingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2.5,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    shadowColor: '#0072FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  fastChargingText: {
+    fontSize: 9.5,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
   },
 });

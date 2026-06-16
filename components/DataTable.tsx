@@ -107,10 +107,10 @@ export function DataTable<T>({
     if (fitWidth) {
       return { flex: col.flex ?? 1, minWidth: col.minWidth ?? 56 };
     }
+    const colWidth = col.width ?? (col.flex ? Math.round(col.flex * 95) : 95);
     return {
-      width: col.width,
-      flex: col.width ? undefined : col.flex ?? 1,
-      minWidth: col.minWidth ?? col.width ?? 64,
+      width: colWidth,
+      minWidth: col.minWidth ?? colWidth,
     };
   };
 

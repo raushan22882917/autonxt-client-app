@@ -34,6 +34,7 @@ import { configureAmplify } from '@/lib/amplify';
 import {
   cumulativeRuntimeToHours,
   isChargingFromTelemetry,
+  isTelemetryDisconnected,
   pickLatestTelemetry,
   type TelemetryRow,
 } from '@/lib/telemetry';
@@ -133,6 +134,8 @@ export interface Tractor {
   telemetryStatus?: string;
   telemetryAt?: string;
   isCharging?: boolean;
+  /** Whether the tractor supports / is operating on fast-charge mode (from dofChargeStatus). */
+  fastCharging?: boolean;
   limpMode?: boolean;
   latitude?: string;
   longitude?: string;
@@ -257,6 +260,7 @@ type RawTractor = Pick<
   | 'updatedAt'
   | 'dispatchInfo'
   | 'components'
+  | 'dofChargeStatus'
 >;
 
 interface RawComplaint {
@@ -473,6 +477,10 @@ function mapRawTractor(
     t.dispatchInfo?.dispatchLocation?.trim() ||
     undefined;
   const model = t.model?.trim() || t.vin;
+  const baseStatus = mapServiceStatus(t.serviceStatus);
+  const isOffline = isTelemetryDisconnected(tel?.timestamp);
+  const status = (baseStatus !== 'MAINTENANCE' && isOffline) ? 'OFFLINE' : baseStatus;
+
   return {
     tractorID: t.vin,
     orgID: t.orgID || orgID,
@@ -482,7 +490,7 @@ function mapRawTractor(
     displayName: getTractorDisplayName(t),
     serialNumber: t.registerNumber?.trim() || t.vin,
     registerNumber: t.registerNumber?.trim() || undefined,
-    status: mapServiceStatus(t.serviceStatus),
+    status,
     serviceStatus: t.serviceStatus?.trim() || undefined,
     serviceStatusLabel: formatServiceStatusLabel(t.serviceStatus) || undefined,
     totalRuntime: Math.round(totalRuntime),
@@ -503,6 +511,9 @@ function mapRawTractor(
     telemetryStatus: tel?.status ?? undefined,
     telemetryAt: tel?.timestamp ?? undefined,
     isCharging: isChargingFromTelemetry(tel?.Charge),
+    fastCharging: t.dofChargeStatus != null
+      ? /fast/i.test(t.dofChargeStatus)
+      : undefined,
     limpMode: tel?.LimpMode != null && tel.LimpMode > 0,
     latitude: tel?.Lat?.trim() || undefined,
     longitude: tel?.Long?.trim() || undefined,
@@ -522,8 +533,14 @@ function applyTelemetryToTractor(
 ): Tractor {
   if (!tel && runtimeHours == null) return t;
   const runtimeFromTel = cumulativeRuntimeToHours(tel?.CumulativeRuntime);
+
+  const isOffline = isTelemetryDisconnected(tel?.timestamp);
+  const baseStatus = t.serviceStatus ? mapServiceStatus(t.serviceStatus) : 'ACTIVE';
+  const status = (baseStatus !== 'MAINTENANCE' && isOffline) ? 'OFFLINE' : baseStatus;
+
   return {
     ...t,
+    status,
     totalRuntime:
       runtimeHours != null
         ? Math.round(runtimeHours)

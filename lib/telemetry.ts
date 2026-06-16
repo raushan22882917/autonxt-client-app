@@ -38,13 +38,19 @@ export function pickLatestTelemetry(
   return latest ?? null;
 }
 
-/** analytics-webapp: offline if last sample older than 30s */
 export function isTelemetryDisconnected(
   timestamp?: string | null,
   nowMs = Date.now()
 ): boolean {
   if (!timestamp?.trim()) return true;
-  const t = new Date(timestamp).getTime();
+  let cleaned = timestamp.trim();
+  // Ensure the date is parsed in UTC to prevent timezone offsets
+  if (cleaned.includes(' ') && !cleaned.includes('+') && !cleaned.includes('-')) {
+    cleaned = cleaned.replace(' ', 'T') + 'Z';
+  } else if (!cleaned.endsWith('Z') && !cleaned.includes('+') && !cleaned.includes('-')) {
+    cleaned = cleaned + 'Z';
+  }
+  const t = new Date(cleaned).getTime();
   if (Number.isNaN(t)) return true;
   return nowMs - t > 30_000;
 }

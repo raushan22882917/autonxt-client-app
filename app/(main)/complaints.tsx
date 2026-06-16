@@ -114,6 +114,18 @@ export default function ComplaintsScreen() {
   }, []);
 
   const [pagePlantOpen, setPagePlantOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState('');
+
+  const filteredPlantsForDropdown = useMemo(() => {
+    if (!dropdownSearch.trim()) return plants;
+    const q = dropdownSearch.toLowerCase().trim();
+    return plants.filter(
+      p =>
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.location && p.location.toLowerCase().includes(q))
+    );
+  }, [plants, dropdownSearch]);
+
   const { width: screenWidth } = useWindowDimensions();
 
   // Responsive scaling based on device screen width (standard base is 375px)
@@ -607,7 +619,10 @@ export default function ComplaintsScreen() {
         visible={pagePlantOpen}
         transparent
         animationType="slide"
-        onRequestClose={() => setPagePlantOpen(false)}
+        onRequestClose={() => {
+          setPagePlantOpen(false);
+          setDropdownSearch('');
+        }}
       >
         <TouchableOpacity
           style={{
@@ -616,7 +631,10 @@ export default function ComplaintsScreen() {
             justifyContent: 'flex-end',
           }}
           activeOpacity={1}
-          onPress={() => setPagePlantOpen(false)}
+          onPress={() => {
+            setPagePlantOpen(false);
+            setDropdownSearch('');
+          }}
         >
           <View
             style={{
@@ -626,7 +644,7 @@ export default function ComplaintsScreen() {
               paddingBottom: insets.bottom + 20,
               paddingTop: 16,
               paddingHorizontal: 20,
-              maxHeight: '60%',
+              maxHeight: '82%',
               width: '100%',
               shadowColor: '#000000',
               shadowOffset: { width: 0, height: -6 },
@@ -643,49 +661,90 @@ export default function ComplaintsScreen() {
               Select Plant
             </Text>
 
+            {/* Inner Dropdown Search */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: c.surfaceAlt,
+                borderColor: c.border,
+                borderWidth: 1.5,
+                borderRadius: 12,
+                marginBottom: 14,
+                paddingHorizontal: 12,
+                height: 40,
+              }}
+            >
+              <Feather name="search" size={15} color={c.mutedForeground} style={{ marginRight: 6 }} />
+              <TextInput
+                style={{
+                  color: c.foreground,
+                  fontSize: 14,
+                  fontFamily: 'Inter_500Medium',
+                  flex: 1,
+                  paddingVertical: 0,
+                  height: '100%',
+                }}
+                placeholder="Search plants…"
+                placeholderTextColor={c.mutedForeground + '88'}
+                value={dropdownSearch}
+                onChangeText={setDropdownSearch}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {dropdownSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setDropdownSearch('')} hitSlop={8}>
+                  <Feather name="x" size={15} color={c.mutedForeground} />
+                </TouchableOpacity>
+              )}
+            </View>
+
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Option: All Plants */}
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: 14,
-                  paddingHorizontal: 16,
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: !selectedPlantID ? c.primary + '35' : c.border,
-                  backgroundColor: !selectedPlantID ? c.primary + '0E' : 'transparent',
-                  marginBottom: 10,
-                  gap: 12,
-                }}
-                onPress={() => {
-                  setSelectedPlantID(null);
-                  setPagePlantOpen(false);
-                }}
-                activeOpacity={0.75}
-              >
-                <View style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: !selectedPlantID ? c.primary : c.surfaceAlt,
-                }}>
-                  <Feather name={!selectedPlantID ? 'check' : 'map-pin'} size={14} color={!selectedPlantID ? '#FFFFFF' : c.mutedForeground} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: c.foreground }}>
-                    All Plants
-                  </Text>
-                  <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, marginTop: 1 }}>
-                    Entire fleet complaints
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              {!dropdownSearch.trim() && (
+                <TouchableOpacity
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: !selectedPlantID ? c.primary + '35' : c.border,
+                    backgroundColor: !selectedPlantID ? c.primary + '0E' : 'transparent',
+                    marginBottom: 10,
+                    gap: 12,
+                  }}
+                  onPress={() => {
+                    setSelectedPlantID(null);
+                    setPagePlantOpen(false);
+                    setDropdownSearch('');
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: !selectedPlantID ? c.primary : c.surfaceAlt,
+                  }}>
+                    <Feather name={!selectedPlantID ? 'check' : 'map-pin'} size={14} color={!selectedPlantID ? '#FFFFFF' : c.mutedForeground} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: c.foreground }}>
+                      All Plants
+                    </Text>
+                    <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, marginTop: 1 }}>
+                      Entire fleet complaints
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
 
               {/* Individual Plants */}
-              {plants.map(p => {
+              {filteredPlantsForDropdown.map(p => {
                 const active = selectedPlantID === p.plantID;
                 return (
                   <TouchableOpacity
@@ -705,6 +764,7 @@ export default function ComplaintsScreen() {
                     onPress={() => {
                       setSelectedPlantID(p.plantID);
                       setPagePlantOpen(false);
+                      setDropdownSearch('');
                     }}
                     activeOpacity={0.75}
                   >
@@ -1152,7 +1212,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     overflow: 'hidden',
-    height: '80%',
+    height: '82%',
     width: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -6 },

@@ -63,7 +63,7 @@ type InfoRowProps = {
   isLast?: boolean;
   isDanger?: boolean;
   onPress?: () => void;
-  gradientColors?: string[];
+  gradientColors?: [string, string, ...string[]];
   useWhiteText?: boolean;
   hideChevron?: boolean;
   style?: any;

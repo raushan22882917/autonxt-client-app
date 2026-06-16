@@ -618,6 +618,7 @@ export default function TractorDetailScreen() {
                 <Text style={styles.featuredRowLabel}>Status</Text>
                 <Text style={styles.featuredRowValue}>{displayTractor.isCharging ? "Charging" : "Discharging"}</Text>
               </View>
+
             </View>
           </View>
         </GlassCard>
@@ -1295,7 +1296,7 @@ const styles = StyleSheet.create({
   },
   featuredDivider: {
     width: 1,
-    height: 48,
+    height: 80,
     backgroundColor: 'rgba(0, 0, 0, 0.08)',
   },
   featuredSubMetrics: {
