@@ -283,7 +283,7 @@ export default function ComplaintsScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <View style={[styles.sectionAccent, { backgroundColor: c.primary, height: 24 }]} />
             <Text style={[styles.periodHint, { color: c.foreground, fontSize: 21 }]}>
-              Complaint Summary
+              Issues
             </Text>
           </View>
 
@@ -292,13 +292,13 @@ export default function ComplaintsScreen() {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 6,
+              gap: 8,
               backgroundColor: '#FFFFFF',
               borderColor: '#E2E8F0',
               borderWidth: 1,
-              paddingHorizontal: 10,
-              paddingVertical: 5,
-              borderRadius: 14,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 16,
               shadowColor: '#000000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.04,
@@ -310,19 +310,19 @@ export default function ComplaintsScreen() {
             disabled={plants.length === 0}
           >
             <View style={{
-              width: 18,
-              height: 18,
-              borderRadius: 5,
+              width: 20,
+              height: 20,
+              borderRadius: 6,
               backgroundColor: '#FDF2F4',
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <Feather name="layers" size={10} color="#7E152F" />
+              <Feather name="layers" size={11} color="#7E152F" />
             </View>
-            <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#1E293B' }} numberOfLines={1}>
+            <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#1E293B' }} numberOfLines={1}>
               {selectedPlantID ? (plants.find(p => p.plantID === selectedPlantID)?.name ?? 'Selected Plant') : 'All Plants'}
             </Text>
-            <Feather name="chevron-down" size={11} color="#7E152F" />
+            <Feather name="chevron-down" size={12} color="#7E152F" />
           </TouchableOpacity>
         </View>
 
@@ -1269,9 +1269,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   description: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: 'Inter_400Regular',
-    lineHeight: 19,
+    lineHeight: 16,
   },
   badgeRow: {
     flexDirection: 'row',

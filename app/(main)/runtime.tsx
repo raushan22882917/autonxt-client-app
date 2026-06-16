@@ -116,31 +116,6 @@ export default function PlantAnalysisScreen() {
           Manage and monitor all your plants in one place
         </Text>
       </View>
-
-      <View style={[styles.searchBarContainer, { backgroundColor: '#F8FAFC', marginTop: 0, marginBottom: 10 }]}>
-        <Feather name="search" size={15} color="#94A3B8" style={{ marginRight: 8 }} />
-        <TextInput
-          style={{
-            color: '#0F172A',
-            fontSize: 13,
-            fontFamily: 'Inter_500Medium',
-            flex: 1,
-            paddingVertical: 0,
-            height: '100%',
-          }}
-          placeholder="Search plants by name or location..."
-          placeholderTextColor="#94A3B8"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
-            <Feather name="x" size={15} color="#94A3B8" />
-          </TouchableOpacity>
-        )}
-      </View>
     </View>
   );
 
@@ -305,7 +280,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 16 },
   header: {
     gap: 12,
-    paddingBottom: 4,
+    paddingBottom: 16,
     paddingHorizontal: 0,
   },
   backToProfile: {

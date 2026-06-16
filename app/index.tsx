@@ -146,7 +146,7 @@ export default function WelcomeScreen() {
           activeOpacity={0.8}
           onPress={() => router.push('/login')}
         >
-          <Text style={[styles.signInButtonText, { color: c.primaryForeground }]}>Sign In</Text>
+          <Text style={[styles.signInButtonText, { color: c.primaryForeground }]}>Start Now</Text>
           <Feather name="arrow-right" size={18} color={c.primaryForeground} />
         </TouchableOpacity>
       </View>

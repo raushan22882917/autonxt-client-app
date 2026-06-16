@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   confirmResetPassword,
   resetPassword,
@@ -25,10 +26,10 @@ import Loader from '../../../components/Loader';
 import colors from '../../../constants/colors';
 import { useAuth } from '@/context/AuthContext';
 
-const TRUST_LOGO = require('../../../assets/images/trust-logo.png');
+const SMALL_LOGO_BLACK = require('../../../assets/images/small-logo-black.png');
 const C = colors.light;
 const TEXT_MUTED_LIGHT = '#64748B';
-const ICON_COLOR = '#64748B';
+const ICON_COLOR = '#7E152F'; // Burgundy icon color
 
 type AuthMode = 'signIn' | 'forgotPassword' | 'confirmReset';
 
@@ -59,45 +60,6 @@ function getAuthErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback;
 }
-
-const WaveSvg = ({ color }: { color: string }) => {
-  return (
-    <View style={styles.waveContainer}>
-      <Svg
-        height="80"
-        width="100%"
-        viewBox="0 0 1440 320"
-        preserveAspectRatio="none"
-        style={styles.waveSvg}
-      >
-        {/* Soft shadow curve path cast onto the card */}
-        <Path
-          fill="rgba(18, 14, 16, 0.2)"
-          d="M0,164 C320,304 960,84 1440,224 L1440,320 L0,320 Z"
-        />
-        {/* Main Burgundy curve path */}
-        <Path
-          fill={color}
-          d="M0,160 C320,300 960,80 1440,220 L1440,320 L0,320 Z"
-        />
-        {/* 3D Rolled Edge Highlight (light reflection) */}
-        <Path
-          stroke="rgba(255, 255, 255, 0.35)"
-          strokeWidth="6"
-          fill="none"
-          d="M0,161 C320,301 960,81 1440,221"
-        />
-        {/* 3D Rolled Edge Shadow (crease shadow) */}
-        <Path
-          stroke="rgba(18, 14, 16, 0.15)"
-          strokeWidth="3"
-          fill="none"
-          d="M0,163 C320,303 960,83 1440,223"
-        />
-      </Svg>
-    </View>
-  );
-};
 
 export function CustomSignIn({ onBack, onSuccess }: CustomSignInProps) {
   const { signIn } = useAuth();
@@ -258,39 +220,88 @@ export function CustomSignIn({ onBack, onSuccess }: CustomSignInProps) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 50 }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            style={{ backgroundColor: '#7E152F' }}
           >
-            {/* Top Light Area Container */}
-            <View style={styles.topArea}>
-              {/* Back Button and Circular Image */}
-              <View style={styles.topSection}>
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={handleBackPress}
-                  accessibilityLabel="Go back"
-                  accessibilityRole="button"
+            {/* Absolute Background Graphics */}
+            <View style={styles.absoluteBackground}>
+              <LinearGradient
+                colors={['#FEFDFD', '#F5ECEE']}
+                style={{ height: 510 }}
+              />
+              <View style={{ height: 120 }}>
+                <Svg
+                  height="120"
+                  width="100%"
+                  viewBox="0 0 375 120"
+                  preserveAspectRatio="none"
                 >
-                  <Ionicons name="arrow-back" size={24} color={C.primary} />
-                </TouchableOpacity>
-
-                <View style={styles.circularImageContainer}>
-                  <Image
-                    source={TRUST_LOGO}
-                    style={styles.circularImage}
-                    resizeMode="contain"
+                  <Path
+                    d="M0,0 L375,0 L375,40 Q187.5,110 0,40 Z"
+                    fill="#F5ECEE"
                   />
+                  <Path
+                    d="M0,40 Q187.5,110 375,40"
+                    stroke="#E2A93E"
+                    strokeWidth={3}
+                    fill="none"
+                  />
+                </Svg>
+              </View>
+            </View>
+
+            {/* Foreground Content */}
+            <View style={styles.container}>
+              {/* Header section (Centered logo inside oval) */}
+              <View style={styles.headerContainer}>
+                <View style={styles.logoContainer}>
+                  <View style={styles.logoRowContainer}>
+                    <Image
+                      source={SMALL_LOGO_BLACK}
+                      style={styles.smallLogo}
+                      resizeMode="contain"
+                    />
+                    <View style={styles.logoTextContainer}>
+                      <Text style={styles.logoTextBrand}>AutoNXT</Text>
+                      <View style={styles.logoTextDivider} />
+                      <Text style={styles.logoTextSub}>AUTOMATION</Text>
+                    </View>
+                  </View>
                 </View>
               </View>
 
-              {/* Form Content wrapped in Card */}
+              {/* Titles outside the card */}
+              {authMode === 'signIn' && (
+                <>
+                  <Text style={styles.title}>Welcome Back</Text>
+                  <Text style={styles.subtitle}>Sign in to your AutoNXT account</Text>
+                </>
+              )}
+
+              {authMode === 'forgotPassword' && (
+                <>
+                  <Text style={styles.title}>Forgot Password</Text>
+                  <Text style={styles.subtitle}>
+                    Enter your email and we will send you a verification code.
+                  </Text>
+                </>
+              )}
+
+              {authMode === 'confirmReset' && (
+                <>
+                  <Text style={styles.title}>Reset Password</Text>
+                  <Text style={styles.subtitle}>
+                    Enter the verification code sent to {codeDestination || email}.
+                  </Text>
+                </>
+              )}
+
+              {/* Form Card */}
               <View style={styles.card}>
                 {authMode === 'signIn' && (
                   <>
-                    <Text style={styles.title}>Welcome Back</Text>
-                    <Text style={styles.subtitle}>Sign in to your AutoNXT account</Text>
-
                     {renderInput(
                       'Email',
                       'mail-outline',
@@ -327,16 +338,30 @@ export function CustomSignIn({ onBack, onSuccess }: CustomSignInProps) {
                         </TouchableOpacity>
                       </>,
                     )}
+
+                    {/* Sign In Button */}
+                    <TouchableOpacity style={styles.signInButton} onPress={handleSignIn} disabled={isLoading}>
+                      {isLoading ? (
+                        <Loader size={20} color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <Text style={styles.signInButtonText}>Sign In</Text>
+                          <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                        </>
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Forgot Password Link */}
+                    <View style={styles.forgotPasswordContainer}>
+                      <TouchableOpacity onPress={handleForgotPasswordPress}>
+                        <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                      </TouchableOpacity>
+                    </View>
                   </>
                 )}
 
                 {authMode === 'forgotPassword' && (
                   <>
-                    <Text style={styles.title}>Forgot Password</Text>
-                    <Text style={styles.subtitle}>
-                      Enter your email and we will send you a verification code. If you don't receive it in your inbox, check your spam folder for the OTP.
-                    </Text>
-
                     {renderInput(
                       'Email',
                       'mail-outline',
@@ -351,16 +376,26 @@ export function CustomSignIn({ onBack, onSuccess }: CustomSignInProps) {
                         autoCorrect={false}
                       />,
                     )}
+
+                    <TouchableOpacity style={styles.signInButton} onPress={handleSendResetCode} disabled={isLoading}>
+                      {isLoading ? (
+                        <Loader size={20} color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <Text style={styles.signInButtonText}>Send Reset Code</Text>
+                          <Ionicons name="mail-outline" size={18} color="#FFFFFF" />
+                        </>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.linkButton} onPress={() => setAuthMode('signIn')}>
+                      <Text style={styles.linkText}>Back to Sign In</Text>
+                    </TouchableOpacity>
                   </>
                 )}
 
                 {authMode === 'confirmReset' && (
                   <>
-                    <Text style={styles.title}>Reset Password</Text>
-                    <Text style={styles.subtitle}>
-                      Enter the verification code sent to {codeDestination || email}. If you don't see it in your inbox, check your spam folder for the OTP.
-                    </Text>
-
                     {renderInput(
                       'Verification Code',
                       'key-outline',
@@ -422,72 +457,49 @@ export function CustomSignIn({ onBack, onSuccess }: CustomSignInProps) {
                         </TouchableOpacity>
                       </>,
                     )}
+
+                    <TouchableOpacity style={styles.signInButton} onPress={handleConfirmResetPassword} disabled={isLoading}>
+                      {isLoading ? (
+                        <Loader size={20} color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <Text style={styles.signInButtonText}>Reset Password</Text>
+                          <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                        </>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.linkButton} onPress={handleSendResetCode} disabled={isLoading}>
+                      <Text style={styles.linkText}>Resend Code</Text>
+                    </TouchableOpacity>
                   </>
                 )}
               </View>
-            </View>
 
-            {/* Wave Transition SVG */}
-            <WaveSvg color={C.primary} />
+              {/* Bottom Feature Badges */}
+              <View style={styles.featuresContainer}>
+                <View style={styles.featureColumn}>
+                  <Ionicons name="shield-checkmark-outline" size={26} color="#E2A93E" />
+                  <Text style={styles.featureTitle}>Secure</Text>
+                  <Text style={styles.featureSubtitle}>Bank-grade security</Text>
+                </View>
 
-            {/* Bottom Dark Area Container */}
-            <View style={[styles.bottomArea, { backgroundColor: C.primary, paddingBottom: insets.bottom + 102 }]}>
-              {authMode === 'signIn' && (
-                <>
-                  <TouchableOpacity style={styles.primaryButton} onPress={handleSignIn} disabled={isLoading}>
-                    {isLoading ? (
-                      <Loader size={20} color={C.primary} />
-                    ) : (
-                      <>
-                        <Text style={styles.primaryButtonText}>Sign In</Text>
-                        <Ionicons name="arrow-forward" size={20} color={C.primary} />
-                      </>
-                    )}
-                  </TouchableOpacity>
+                <View style={styles.featureDivider} />
 
-                  <TouchableOpacity style={styles.linkButton} onPress={handleForgotPasswordPress}>
-                    <Text style={styles.linkText}>Forgot Password?</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+                <View style={styles.featureColumn}>
+                  <Ionicons name="people-outline" size={26} color="#E2A93E" />
+                  <Text style={styles.featureTitle}>Trusted</Text>
+                  <Text style={styles.featureSubtitle}>By 1000+ partners</Text>
+                </View>
 
-              {authMode === 'forgotPassword' && (
-                <>
-                  <TouchableOpacity style={styles.primaryButton} onPress={handleSendResetCode} disabled={isLoading}>
-                    {isLoading ? (
-                      <Loader size={20} color={C.primary} />
-                    ) : (
-                      <>
-                        <Text style={styles.primaryButtonText}>Send Reset Code</Text>
-                        <Ionicons name="mail-outline" size={20} color={C.primary} />
-                      </>
-                    )}
-                  </TouchableOpacity>
+                <View style={styles.featureDivider} />
 
-                  <TouchableOpacity style={styles.linkButton} onPress={() => setAuthMode('signIn')}>
-                    <Text style={styles.linkText}>Back to Sign In</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {authMode === 'confirmReset' && (
-                <>
-                  <TouchableOpacity style={styles.primaryButton} onPress={handleConfirmResetPassword} disabled={isLoading}>
-                    {isLoading ? (
-                      <Loader size={20} color={C.primary} />
-                    ) : (
-                      <>
-                        <Text style={styles.primaryButtonText}>Reset Password</Text>
-                        <Ionicons name="checkmark" size={20} color={C.primary} />
-                      </>
-                    )}
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.linkButton} onPress={handleSendResetCode} disabled={isLoading}>
-                    <Text style={styles.linkText}>Resend Code</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+                <View style={styles.featureColumn}>
+                  <Ionicons name="flash-outline" size={26} color="#E2A93E" />
+                  <Text style={styles.featureTitle}>Fast</Text>
+                  <Text style={styles.featureSubtitle}>Built for performance</Text>
+                </View>
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -499,160 +511,205 @@ export function CustomSignIn({ onBack, onSuccess }: CustomSignInProps) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F5F6F8',
+    backgroundColor: '#7E152F',
   },
   safe: {
     flex: 1,
-    backgroundColor: '#F5F6F8',
+    backgroundColor: '#FEFDFD',
   },
   flex: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: '#F5F6F8',
   },
-  topArea: {
-    backgroundColor: '#F5F6F8',
+  absoluteBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#7E152F',
+  },
+  container: {
+    flex: 1,
     paddingHorizontal: 24,
     paddingTop: 12,
-    paddingBottom: 50,
   },
-  topSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  headerContainer: {
     alignItems: 'center',
-    marginBottom: 16,
-    width: '100%',
+    justifyContent: 'center',
+    marginBottom: 20,
+    marginTop: 14,
+    paddingTop: 6,
   },
-  backButton: {
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+  logoContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  circularImageContainer: {
-    width: 120,
-    height: 120,
+
+  logoRowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  circularImage: {
-    width: '100%',
-    height: '100%',
+  smallLogo: {
+    width: 100,
+    height: 100,
+    marginRight: 6,
+  },
+  logoTextContainer: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  logoTextBrand: {
+    fontSize: 38,
+    fontFamily: Platform.select({ ios: 'Georgia', android: 'serif' }),
+    fontWeight: '700',
+    color: '#7E152F',
+    letterSpacing: 0.5,
+    lineHeight: 40,
+  },
+  logoTextDivider: {
+    height: 1.5,
+    backgroundColor: '#7E152F',
+    alignSelf: 'stretch',
+    marginVertical: 4,
+  },
+  logoTextSub: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#E2A93E',
+    letterSpacing: 4,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 80,
     width: '100%',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
-    marginBottom: -60,
-    zIndex: 1,
+    marginBottom: 32,
   },
   title: {
-    fontSize: 26,
-    fontFamily: 'Inter_700Bold',
+    fontSize: 32,
+    fontFamily: Platform.select({ ios: 'Georgia', android: 'serif' }),
     fontWeight: '700',
     color: '#0F172A',
-    letterSpacing: -0.4,
-    marginBottom: 6,
-    marginTop: 24,
+    textAlign: 'center',
+    marginTop: 16,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Inter_400Regular',
     color: '#64748B',
-    lineHeight: 20,
+    textAlign: 'center',
+    marginTop: 8,
     marginBottom: 24,
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
-    marginBottom: 6,
-    color: '#334155',
+    color: '#1E293B',
+    marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
-    backgroundColor: '#F8FAFC',
     borderColor: '#E2E8F0',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 52,
+    backgroundColor: '#FFFFFF',
   },
   inputIcon: {
-    marginRight: 8,
+    marginRight: 12,
   },
   input: {
+    flex: 1,
     fontSize: 15,
     fontFamily: 'Inter_400Regular',
-    flex: 1,
     color: '#0F172A',
+    height: '100%',
     padding: 0,
   },
   eyeIcon: {
     padding: 4,
   },
-  waveContainer: {
-    width: '100%',
-    height: 80,
-    backgroundColor: 'transparent',
-    marginBottom: -1,
-    zIndex: 2,
-  },
-  waveSvg: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-  },
-  bottomArea: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 16,
+  forgotPasswordContainer: {
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    zIndex: 2,
+    marginTop: 16,
+    marginBottom: 8,
   },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '80%',
-    paddingVertical: 14,
-    borderRadius: 24,
-    gap: 8,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  primaryButtonText: {
+  forgotPasswordText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: '#7E152F',
+  },
+  signInButton: {
+    backgroundColor: '#7E152F',
+    borderRadius: 26,
+    height: 52,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+  },
+  signInButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
   },
   linkButton: {
-    marginTop: 16,
+    marginTop: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 8,
   },
   linkText: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#7E152F',
+  },
+  featuresContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingHorizontal: 8,
+    width: '100%',
+  },
+  featureColumn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  featureDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  featureTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#E2A93E',
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  featureSubtitle: {
+    fontSize: 10,
+    fontFamily: 'Inter_400Regular',
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginBottom: 16, // Added spacing below the subtitle text
   },
 });
+

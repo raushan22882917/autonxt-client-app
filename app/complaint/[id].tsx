@@ -564,9 +564,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   description: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    lineHeight: 22,
+    lineHeight: 18,
   },
   statusBanner: {
     flexDirection: 'row',
