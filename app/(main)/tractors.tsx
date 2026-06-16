@@ -1,10 +1,13 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
   BackHandler,
   FlatList,
+  Modal,
   Platform,
+  Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -49,15 +52,43 @@ export default function TractorsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
+    tractors,
     filteredTractors,
     isLoading,
     isLoadingMorePlants,
     refreshLiveTelemetry,
     tractorSearch,
     setTractorSearch,
+    plants,
+    selectedPlantID,
+    setSelectedPlantID,
   } = useApp();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [refreshing, setRefreshing] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownQuery, setDropdownQuery] = useState('');
+
+  const openDropdown = () => {
+    setDropdownQuery('');
+    setDropdownOpen(true);
+  };
+
+  useEffect(() => {
+    setSelectedPlantID(null);
+  }, [setSelectedPlantID]);
+
+  const countFor = useCallback((plantID: string) => {
+    return tractors.filter(t => t.plantID === plantID).length;
+  }, [tractors]);
+
+  const filteredPlantsForDropdown = useMemo(() => {
+    const q = dropdownQuery.trim().toLowerCase();
+    if (!q) return plants;
+    return plants.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.location || '').toLowerCase().includes(q)
+    );
+  }, [plants, dropdownQuery]);
 
   const { from } = useLocalSearchParams<{ from?: string }>();
   const fromProfile = from === 'profile';
@@ -158,6 +189,18 @@ export default function TractorsScreen() {
               {' '}Tractor{displayed.length !== 1 ? 's' : ''}
             </Text>
           </View>
+          {plants.length > 0 && (
+            <TouchableOpacity
+              style={styles.dropdownButton}
+              onPress={openDropdown}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dropdownButtonText} numberOfLines={1}>
+                {plants.find(p => p.plantID === selectedPlantID)?.name || 'All Plants'}
+              </Text>
+              <Feather name="chevron-down" size={14} color="#64748B" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
   );
@@ -204,6 +247,183 @@ export default function TractorsScreen() {
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
+
+      {/* Plant Selection Modal Dropdown */}
+      <Modal
+        visible={dropdownOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDropdownOpen(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setDropdownOpen(false)}
+        >
+          <Pressable
+            style={[
+              styles.dropdownMenu,
+              {
+                backgroundColor: c.card,
+                borderColor: c.border,
+                marginTop: Platform.OS === 'web' ? 110 : 140,
+                paddingBottom: insets.bottom + 16,
+              },
+            ]}
+            onPress={e => e.stopPropagation()}
+          >
+            {/* Sheet Handle */}
+            <View style={styles.sheetHandleWrap}>
+              <View style={[styles.sheetHandle, { backgroundColor: c.border }]} />
+            </View>
+
+            {/* Header */}
+            <View style={[styles.dropdownHeader, { borderBottomColor: c.hairline }]}>
+              <View style={[styles.headerIconWrap, { backgroundColor: c.primary + '12' }]}>
+                <Feather name="map-pin" size={18} color={c.primary} />
+              </View>
+              <View style={styles.headerTextWrap}>
+                <Text style={[styles.dropdownHeaderTitle, { color: c.foreground }]}>Select Plant</Text>
+                <Text style={[styles.dropdownHeaderSub, { color: c.mutedForeground }]}>
+                  Filter tractors by operating plant location
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setDropdownOpen(false)}
+                style={[styles.closeBtn, { backgroundColor: c.surfaceAlt }]}
+                hitSlop={8}
+              >
+                <Feather name="x" size={18} color={c.foreground} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Search Bar */}
+            <View
+              style={[styles.menuSearch, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}
+            >
+              <Feather name="search" size={17} color={c.mutedForeground} />
+              <TextInput
+                style={[styles.menuSearchInput, { color: c.foreground }]}
+                placeholder="Search plants…"
+                placeholderTextColor={c.mutedForeground + '88'}
+                value={dropdownQuery}
+                onChangeText={setDropdownQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+              />
+              {dropdownQuery.length > 0 ? (
+                <TouchableOpacity onPress={() => setDropdownQuery('')} hitSlop={8}>
+                  <Feather name="x" size={17} color={c.mutedForeground} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <ScrollView
+              style={styles.dropdownScroll}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {!dropdownQuery.trim() ? (
+                <TouchableOpacity
+                  style={[
+                    styles.dropdownItem,
+                    {
+                      backgroundColor: !selectedPlantID ? c.primary + '0E' : 'transparent',
+                      borderColor: !selectedPlantID ? c.primary + '35' : c.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    setSelectedPlantID(null);
+                    setDropdownOpen(false);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.dropdownItemIcon, { backgroundColor: !selectedPlantID ? c.primary : c.surfaceAlt }]}>
+                    <Feather
+                      name={!selectedPlantID ? 'check' : 'layers'}
+                      size={15}
+                      color={!selectedPlantID ? c.primaryForeground : c.mutedForeground}
+                    />
+                  </View>
+                  <View style={styles.dropdownItemBody}>
+                    <Text style={[styles.dropdownItemLabel, { color: c.foreground }]} numberOfLines={1}>
+                      All Plants
+                    </Text>
+                    <Text style={[styles.dropdownItemSub, { color: c.mutedForeground }]} numberOfLines={1}>
+                      {plants.length} plant{plants.length !== 1 ? 's' : ''} · entire fleet
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.dropdownItemCount,
+                      { backgroundColor: !selectedPlantID ? c.primary + '18' : c.muted },
+                    ]}
+                  >
+                    <Text style={[styles.dropdownItemCountText, { color: !selectedPlantID ? c.primary : c.mutedForeground }]}>
+                      {tractors.length}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null}
+
+              {filteredPlantsForDropdown.map(p => {
+                const isSelected = p.plantID === selectedPlantID;
+                const count = countFor(p.plantID);
+                return (
+                  <TouchableOpacity
+                    key={p.plantID}
+                    style={[
+                      styles.dropdownItem,
+                      {
+                        backgroundColor: isSelected ? c.primary + '0E' : 'transparent',
+                        borderColor: isSelected ? c.primary + '35' : c.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedPlantID(p.plantID);
+                      setDropdownOpen(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.dropdownItemIcon, { backgroundColor: isSelected ? c.primary : c.surfaceAlt }]}>
+                      <Feather
+                        name={p.plantType === 'HUB_WAREHOUSE' ? 'home' : isSelected ? 'check' : 'map-pin'}
+                        size={15}
+                        color={isSelected ? c.primaryForeground : c.mutedForeground}
+                      />
+                    </View>
+                    <View style={styles.dropdownItemBody}>
+                      <Text style={[styles.dropdownItemLabel, { color: c.foreground }]} numberOfLines={1}>
+                        {p.name}
+                      </Text>
+                      <Text style={[styles.dropdownItemSub, { color: c.mutedForeground }]} numberOfLines={1}>
+                        {p.location || (p.plantType === 'HUB_WAREHOUSE' ? 'Hub warehouse' : 'Site')}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.dropdownItemCount,
+                        { backgroundColor: isSelected ? c.primary + '18' : c.muted },
+                      ]}
+                    >
+                      <Text style={[styles.dropdownItemCountText, { color: isSelected ? c.primary : c.mutedForeground }]}>
+                        {count}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {dropdownQuery.trim() && filteredPlantsForDropdown.length === 0 ? (
+                <Text style={[styles.dropdownEmptySearch, { color: c.mutedForeground }]}>
+                  No plants match your search
+                </Text>
+              ) : null}
+              <View style={{ height: 16 }} />
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -467,6 +687,163 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
   },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    maxWidth: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  dropdownButtonText: {
+    fontSize: 12.5,
+    fontFamily: 'Inter_700Bold',
+    color: '#334155',
+    flexShrink: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(8, 16, 43, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  dropdownMenu: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    flex: 1,
+    width: '100%',
+    overflow: 'hidden',
+    shadowColor: '#120E10',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  sheetHandleWrap: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 4,
+    width: '100%',
+  },
+  sheetHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+  },
+  headerIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  dropdownHeaderTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.3,
+  },
+  dropdownHeaderSub: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuSearch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    margin: 14,
+    marginBottom: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  menuSearchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+    paddingVertical: 0,
+  },
+  dropdownScroll: {
+    flex: 1,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 12,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  dropdownItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  dropdownItemBody: {
+    flex: 1,
+    gap: 2,
+  },
+  dropdownItemLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.1,
+  },
+  dropdownItemSub: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+  },
+  dropdownItemCount: {
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 7,
+  },
+  dropdownItemCountText: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+  },
+  dropdownEmptySearch: {
+    textAlign: 'center',
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    padding: 24,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(8, 16, 43, 0.5)',
@@ -486,17 +863,7 @@ const styles = StyleSheet.create({
     elevation: 12,
     paddingBottom: 20,
   },
-  sheetHandleWrap: {
-    alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 4,
-    width: '100%',
-  },
-  sheetHandle: {
-    width: 38,
-    height: 4,
-    borderRadius: 2,
-  },
+
   menuScroll: {
     paddingVertical: 10,
   },

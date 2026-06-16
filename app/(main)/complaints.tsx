@@ -21,6 +21,7 @@ import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
 import { ComplaintFilterSheet } from '@/components/ComplaintFilterSheet';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TractorImage } from '@/components/TractorImage';
 import { Complaint } from '@/lib/appsync';
 import { severityColor, formatDate } from '@/lib/complaint';
 import {
@@ -35,6 +36,15 @@ import {
   type ComplaintFilterValues,
 } from '@/lib/complaintFilters';
 import { isBreakdownComplaint } from '@/lib/isBreakdownComplaint';
+
+function formatResolutionTime(ms: number): string {
+  const mins = ms / (1000 * 60);
+  if (mins < 60) return `${Math.round(mins)}m`;
+  const hours = mins / 60;
+  if (hours < 24) return `${hours.toFixed(1).replace('.0', '')}h`;
+  const days = hours / 24;
+  return `${days.toFixed(1).replace('.0', '')}d`;
+}
 
 function activeFilterSummary(filters: ComplaintFilterValues): string {
   const statusLabel =
@@ -95,6 +105,7 @@ export default function ComplaintsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
+    tractors,
     filteredComplaints,
     isLoading,
     refresh,
@@ -143,13 +154,23 @@ export default function ComplaintsScreen() {
 
 
   const [showAllModal, setShowAllModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'ALL' | 'FILTERED'>('ALL');
 
   const { period, customMonth, statusTab, severity, breakdownOnly } = filters;
   const activeFilterCount = countActiveComplaintFilters(filters);
 
-  const handleBoxPress = (type: 'RAISED' | 'CRITICAL' | 'OPEN' | 'BREAKDOWN') => {
+  const handleBoxPress = (type: 'TOTAL' | 'RAISED' | 'WIP' | 'CLOSED') => {
+    setModalMode('FILTERED');
     setFilters(prev => {
       switch (type) {
+        case 'TOTAL':
+          return {
+            ...prev,
+            statusTab: 'ALL',
+            severity: 'ALL',
+            breakdownOnly: false,
+            period: 'ALL',
+          };
         case 'RAISED':
           return {
             ...prev,
@@ -157,26 +178,19 @@ export default function ComplaintsScreen() {
             severity: 'ALL',
             breakdownOnly: false,
           };
-        case 'CRITICAL':
+        case 'WIP':
           return {
             ...prev,
-            statusTab: 'ALL',
-            severity: 'CRITICAL',
-            breakdownOnly: false,
-          };
-        case 'OPEN':
-          return {
-            ...prev,
-            statusTab: 'OPEN',
+            statusTab: 'IN_PROGRESS',
             severity: 'ALL',
             breakdownOnly: false,
           };
-        case 'BREAKDOWN':
+        case 'CLOSED':
           return {
             ...prev,
-            statusTab: 'ALL',
+            statusTab: 'CLOSED',
             severity: 'ALL',
-            breakdownOnly: true,
+            breakdownOnly: false,
           };
         default:
           return prev;
@@ -209,15 +223,57 @@ export default function ComplaintsScreen() {
     [filteredComplaints, statusTab, severity, breakdownOnly, search, period, customMonth]
   );
 
+  const sortedAllComplaints = useMemo(() => {
+    const sorted = [...filteredComplaints].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    if (!search.trim()) return sorted;
+    const q = search.toLowerCase().trim();
+    return sorted.filter(c => {
+      const hay = [
+        c.title,
+        c.description,
+        c.tractorModel,
+        c.tractorID,
+        c.plantName,
+        c.reportedBy,
+        c.problemSubType,
+        c.breakdownType,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [filteredComplaints, search]);
+
+  const totalTicketsCount = filteredComplaints.length;
   const raisedCount = inPeriod.length;
-  const critCount = inPeriod.filter(x => x.severity === 'CRITICAL').length;
-  const openCount = inPeriod.filter(isActiveComplaint).length;
-  const breakdownRaised = inPeriod.filter(isBreakdownComplaint).length;
+  const wipCount = inPeriod.filter(x => x.status === 'IN_PROGRESS').length;
+  const closedCount = inPeriod.filter(x => x.status === 'CLOSED' || x.status === 'RESOLVED').length;
+
+  const resolvedInPeriod = inPeriod.filter(
+    x => x.resolvedAt && (x.status === 'CLOSED' || x.status === 'RESOLVED')
+  );
+  const resolvedDurations = resolvedInPeriod
+    .map(x => new Date(x.resolvedAt!).getTime() - new Date(x.createdAt).getTime())
+    .filter(d => d >= 0);
+  const avgResolutionTimeStr =
+    resolvedDurations.length > 0
+      ? formatResolutionTime(
+          resolvedDurations.reduce((sum, d) => sum + d, 0) / resolvedDurations.length
+        )
+      : '--';
 
   const renderComplaint = ({ item }: { item: Complaint }) => {
     const sev = severityColor(item.severity, c);
     const isCritical = item.severity === 'CRITICAL';
     const isBreakdown = isBreakdownComplaint(item);
+    // Look up the full tractor to get model + color (same as the card header uses)
+    const fullTractor = tractors.find(t => t.tractorID === item.tractorID);
+    const tractorImageFields = fullTractor
+      ? { model: fullTractor.model, color: fullTractor.color }
+      : { model: item.tractorModel };
 
     return (
       <TouchableOpacity
@@ -250,9 +306,14 @@ export default function ComplaintsScreen() {
 
           {/* Header row */}
           <View style={styles.cardTop}>
-            <View style={[styles.iconWrap, { backgroundColor: sev + '18', borderColor: sev + '30', borderWidth: 1 }]}>
-              <Feather name={isBreakdown ? 'alert-octagon' : 'alert-triangle'} size={19} color={sev} />
+            <View style={[styles.iconWrap, { overflow: 'hidden' }]}>
+              <TractorImage
+                tractor={tractorImageFields}
+                colorful={false}
+              />
             </View>
+            {/* Vertical divider */}
+            <View style={[styles.cardDivider, { backgroundColor: c.border }]} />
             <View style={styles.info}>
               <Text style={[styles.title, { color: c.foreground }]} numberOfLines={1}>
                 {item.title}
@@ -405,7 +466,7 @@ export default function ComplaintsScreen() {
           >
             {/* Row 1 */}
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {/* Box 1: Raised */}
+              {/* Box 1: Total Tickets */}
               <TouchableOpacity
                 style={{
                   flex: 1,
@@ -416,26 +477,26 @@ export default function ComplaintsScreen() {
                   paddingHorizontal: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
-                onPress={() => handleBoxPress('RAISED')}
+                onPress={() => handleBoxPress('TOTAL')}
               >
                 <View
                   style={{
-                    width: 38 * scaleFactor,
-                    height: 38 * scaleFactor,
-                    borderRadius: 19 * scaleFactor,
+                    width: 32 * scaleFactor,
+                    height: 32 * scaleFactor,
+                    borderRadius: 16 * scaleFactor,
                     backgroundColor: '#3B82F6', // Blue
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
                 >
-                  <Feather name="file-text" size={17 * scaleFactor} color="#FFFFFF" />
+                  <Feather name="file-text" size={14 * scaleFactor} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1, gap: 1 }}>
-                  <Text style={{ fontSize: 11 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={1}>
-                    Raised Complaints
+                  <Text style={{ fontSize: 11.5 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={2}>
+                    Total Tickets
                   </Text>
-                  <Text style={{ fontSize: 20 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 24 * scaleFactor }}>
-                    {raisedCount}
+                  <Text style={{ fontSize: 24 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 28 * scaleFactor }}>
+                    {totalTicketsCount}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -443,7 +504,7 @@ export default function ComplaintsScreen() {
               {/* Vertical Divider */}
               <View style={{ width: 1, backgroundColor: c.border, height: 48 * scaleFactor, alignSelf: 'center' }} />
 
-              {/* Box 2: Critical */}
+              {/* Box 2: Ticket Raised */}
               <TouchableOpacity
                 style={{
                   flex: 1,
@@ -455,26 +516,26 @@ export default function ComplaintsScreen() {
                   paddingRight: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
-                onPress={() => handleBoxPress('CRITICAL')}
+                onPress={() => handleBoxPress('RAISED')}
               >
                 <View
                   style={{
-                    width: 38 * scaleFactor,
-                    height: 38 * scaleFactor,
-                    borderRadius: 19 * scaleFactor,
-                    backgroundColor: '#EF4444', // Red
+                    width: 32 * scaleFactor,
+                    height: 32 * scaleFactor,
+                    borderRadius: 16 * scaleFactor,
+                    backgroundColor: '#8B5CF6', // Purple
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
                 >
-                  <Feather name="alert-triangle" size={17 * scaleFactor} color="#FFFFFF" />
+                  <Feather name="inbox" size={14 * scaleFactor} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1, gap: 1 }}>
-                  <Text style={{ fontSize: 11 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={1}>
-                    Critical Tickets
+                  <Text style={{ fontSize: 11.5 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={2}>
+                    Ticket Raised
                   </Text>
-                  <Text style={{ fontSize: 20 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 24 * scaleFactor }}>
-                    {critCount}
+                  <Text style={{ fontSize: 24 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 28 * scaleFactor }}>
+                    {raisedCount}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -485,7 +546,7 @@ export default function ComplaintsScreen() {
 
             {/* Row 2 */}
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {/* Box 3: Open */}
+              {/* Box 3: Work in Progress */}
               <TouchableOpacity
                 style={{
                   flex: 1,
@@ -496,26 +557,26 @@ export default function ComplaintsScreen() {
                   paddingHorizontal: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
-                onPress={() => handleBoxPress('OPEN')}
+                onPress={() => handleBoxPress('WIP')}
               >
                 <View
                   style={{
-                    width: 38 * scaleFactor,
-                    height: 38 * scaleFactor,
-                    borderRadius: 19 * scaleFactor,
+                    width: 32 * scaleFactor,
+                    height: 32 * scaleFactor,
+                    borderRadius: 16 * scaleFactor,
                     backgroundColor: '#E2A93E', // Yellow/Orange
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
                 >
-                  <Feather name="clock" size={17 * scaleFactor} color="#FFFFFF" />
+                  <Feather name="activity" size={14 * scaleFactor} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1, gap: 1 }}>
-                  <Text style={{ fontSize: 11 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={1}>
-                    Awaiting Resolution
+                  <Text style={{ fontSize: 11.5 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={2}>
+                    Work in Progress
                   </Text>
-                  <Text style={{ fontSize: 20 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 24 * scaleFactor }}>
-                    {openCount}
+                  <Text style={{ fontSize: 24 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 28 * scaleFactor }}>
+                    {wipCount}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -523,7 +584,7 @@ export default function ComplaintsScreen() {
               {/* Vertical Divider */}
               <View style={{ width: 1, backgroundColor: c.border, height: 48 * scaleFactor, alignSelf: 'center' }} />
 
-              {/* Box 4: Breakdown */}
+              {/* Box 4: Closed Resolution Time */}
               <TouchableOpacity
                 style={{
                   flex: 1,
@@ -535,26 +596,26 @@ export default function ComplaintsScreen() {
                   paddingRight: 4 * scaleFactor,
                 }}
                 activeOpacity={0.7}
-                onPress={() => handleBoxPress('BREAKDOWN')}
+                onPress={() => handleBoxPress('CLOSED')}
               >
                 <View
                   style={{
-                    width: 38 * scaleFactor,
-                    height: 38 * scaleFactor,
-                    borderRadius: 19 * scaleFactor,
+                    width: 32 * scaleFactor,
+                    height: 32 * scaleFactor,
+                    borderRadius: 16 * scaleFactor,
                     backgroundColor: '#7E152F', // Burgundy
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
                 >
-                  <Feather name="bar-chart-2" size={17 * scaleFactor} color="#FFFFFF" />
+                  <Feather name="clock" size={14 * scaleFactor} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1, gap: 1 }}>
-                  <Text style={{ fontSize: 11 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={1}>
-                    Breakdowns Reported
+                  <Text style={{ fontSize: 11.5 * scaleFactor, fontFamily: 'Inter_500Medium', color: '#64748B' }} numberOfLines={2}>
+                    Closed Resolution Time
                   </Text>
-                  <Text style={{ fontSize: 20 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 24 * scaleFactor }}>
-                    {breakdownRaised}
+                  <Text style={{ fontSize: 24 * scaleFactor, fontFamily: 'Inter_700Bold', color: '#0F172A', lineHeight: 28 * scaleFactor }}>
+                    {avgResolutionTimeStr}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -567,14 +628,9 @@ export default function ComplaintsScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <View style={[styles.sectionAccent, { backgroundColor: c.primary }]} />
             <Text style={[styles.periodHint, { color: c.foreground }]}>
-              Tickets <Text style={{ color: c.mutedForeground, fontSize: 12, fontFamily: 'Inter_500Medium' }}>({displayed.length > 2 ? `Showing 2 of ${displayed.length}` : displayed.length})</Text>
+              Tickets <Text style={{ color: c.mutedForeground, fontSize: 12, fontFamily: 'Inter_500Medium' }}>({sortedAllComplaints.length > 5 ? `Showing 5 of ${sortedAllComplaints.length}` : sortedAllComplaints.length})</Text>
             </Text>
           </View>
-          {displayed.length > 2 && (
-            <TouchableOpacity onPress={() => setShowAllModal(true)} activeOpacity={0.7}>
-              <Text style={[styles.seeAllText, { color: c.primary }]}>See All</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </View>
   );
@@ -582,16 +638,46 @@ export default function ComplaintsScreen() {
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <FlatList
-        data={displayed.slice(0, 2)}
+        data={sortedAllComplaints.slice(0, 5)}
         keyExtractor={x => x.complaintID}
         renderItem={renderComplaint}
         ListHeaderComponent={ListHeader}
+        ListFooterComponent={
+          sortedAllComplaints.length > 5 ? (
+            <TouchableOpacity
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 14,
+                backgroundColor: c.card,
+                borderColor: c.border,
+                borderWidth: 1,
+                borderRadius: 16,
+                marginTop: 8,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.04,
+                shadowRadius: 4,
+                elevation: 1,
+              }}
+              onPress={() => {
+                setModalMode('ALL');
+                setShowAllModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: c.primary }}>
+                See All Tickets ({sortedAllComplaints.length})
+              </Text>
+            </TouchableOpacity>
+          ) : null
+        }
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refresh} tintColor={c.primary} />
         }
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
         ListEmptyComponent={
           <View style={[styles.empty, { backgroundColor: c.card, borderColor: c.border }]}>
             <View style={[styles.emptyIconWrap, { backgroundColor: c.successSoft }]}>
@@ -822,7 +908,7 @@ export default function ComplaintsScreen() {
 
               <View style={styles.modalHeaderContent}>
                 <Text style={[styles.modalTitle, { color: c.primary }]} numberOfLines={1}>
-                  Tickets ({displayed.length})
+                  Tickets ({modalMode === 'ALL' ? sortedAllComplaints.length : displayed.length})
                 </Text>
                 
                 <View style={[styles.modalSearchBox, { backgroundColor: c.card, borderColor: c.border, borderWidth: 1.5 }]}>
@@ -894,11 +980,11 @@ export default function ComplaintsScreen() {
 
             {/* Scrollable Modal List of Complaints */}
             <FlatList
-              data={displayed}
+              data={modalMode === 'ALL' ? sortedAllComplaints : displayed}
               keyExtractor={x => x.complaintID}
               renderItem={renderComplaint}
               contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40 }}
-              ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+              ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
               showsVerticalScrollIndicator={true}
             />
           </View>
@@ -1295,20 +1381,38 @@ const styles = StyleSheet.create({
   cardBody: {
     flex: 1,
     padding: 14,
-    gap: 10,
+    gap: 5,
   },
   cardTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginTop: -2,
+    marginBottom: 6,
   },
   iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    position: 'relative',
+  },
+  sevCornerBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    marginVertical: 4,
   },
   info: { flex: 1, gap: 2 },
   title: {
