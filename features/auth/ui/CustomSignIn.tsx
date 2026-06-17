@@ -1,6 +1,6 @@
 // src/features/auth/ui/CustomSignIn.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -198,6 +199,16 @@ export function CustomSignIn({ onBack, onSuccess }: CustomSignInProps) {
     setConfirmNewPassword('');
   };
 
+  useEffect(() => {
+    const onBackPress = () => {
+      handleBackPress();
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [authMode, onBack]);
+
   const renderInput = (
     label: string,
     icon: keyof typeof Ionicons.glyphMap,
@@ -254,6 +265,15 @@ export function CustomSignIn({ onBack, onSuccess }: CustomSignInProps) {
 
             {/* Foreground Content */}
             <View style={styles.container}>
+              {/* Back Button */}
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={handleBackPress}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="arrow-back" size={24} color="#7E152F" />
+              </TouchableOpacity>
+
               {/* Header section (Centered logo inside oval) */}
               <View style={styles.headerContainer}>
                 <View style={styles.logoContainer}>
@@ -710,6 +730,23 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     textAlign: 'center',
     marginBottom: 16, // Added spacing below the subtitle text
+  },
+  backButton: {
+    position: 'absolute',
+    top: 12,
+    left: 16,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });
 
