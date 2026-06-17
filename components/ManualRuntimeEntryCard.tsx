@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import type { RuntimeRecord } from '@/lib/appsync';
@@ -107,17 +107,20 @@ export function ManualRuntimeEntryCard({ record, plantLabel, compact }: Props) {
             ]}
           >
             <View style={[styles.fieldIcon, { backgroundColor: c.surfaceAlt }]}>
-              <Feather
-                name={
-                  f.key === 'date' ? 'calendar' :
-                  f.key === 'plant' ? 'map-pin' :
-                  f.key === 'loggerID' ? 'cpu' :
-                  f.key === 'orgID' ? 'briefcase' :
-                  'activity'
-                }
-                size={13}
-                color={c.primary}
-              />
+              {f.key === 'plant' ? (
+                <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 17, height: 17 }} resizeMode="contain" />
+              ) : (
+                <Feather
+                  name={
+                    f.key === 'date' ? 'calendar' :
+                    f.key === 'loggerID' ? 'cpu' :
+                    f.key === 'orgID' ? 'briefcase' :
+                    'activity'
+                  }
+                  size={13}
+                  color={c.primary}
+                />
+              )}
             </View>
             <View style={styles.fieldContent}>
               <Text style={[styles.fieldLabel, { color: c.mutedForeground }]}>{f.label}</Text>

@@ -355,7 +355,11 @@ export default function ComplaintDetailScreen() {
                 ]}
               >
                 <View style={[styles.metaIcon, { backgroundColor: c.primary + '12' }]}>
-                  <Feather name={m.icon} size={15} color={c.primary} />
+                  {m.icon === 'map-pin' ? (
+                    <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 20, height: 20 }} resizeMode="contain" />
+                  ) : (
+                    <Feather name={m.icon} size={15} color={c.primary} />
+                  )}
                 </View>
                 <Text style={[styles.metaLabel, { color: c.mutedForeground }]}>{m.label}</Text>
                 <Text style={[styles.metaValue, { color: c.foreground }]} numberOfLines={2}>

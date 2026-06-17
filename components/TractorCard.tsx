@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
@@ -65,7 +65,7 @@ export function TractorCard({ tractor: t, onOpenDetail, hideActions }: Props) {
     },
     {
       key: 'loc',
-      icon: <Feather name="map-pin" size={12} color="#64748B" />,
+      icon: <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 16, height: 16 }} resizeMode="contain" />,
       label: location,
     },
   ];

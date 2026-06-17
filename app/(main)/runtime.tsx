@@ -12,6 +12,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -256,7 +257,11 @@ export default function PlantAnalysisScreen() {
                     }}
                   >
                     <View style={[styles.optionIcon, { backgroundColor: active ? c.primary : c.surfaceAlt }]}>
-                      <Feather name={active ? 'check' : 'map-pin'} size={14} color={active ? c.primaryForeground : c.mutedForeground} />
+                      {active ? (
+                        <Feather name="check" size={14} color={c.primaryForeground} />
+                      ) : (
+                        <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 18, height: 18 }} resizeMode="contain" />
+                      )}
                     </View>
                     <View style={styles.optionBody}>
                       <Text style={[styles.optionLabel, { color: c.foreground }]} numberOfLines={1}>{p.name}</Text>

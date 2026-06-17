@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
@@ -85,11 +85,19 @@ function FilterChip({
           { backgroundColor: active ? c.primaryForeground + '20' : c.surfaceAlt },
         ]}
       >
-        <Feather
-          name={icon}
-          size={11}
-          color={active ? c.primaryForeground : c.mutedForeground}
-        />
+        {icon === 'map-pin' ? (
+          <Image
+            source={require('@/assets/images/LogoLocation.png')}
+            style={{ width: 15, height: 15 }}
+            resizeMode="contain"
+          />
+        ) : (
+          <Feather
+            name={icon}
+            size={11}
+            color={active ? c.primaryForeground : c.mutedForeground}
+          />
+        )}
       </View>
       <Text
         style={[

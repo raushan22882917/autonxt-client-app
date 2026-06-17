@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   ScrollView,
   StyleSheet,
@@ -73,6 +74,26 @@ export default function PlantDetailScreen() {
   const [filters, setFilters] = useState<PlantDetailFilterValues>(DEFAULT_PLANT_DETAIL_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [breakdownStatusFilter, setBreakdownStatusFilter] = useState<'ALL' | 'IN_PROGRESS' | 'CLOSED' | 'RESOLVED'>('ALL');
+  const [breakdownStatusOpen, setBreakdownStatusOpen] = useState(false);
+  const [isTabLoading, setIsTabLoading] = useState(false);
+  const [pendingUpdate, setPendingUpdate] = useState<{ action: () => void } | null>(null);
+
+  useEffect(() => {
+    if (pendingUpdate) {
+      const timer = setTimeout(() => {
+        pendingUpdate.action();
+        setPendingUpdate(null);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingUpdate]);
+
+  useEffect(() => {
+    if (isTabLoading && !pendingUpdate) {
+      setIsTabLoading(false);
+    }
+  }, [isTabLoading, pendingUpdate]);
 
   const topPad = Platform.OS === 'web' ? 67 : 0;
 
@@ -142,9 +163,15 @@ export default function PlantDetailScreen() {
     () => filterTractorMetrics(metricsBase, appliedFilters),
     [metricsBase, appliedFilters]
   );
-  const filteredBreakdown = useMemo(
+  const filteredBreakdownBase = useMemo(
     () => filterPlantComplaints(breakdownSource, { ...appliedFilters, period: 'ALL' }),
     [breakdownSource, appliedFilters]
+  );
+  const filteredBreakdown = useMemo(
+    () => breakdownStatusFilter === 'ALL'
+      ? filteredBreakdownBase
+      : filteredBreakdownBase.filter(r => r.status === breakdownStatusFilter),
+    [filteredBreakdownBase, breakdownStatusFilter]
   );
   const filteredTickets = useMemo(
     () => filterPlantComplaints(openTicketsSource, { ...appliedFilters, period: 'ALL' }),
@@ -269,32 +296,122 @@ export default function PlantDetailScreen() {
             rowBgColorEven={c.card}
             borderColor={c.redBorder}
             outerBorderColor={c.redBorder}
-            getRowBgColor={m => m.openTickets > 0 ? '#FFFDE7' : m.tractor.status === 'MAINTENANCE' ? '#FFECEC' : undefined}
+            getRowBgColor={m => m.openTickets > 0 ? '#FFD6D6' : m.tractor.status === 'MAINTENANCE' ? '#FFECEC' : undefined}
           />
         );
-      case 'breakdown':
+      case 'breakdown': {
+        const bdStatusOptions: { key: 'ALL' | 'IN_PROGRESS' | 'CLOSED' | 'RESOLVED'; label: string }[] = [
+          { key: 'ALL', label: 'All' },
+          { key: 'IN_PROGRESS', label: 'In Progress' },
+          { key: 'CLOSED', label: 'Closed' },
+          { key: 'RESOLVED', label: 'Resolved' },
+        ];
+        const selectedLabel = bdStatusOptions.find(o => o.key === breakdownStatusFilter)?.label ?? 'All';
         return (
-          <DataTable
-            title="Breakdown history"
-            subtitle={`${filteredBreakdown.length} of ${breakdownSource.length} entries`}
-            columns={complaintColumns}
-            data={filteredBreakdown}
-            keyExtractor={r => r.complaintID}
-            emptyMessage="No breakdown records match filters"
-            compact
-            showRowChevron
-            stickyFirstColumn
-            onRowPress={r => openComplaint(r.complaintID)}
-            titleColor="#FFFFFF"
-            titleBgGradient={[c.gradientEnd, '#be1e2d']}
-            headerBgColor={c.redSoft}
-            headerTextColor={c.primary}
-            rowBgColorOdd={c.redSoft + '40'}
-            rowBgColorEven={c.card}
-            borderColor={c.redBorder}
-            outerBorderColor={c.redBorder}
-          />
+          <View>
+            {/* Status filter pill */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 6 }}>
+              <TouchableOpacity
+                onPress={() => setBreakdownStatusOpen(v => !v)}
+                activeOpacity={0.75}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: breakdownStatusFilter !== 'ALL' ? c.primary : c.surfaceAlt,
+                  borderColor: breakdownStatusFilter !== 'ALL' ? c.primary : c.border,
+                  borderWidth: 1,
+                  borderRadius: 20,
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: breakdownStatusFilter !== 'ALL' ? '#fff' : c.foreground }}>
+                  Status: {selectedLabel}
+                </Text>
+                <Feather name={breakdownStatusOpen ? 'chevron-up' : 'chevron-down'} size={13} color={breakdownStatusFilter !== 'ALL' ? '#fff' : c.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Dropdown options */}
+            {breakdownStatusOpen && (
+              <View style={{
+                position: 'absolute',
+                top: 36,
+                left: 0,
+                zIndex: 999,
+                backgroundColor: c.card,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: c.border,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 8,
+                minWidth: 140,
+                overflow: 'hidden',
+              }}>
+                {bdStatusOptions.map((opt, idx) => (
+                  <TouchableOpacity
+                    key={opt.key}
+                    onPress={() => {
+                      if (breakdownStatusFilter === opt.key) {
+                        setBreakdownStatusOpen(false);
+                        return;
+                      }
+                      setBreakdownStatusOpen(false);
+                      setIsTabLoading(true);
+                      setPendingUpdate({
+                        action: () => setBreakdownStatusFilter(opt.key),
+                      });
+                    }}
+                    activeOpacity={0.7}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      backgroundColor: breakdownStatusFilter === opt.key ? c.redSoft : 'transparent',
+                      borderBottomWidth: idx < bdStatusOptions.length - 1 ? 1 : 0,
+                      borderBottomColor: c.border,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontFamily: 'Inter_500Medium', color: breakdownStatusFilter === opt.key ? c.primary : c.foreground }}>
+                      {opt.label}
+                    </Text>
+                    {breakdownStatusFilter === opt.key && (
+                      <Feather name="check" size={13} color={c.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <DataTable
+              title="Breakdown history"
+              subtitle={`${filteredBreakdown.length} of ${breakdownSource.length} entries`}
+              columns={complaintColumns}
+              data={filteredBreakdown}
+              keyExtractor={r => r.complaintID}
+              emptyMessage="No breakdown records match filters"
+              compact
+              showRowChevron
+              stickyFirstColumn
+              onRowPress={r => openComplaint(r.complaintID)}
+              titleColor="#FFFFFF"
+              titleBgGradient={[c.gradientEnd, '#be1e2d']}
+              headerBgColor={c.redSoft}
+              headerTextColor={c.primary}
+              rowBgColorOdd={c.redSoft + '40'}
+              rowBgColorEven={c.card}
+              borderColor={c.redBorder}
+              outerBorderColor={c.redBorder}
+            />
+          </View>
         );
+      }
       case 'tickets':
         return (
           <DataTable
@@ -726,7 +843,13 @@ export default function PlantDetailScreen() {
                         gap: 4,
                       },
                     ]}
-                    onPress={() => setTab(t.key)}
+                    onPress={() => {
+                      if (tab === t.key) return;
+                      setIsTabLoading(true);
+                      setPendingUpdate({
+                        action: () => setTab(t.key),
+                      });
+                    }}
                     activeOpacity={0.8}
                   >
                     <Feather name={t.icon} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
@@ -777,7 +900,13 @@ export default function PlantDetailScreen() {
                         gap: 4,
                       },
                     ]}
-                    onPress={() => setTab(t.key)}
+                    onPress={() => {
+                      if (tab === t.key) return;
+                      setIsTabLoading(true);
+                      setPendingUpdate({
+                        action: () => setTab(t.key),
+                      });
+                    }}
                     activeOpacity={0.8}
                   >
                     <Feather name={t.icon} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
@@ -823,7 +952,15 @@ export default function PlantDetailScreen() {
                   onChangeText={setSearch}
                 />
                 {search.length > 0 ? (
-                  <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsTabLoading(true);
+                      setPendingUpdate({
+                        action: () => setSearch(''),
+                      });
+                    }}
+                    hitSlop={8}
+                  >
                     <View style={[styles.clearBtn, { backgroundColor: c.border }]}>
                       <Feather name="x" size={11} color={c.mutedForeground} />
                     </View>
@@ -878,8 +1015,27 @@ export default function PlantDetailScreen() {
         tractorOptions={tractorOptions}
         showBreakdownToggle={tab === 'breakdown' || tab === 'tickets'}
         onClose={() => setFilterSheetOpen(false)}
-        onApply={setFilters}
+        onApply={(newFilters) => {
+          setIsTabLoading(true);
+          setPendingUpdate({
+            action: () => setFilters(newFilters),
+          });
+        }}
       />
+
+      {isTabLoading && (
+        <View style={StyleSheet.absoluteFillObject}>
+          <View style={[styles.loadingOverlayBg, { backgroundColor: 'rgba(8, 16, 43, 0.45)' }]} />
+          <View style={styles.loadingContainer}>
+            <View style={[styles.loadingBox, { backgroundColor: c.card, borderColor: c.border }]}>
+              <ActivityIndicator size="large" color={c.primary} />
+              <Text style={[styles.loadingText, { color: c.foreground }]}>
+                Processing...
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -1203,5 +1359,32 @@ const styles = StyleSheet.create({
   },
   runtimeStack: {
     gap: 14,
+  },
+  loadingOverlayBg: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 99999,
+  },
+  loadingBox: {
+    padding: 24,
+    borderRadius: 20,
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 8,
+    minWidth: 130,
+  },
+  loadingText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: -0.1,
   },
 });

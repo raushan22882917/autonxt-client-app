@@ -10,6 +10,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -208,7 +209,11 @@ export function FleetHeader() {
             />
             <View style={styles.headerDropdownLeft}>
               <View style={styles.headerDropdownIconWrap}>
-                <Feather name="layers" size={11} color="#7E152F" />
+                <Image
+                  source={require('@/assets/images/LogoLocation.png')}
+                  style={{ width: 14, height: 14 }}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={styles.headerDropdownValue} numberOfLines={1}>
                 {selectedLabel}
@@ -468,11 +473,13 @@ function PlantOption({
       activeOpacity={0.75}
     >
       <View style={[styles.optionIcon, { backgroundColor: active ? c.primary : c.surfaceAlt }]}>
-        <Feather
-          name={hub ? 'home' : active ? 'check' : 'map-pin'}
-          size={15}
-          color={active ? c.primaryForeground : c.mutedForeground}
-        />
+        {active ? (
+          <Feather name="check" size={15} color={c.primaryForeground} />
+        ) : hub ? (
+          <Feather name="home" size={15} color={c.mutedForeground} />
+        ) : (
+          <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 22, height: 22 }} resizeMode="contain" />
+        )}
       </View>
       <View style={styles.optionBody}>
         <Text style={[styles.optionLabel, { color: c.foreground }]} numberOfLines={1}>

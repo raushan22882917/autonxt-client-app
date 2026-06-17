@@ -13,6 +13,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -279,7 +280,7 @@ export default function TractorsScreen() {
             {/* Header */}
             <View style={[styles.dropdownHeader, { borderBottomColor: c.hairline }]}>
               <View style={[styles.headerIconWrap, { backgroundColor: c.primary + '12' }]}>
-                <Feather name="map-pin" size={18} color={c.primary} />
+                <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 24, height: 24 }} resizeMode="contain" />
               </View>
               <View style={styles.headerTextWrap}>
                 <Text style={[styles.dropdownHeaderTitle, { color: c.foreground }]}>Select Plant</Text>
@@ -386,11 +387,13 @@ export default function TractorsScreen() {
                     activeOpacity={0.75}
                   >
                     <View style={[styles.dropdownItemIcon, { backgroundColor: isSelected ? c.primary : c.surfaceAlt }]}>
-                      <Feather
-                        name={p.plantType === 'HUB_WAREHOUSE' ? 'home' : isSelected ? 'check' : 'map-pin'}
-                        size={15}
-                        color={isSelected ? c.primaryForeground : c.mutedForeground}
-                      />
+                      {isSelected ? (
+                        <Feather name="check" size={15} color={c.primaryForeground} />
+                      ) : p.plantType === 'HUB_WAREHOUSE' ? (
+                        <Feather name="home" size={15} color={c.mutedForeground} />
+                      ) : (
+                        <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 18, height: 18 }} resizeMode="contain" />
+                      )}
                     </View>
                     <View style={styles.dropdownItemBody}>
                       <Text style={[styles.dropdownItemLabel, { color: c.foreground }]} numberOfLines={1}>

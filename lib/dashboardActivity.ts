@@ -12,6 +12,7 @@ export interface ActivityItem {
   icon: 'alert-circle' | 'alert-triangle' | 'tool' | 'wifi-off' | 'battery-charging' | 'bell' | 'check-circle';
   severity?: 'info' | 'warning' | 'critical';
   complaintID?: string;
+  tractorID?: string;
 }
 
 function parseTime(iso: string): number {
@@ -50,6 +51,7 @@ export function buildDashboardActivity(
       icon: isBreakdown || c.severity === 'CRITICAL' ? 'alert-triangle' : 'alert-circle',
       severity: sev,
       complaintID: c.complaintID,
+      tractorID: c.tractorID || undefined,
     });
   }
 
@@ -63,6 +65,7 @@ export function buildDashboardActivity(
         timestamp: t.telemetryAt || t.updatedAt || t.createdAt || new Date(0).toISOString(),
         icon: 'tool',
         severity: 'warning',
+        tractorID: t.tractorID,
       });
     } else if (t.status === 'OFFLINE') {
       items.push({
@@ -73,6 +76,7 @@ export function buildDashboardActivity(
         timestamp: t.telemetryAt || t.updatedAt || new Date(0).toISOString(),
         icon: 'wifi-off',
         severity: 'warning',
+        tractorID: t.tractorID,
       });
     } else if (t.isCharging) {
       items.push({
@@ -83,6 +87,7 @@ export function buildDashboardActivity(
         timestamp: t.telemetryAt || new Date(0).toISOString(),
         icon: 'battery-charging',
         severity: 'info',
+        tractorID: t.tractorID,
       });
     }
   }
@@ -100,6 +105,7 @@ export function buildDashboardActivity(
       icon: 'alert-triangle',
       severity: 'critical',
       complaintID: c.complaintID,
+      tractorID: c.tractorID || undefined,
     });
   }
 
@@ -116,6 +122,7 @@ export function buildDashboardActivity(
       icon: 'check-circle',
       severity: 'info',
       complaintID: c.complaintID,
+      tractorID: c.tractorID || undefined,
     });
   }
 

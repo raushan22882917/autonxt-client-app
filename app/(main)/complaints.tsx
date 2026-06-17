@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   View,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -816,7 +817,11 @@ export default function ComplaintsScreen() {
                     justifyContent: 'center',
                     backgroundColor: !selectedPlantID ? c.primary : c.surfaceAlt,
                   }}>
-                    <Feather name={!selectedPlantID ? 'check' : 'map-pin'} size={14} color={!selectedPlantID ? '#FFFFFF' : c.mutedForeground} />
+                    {!selectedPlantID ? (
+                      <Feather name="check" size={14} color="#FFFFFF" />
+                    ) : (
+                      <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 18, height: 18 }} resizeMode="contain" />
+                    )}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: c.foreground }}>
@@ -862,7 +867,11 @@ export default function ComplaintsScreen() {
                       justifyContent: 'center',
                       backgroundColor: active ? c.primary : c.surfaceAlt,
                     }}>
-                      <Feather name={active ? 'check' : 'map-pin'} size={14} color={active ? '#FFFFFF' : c.mutedForeground} />
+                      {active ? (
+                        <Feather name="check" size={14} color="#FFFFFF" />
+                      ) : (
+                        <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 18, height: 18 }} resizeMode="contain" />
+                      )}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: c.foreground }} numberOfLines={1}>

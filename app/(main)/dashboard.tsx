@@ -25,6 +25,8 @@ import {
 import { FleetStatusCard } from '@/components/FleetStatusCard';
 import { LoadingRing } from '@/components/LoadingRing';
 import { StatCard } from '@/components/StatCard';
+import { TractorImage } from '@/components/TractorImage';
+import { type TractorImageFields } from '@/lib/tractorImages';
 
 // ── Background Ambient Glows ─────────────────────────────────────────────────
 function BackgroundAmbientGlows() {
@@ -463,14 +465,18 @@ export default function DashboardScreen() {
             </View>
           ) : (
             <View style={{ gap: 10 }}>
-              {activity.map((item) => (
-                <ActivityRow
-                  key={item.id}
-                  item={item}
-                  c={c}
-                  onPress={onActivityPress(item, router)}
-                />
-              ))}
+              {activity.map((item) => {
+                const tractor = filteredTractors.find(t => t.tractorID === item.tractorID);
+                return (
+                  <ActivityRow
+                    key={item.id}
+                    item={item}
+                    tractor={tractor}
+                    c={c}
+                    onPress={onActivityPress(item, router)}
+                  />
+                );
+              })}
             </View>
           )}
         </View>
@@ -489,10 +495,12 @@ function onActivityPress(item: ActivityItem, router: ReturnType<typeof useRouter
 
 function ActivityRow({
   item,
+  tractor,
   c,
   onPress,
 }: {
   item: ActivityItem;
+  tractor?: TractorImageFields;
   c: ReturnType<typeof useColors>;
   onPress: () => void;
 }) {
@@ -539,12 +547,21 @@ function ActivityRow({
       {/* Thick left stripe */}
       <View style={[styles.activityStripeNew, { backgroundColor: c.primary }]} />
 
-      {/* Brackets [⚡] icon wrap */}
-      <View style={styles.activityIconNew}>
-        <Text style={styles.bracketText}>[</Text>
-        <Feather name={getFeatherIconName(item.icon) as any} size={11} color={c.primary} />
-        <Text style={styles.bracketText}>]</Text>
-      </View>
+      {/* Brackets [⚡] icon wrap / Tractor Image */}
+      {tractor ? (
+        <View style={{ width: 48, height: 48, flexShrink: 0, marginLeft: 4 }}>
+          <TractorImage
+            tractor={tractor}
+            colorful={false}
+          />
+        </View>
+      ) : (
+        <View style={styles.activityIconNew}>
+          <Text style={styles.bracketText}>[</Text>
+          <Feather name={getFeatherIconName(item.icon) as any} size={14} color={c.primary} />
+          <Text style={styles.bracketText}>]</Text>
+        </View>
+      )}
 
       <View style={styles.activityBodyNew}>
         <Text style={[styles.activityTitleNew, { color: c.foreground }]} numberOfLines={1}>
@@ -1081,9 +1098,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 16,
   },
   activityIconNew: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: '#FDF2F4', // Soft pinkish bg
     flexDirection: 'row',
     alignItems: 'center',
@@ -1094,7 +1111,7 @@ const styles = StyleSheet.create({
   },
   bracketText: {
     color: '#7E152F', // Burgundy c.primary
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Inter_700Bold',
   },
   activityBodyNew: {
