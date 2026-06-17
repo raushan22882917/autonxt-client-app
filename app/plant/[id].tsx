@@ -161,7 +161,7 @@ export default function PlantDetailScreen() {
 
 
 
-  const complaintColumns = useMemo(() => plantComplaintTableColumns(), []);
+  const complaintColumns = useMemo(() => plantComplaintTableColumns(fleet.plantRuntime), [fleet.plantRuntime]);
   const tractorColumns = useMemo(() => plantTractorColumns(), []);
 
   const runtimeLogCols = useMemo(() => plantRuntimeLogColumns(), []);
@@ -269,7 +269,7 @@ export default function PlantDetailScreen() {
             rowBgColorEven={c.card}
             borderColor={c.redBorder}
             outerBorderColor={c.redBorder}
-            getRowBgColor={m => (m.openTickets > 0 || m.tractor.status === 'MAINTENANCE') ? '#FFECEC' : undefined}
+            getRowBgColor={m => m.openTickets > 0 ? '#FFFDE7' : m.tractor.status === 'MAINTENANCE' ? '#FFECEC' : undefined}
           />
         );
       case 'breakdown':
@@ -468,7 +468,7 @@ export default function PlantDetailScreen() {
           }}>
             <View style={{ flex: 1, alignItems: 'center', gap: 3 }}>
               <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: c.warning }}>
-                {summary.breakdownOpen}
+                {underMaintCount}
               </Text>
               <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, textAlign: 'center' }}>
                 Breakdown open
@@ -478,10 +478,10 @@ export default function PlantDetailScreen() {
             
             <View style={{ flex: 1, alignItems: 'center', gap: 3 }}>
               <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: c.primary }}>
-                {summary.runtimeHours > 0 ? `${Math.round(summary.runtimeHours)}h` : '—'}
+                {Math.round(fleet.plantTractors.reduce((sum, t) => sum + (t.totalRuntime || 0), 0))}h
               </Text>
               <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, textAlign: 'center' }}>
-                Runtime logged
+                Cumulative runtime
               </Text>
             </View>
             <View style={{ width: 1, height: 30, backgroundColor: c.border, alignSelf: 'center' }} />
@@ -668,7 +668,7 @@ export default function PlantDetailScreen() {
 
           {/* SECTION 4: Uptime progress bar track at bottom */}
           <View style={{ height: 6, backgroundColor: c.track, borderRadius: 3, overflow: 'hidden' }}>
-            <View style={{ height: '100%', borderRadius: 3, backgroundColor: uptimeColor, width: `${Math.min(100, uptimePct)}%` }} />
+            <View style={{ height: '100%', borderRadius: 3, backgroundColor: c.success, width: '100%' }} />
           </View>
         </View>
 

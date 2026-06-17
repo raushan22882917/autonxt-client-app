@@ -146,7 +146,9 @@ export function buildPlantRuntimeLogRows(
     }));
 }
 
-export function plantComplaintTableColumns(): DataTableColumn<Complaint>[] {
+export function plantComplaintTableColumns(
+  runtimeRecords?: RuntimeRecord[]
+): DataTableColumn<Complaint>[] {
   return [
     {
       key: 'tractor',
@@ -168,6 +170,25 @@ export function plantComplaintTableColumns(): DataTableColumn<Complaint>[] {
       flex: 0.7,
       minWidth: 80,
       render: c => formatDate(c.createdAt),
+    },
+    {
+      key: 'todayCumulative',
+      label: 'Today Cum.',
+      flex: 0.9,
+      minWidth: 90,
+      align: 'right',
+      render: c => {
+        if (!runtimeRecords) return '—';
+        const dateStr = c.createdAt.substring(0, 10);
+        const entry = runtimeRecords.find(
+          r => r.tractorID === c.tractorID && r.date.substring(0, 10) === dateStr
+        );
+        if (entry) {
+          const hours = manualRuntimeDayHours(entry);
+          return hours > 0 ? `${hours.toFixed(1)}h` : '0.0h';
+        }
+        return '—';
+      },
     },
   ];
 }
