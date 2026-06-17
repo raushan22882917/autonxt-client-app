@@ -22,7 +22,7 @@ import {
   buildPlantRuntimeLogRows,
   plantComplaintTableColumns,
   plantRuntimeLogColumns,
-  plantRuntimeTractorColumns,
+
   plantTractorColumns,
 } from '@/lib/plantDetailTables';
 import { complaintPeriodLabel, type ComplaintPeriod } from '@/lib/complaintFilters';
@@ -33,7 +33,7 @@ import {
   filterComplaintsByPeriod,
   filterPlantComplaints,
   filterRuntimeLogs,
-  filterRuntimeRecordsByPeriod,
+
   filterTractorMetrics,
   plantDetailFilterSummary,
   type PlantDetailFilterValues,
@@ -53,6 +53,14 @@ const TABS: { key: TabKey; label: string; icon: keyof typeof Feather.glyphMap }[
   { key: 'tickets', label: 'Tickets', icon: 'inbox' },
   { key: 'runtime', label: 'Runtime', icon: 'clock' },
 ];
+
+const cleanLocation = (loc?: string) => {
+  if (!loc) return '';
+  return loc
+    .replace(/\s*\(\s*(?:Lat:\s*)?-?\d+(?:\.\d+)?\s*,\s*(?:Lon:\s*)?-?\d+(?:\.\d+)?\s*\)/gi, '')
+    .replace(/\s*(?:Lat:\s*)?-?\d+(?:\.\d+)?\s*,\s*(?:Lon:\s*)?-?\d+(?:\.\d+)?/gi, '')
+    .trim();
+};
 
 export default function PlantDetailScreen() {
   const c = useColors();
@@ -135,50 +143,36 @@ export default function PlantDetailScreen() {
     [metricsBase, appliedFilters]
   );
   const filteredBreakdown = useMemo(
-    () => filterPlantComplaints(breakdownInPeriod, appliedFilters),
-    [breakdownInPeriod, appliedFilters]
+    () => filterPlantComplaints(breakdownSource, { ...appliedFilters, period: 'ALL' }),
+    [breakdownSource, appliedFilters]
   );
   const filteredTickets = useMemo(
-    () => filterPlantComplaints(openTicketsInPeriod, appliedFilters),
-    [openTicketsInPeriod, appliedFilters]
+    () => filterPlantComplaints(openTicketsSource, { ...appliedFilters, period: 'ALL' }),
+    [openTicketsSource, appliedFilters]
   );
-  const runtimeInPeriod = useMemo(
-    () => filterRuntimeRecordsByPeriod(fleet.plantRuntime, period, customMonth),
-    [fleet.plantRuntime, period, customMonth]
-  );
-  const runtimeLogRows = useMemo(
-    () => buildPlantRuntimeLogRows(runtimeInPeriod, tractorLabel),
-    [runtimeInPeriod, tractorLabel]
+  const runtimeLogRowsAll = useMemo(
+    () => buildPlantRuntimeLogRows(fleet.plantRuntime, tractorLabel),
+    [fleet.plantRuntime, tractorLabel]
   );
   const filteredRuntimeLogs = useMemo(
-    () => filterRuntimeLogs(runtimeLogRows, appliedFilters),
-    [runtimeLogRows, appliedFilters]
+    () => filterRuntimeLogs(runtimeLogRowsAll, { ...appliedFilters, period: 'ALL' }),
+    [runtimeLogRowsAll, appliedFilters]
   );
-  const runtimeTractorsDisplay = useMemo(() => {
-    if (period !== 'ALL') return filteredTractors;
-    const ids = new Set(filteredRuntimeLogs.map(r => r.tractorID));
-    if (ids.size === 0 && !appliedFilters.tractorID && !appliedFilters.search.trim())
-      return filteredTractors;
-    return filteredTractors.filter(m => ids.has(m.tractor.tractorID));
-  }, [filteredTractors, filteredRuntimeLogs, period, appliedFilters]);
-  const logCountByTractor = useMemo(() => {
-    const map = new Map<string, number>();
-    filteredRuntimeLogs.forEach(r => { map.set(r.tractorID, (map.get(r.tractorID) ?? 0) + 1); });
-    return map;
-  }, [filteredRuntimeLogs]);
+
+
 
   const complaintColumns = useMemo(() => plantComplaintTableColumns(), []);
   const tractorColumns = useMemo(() => plantTractorColumns(), []);
-  const runtimeTractorCols = useMemo(() => plantRuntimeTractorColumns(logCountByTractor), [logCountByTractor]);
+
   const runtimeLogCols = useMemo(() => plantRuntimeLogColumns(), []);
 
   const tabMeta = useMemo(() => ({
     tractors:  { count: filteredTractors.length,    total: metricsBase.length },
-    breakdown: { count: filteredBreakdown.length,   total: breakdownInPeriod.length },
-    tickets:   { count: filteredTickets.length,     total: openTicketsInPeriod.length },
-    runtime:   { count: filteredRuntimeLogs.length, total: runtimeLogRows.length },
+    breakdown: { count: filteredBreakdown.length,   total: breakdownSource.length },
+    tickets:   { count: filteredTickets.length,     total: openTicketsSource.length },
+    runtime:   { count: filteredRuntimeLogs.length, total: runtimeLogRowsAll.length },
   }), [filteredTractors, filteredBreakdown, filteredTickets, filteredRuntimeLogs,
-       metricsBase.length, breakdownInPeriod.length, openTicketsInPeriod.length, runtimeLogRows.length]);
+       metricsBase.length, breakdownSource.length, openTicketsSource.length, runtimeLogRowsAll.length]);
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -212,6 +206,26 @@ export default function PlantDetailScreen() {
   }
 
   const currentMeta = tabMeta[tab];
+
+  const underMaintCount = useMemo(() => {
+    return fleet.plantComplaints.filter(isActiveComplaint).length;
+  }, [fleet.plantComplaints]);
+
+  const inUseNowCount = useMemo(() => {
+    return Math.max(0, fleet.plantTractors.length - underMaintCount);
+  }, [fleet.plantTractors.length, underMaintCount]);
+
+  const uptimePct = useMemo(() => {
+    const total = fleet.plantTractors.length;
+    if (total === 0) return 0;
+    return Math.round((inUseNowCount / total) * 100);
+  }, [inUseNowCount, fleet.plantTractors.length]);
+
+  const downtimePct = useMemo(() => {
+    const total = fleet.plantTractors.length;
+    if (total === 0) return 0;
+    return Math.round((underMaintCount / total) * 100);
+  }, [underMaintCount, fleet.plantTractors.length]);
   const dateLabel = useMemo(() => {
     return complaintPeriodLabel(
       appliedFilters.period,
@@ -255,13 +269,14 @@ export default function PlantDetailScreen() {
             rowBgColorEven={c.card}
             borderColor={c.redBorder}
             outerBorderColor={c.redBorder}
+            getRowBgColor={m => (m.openTickets > 0 || m.tractor.status === 'MAINTENANCE') ? '#FFECEC' : undefined}
           />
         );
       case 'breakdown':
         return (
           <DataTable
             title="Breakdown history"
-            subtitle={`${filteredBreakdown.length} of ${breakdownInPeriod.length} in range`}
+            subtitle={`${filteredBreakdown.length} of ${breakdownSource.length} entries`}
             columns={complaintColumns}
             data={filteredBreakdown}
             keyExtractor={r => r.complaintID}
@@ -284,7 +299,7 @@ export default function PlantDetailScreen() {
         return (
           <DataTable
             title="Open tickets"
-            subtitle={`${filteredTickets.length} of ${openTicketsInPeriod.length} in range`}
+            subtitle={`${filteredTickets.length} of ${openTicketsSource.length} entries`}
             columns={complaintColumns}
             data={filteredTickets}
             keyExtractor={r => r.complaintID}
@@ -305,53 +320,31 @@ export default function PlantDetailScreen() {
         );
       case 'runtime':
         return (
-          <View style={styles.runtimeStack}>
-            <DataTable
-              title="Tractor runtime"
-              subtitle={`${runtimeTractorsDisplay.length} tractor${runtimeTractorsDisplay.length === 1 ? '' : 's'}`}
-              columns={runtimeTractorCols}
-              data={runtimeTractorsDisplay}
-              keyExtractor={m => m.tractor.tractorID}
-              emptyMessage="No tractors match filters"
-              compact
-              showRowChevron
-              stickyFirstColumn
-              onRowPress={m => openTractor(m.tractor.tractorID)}
-              titleColor="#FFFFFF"
-              titleBgGradient={[c.gradientEnd, '#be1e2d']}
-              headerBgColor={c.redSoft}
-              headerTextColor={c.primary}
-              rowBgColorOdd={c.redSoft + '40'}
-              rowBgColorEven={c.card}
-              borderColor={c.redBorder}
-              outerBorderColor={c.redBorder}
-            />
-            <DataTable
-              title="Manual log"
-              subtitle={`${filteredRuntimeLogs.length} of ${runtimeLogRows.length} entries`}
-              columns={runtimeLogCols}
-              data={filteredRuntimeLogs}
-              keyExtractor={r => r.recordID}
-              emptyMessage="No log entries match filters"
-              compact
-              showRowChevron
-              stickyFirstColumn
-              onRowPress={r => openTractor(r.tractorID)}
-              titleColor="#FFFFFF"
-              titleBgGradient={[c.gradientEnd, '#be1e2d']}
-              headerBgColor={c.redSoft}
-              headerTextColor={c.primary}
-              rowBgColorOdd={c.redSoft + '40'}
-              rowBgColorEven={c.card}
-              borderColor={c.redBorder}
-              outerBorderColor={c.redBorder}
-            />
-          </View>
+          <DataTable
+            title="Manual log"
+            subtitle={`${filteredRuntimeLogs.length} of ${runtimeLogRowsAll.length} entries`}
+            columns={runtimeLogCols}
+            data={filteredRuntimeLogs}
+            keyExtractor={r => r.recordID}
+            emptyMessage="No log entries match filters"
+            compact
+            showRowChevron
+            stickyFirstColumn
+            onRowPress={r => openTractor(r.tractorID)}
+            titleColor="#FFFFFF"
+            titleBgGradient={[c.gradientEnd, '#be1e2d']}
+            headerBgColor={c.redSoft}
+            headerTextColor={c.primary}
+            rowBgColorOdd={c.redSoft + '40'}
+            rowBgColorEven={c.card}
+            borderColor={c.redBorder}
+            outerBorderColor={c.redBorder}
+          />
         );
       default: return null;
     }
   };
-  const uptimeColor = summary.uptimePct >= 75 ? c.success : summary.uptimePct >= 50 ? c.warning : c.red;
+  const uptimeColor = uptimePct >= 75 ? c.success : uptimePct >= 50 ? c.warning : c.red;
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
@@ -374,22 +367,21 @@ export default function PlantDetailScreen() {
             <Text style={{ fontSize: 36, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textAlign: 'center' }}>
               {plant.name}
             </Text>
-            {plant.location ? (
+            {cleanLocation(plant.location) ? (
               <Text style={{ fontSize: 12, fontFamily: 'Inter_500Medium', color: 'rgba(255, 255, 255, 0.7)', marginTop: 4, textAlign: 'center' }}>
-                {plant.location}
+                {cleanLocation(plant.location)}
               </Text>
             ) : null}
           </View>
         </View>
 
         {/* Progress / Slider Indicator */}
-        <View style={{ height: 4, backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 2, position: 'relative', marginTop: 16, marginBottom: 8 }}>
-          <View style={{ height: 4, backgroundColor: '#FFFFFF', borderRadius: 2, width: `${Math.min(100, summary.uptimePct)}%` }} />
+        <View style={{ height: 4, backgroundColor: '#FFFFFF', borderRadius: 2, position: 'relative', marginTop: 16, marginBottom: 8 }}>
           <View
             style={{
               position: 'absolute',
               top: -5,
-              left: `${Math.min(100, summary.uptimePct)}%`,
+              left: '100%',
               width: 14,
               height: 14,
               borderRadius: 7,
@@ -429,13 +421,13 @@ export default function PlantDetailScreen() {
             gap: 12, // increased from 10
           }}
         >
-          {/* SECTION 1: Status List (Tractors, In operation, Maintenance, Open tickets) */}
+          {/* SECTION 1: Status List (Commissioned fleet, In use now, Under maint/breakdown, Total breakdowns) */}
           <View>
             {[
-              { label: 'Tractors',     value: `${summary.tractorCount} units`, dotColor: theme.accent, showBorder: true },
-              { label: 'In operation', value: `${summary.inOperation} units`,  dotColor: c.success, showBorder: true },
-              { label: 'Maintenance',  value: `${summary.maintenance} units`,  dotColor: c.warning, showBorder: true },
-              { label: 'Open tickets', value: `${summary.openTickets} open`,    dotColor: c.red, showBorder: false },
+              { label: 'Commissioned fleet',   value: `${fleet.plantTractors.length}`, dotColor: theme.accent, showBorder: true },
+              { label: 'In use now',           value: `${inUseNowCount}`,  dotColor: c.success, showBorder: true },
+              { label: 'Under maint/breakdown', value: `${underMaintCount}`, dotColor: c.warning, showBorder: true },
+              { label: 'Total breakdowns',     value: `${fleet.plantComplaints.length}`, dotColor: c.red, showBorder: false },
             ].map((item, idx) => (
               <View
                 key={item.label}
@@ -496,7 +488,7 @@ export default function PlantDetailScreen() {
             
             <View style={{ flex: 1, alignItems: 'center', gap: 3 }}>
               <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: uptimeColor }}>
-                {formatPct(summary.uptimePct)}
+                {formatPct(uptimePct)}
               </Text>
               <Text style={{ fontSize: 10, fontFamily: 'Inter_500Medium', color: c.mutedForeground, textAlign: 'center' }}>
                 Fleet uptime
@@ -584,7 +576,7 @@ export default function PlantDetailScreen() {
                   numberOfLines={1}
                   adjustsFontSizeToFit
                 >
-                  {formatPct(summary.uptimePct)}
+                  {formatPct(uptimePct)}
                 </Text>
               </View>
 
@@ -626,7 +618,7 @@ export default function PlantDetailScreen() {
                   numberOfLines={1}
                   adjustsFontSizeToFit
                 >
-                  {formatPct(summary.downtimePct)}
+                  {formatPct(downtimePct)}
                 </Text>
               </View>
 
@@ -676,7 +668,7 @@ export default function PlantDetailScreen() {
 
           {/* SECTION 4: Uptime progress bar track at bottom */}
           <View style={{ height: 6, backgroundColor: c.track, borderRadius: 3, overflow: 'hidden' }}>
-            <View style={{ height: '100%', borderRadius: 3, backgroundColor: uptimeColor, width: `${Math.min(100, summary.uptimePct)}%` }} />
+            <View style={{ height: '100%', borderRadius: 3, backgroundColor: uptimeColor, width: `${Math.min(100, uptimePct)}%` }} />
           </View>
         </View>
 

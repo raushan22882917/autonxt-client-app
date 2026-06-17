@@ -1,8 +1,10 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import type { PlantSummary } from '@/lib/plantAnalysis';
+
+const PlantLogo = require('@/assets/images/PlantLogo.png');
 
 type Props = {
   summary: PlantSummary;
@@ -28,10 +30,15 @@ export function PlantAnalysisCard({ summary, onPress }: Props) {
       onPress={onPress}
       activeOpacity={0.82}
     >
-      {/* Left side: Solid circular badge containing total tractors count */}
-      <View style={[styles.leftBadgeWrap, { backgroundColor: accentColor }]}>
-        <Text style={styles.leftBadgeText}>{tractorCount}</Text>
-      </View>
+      {/* Left side: Plant logo image */}
+      <Image
+        source={PlantLogo}
+        style={styles.logoImage}
+        resizeMode="contain"
+      />
+
+      {/* Vertical divider line between logo and name */}
+      <View style={[styles.verticalDivider, { backgroundColor: '#E2E8F0' }]} />
 
       {/* Middle section: Plant name */}
       <View style={styles.middleSection}>
@@ -67,18 +74,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 1,
   },
-  leftBadgeWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  leftBadgeText: {
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    color: '#FFFFFF',
+  logoImage: {
+    width: 26,
+    height: 26,
+    marginRight: 0,
   },
   middleSection: {
     flex: 1,

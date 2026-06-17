@@ -47,6 +47,7 @@ export interface DataTableProps<T> {
   backgroundColor?: string;
   textColor?: string;
   stickyFirstColumn?: boolean;
+  getRowBgColor?: (row: T, index: number) => string | undefined;
 }
 
 export function DataTable<T>({
@@ -73,6 +74,7 @@ export function DataTable<T>({
   backgroundColor,
   textColor,
   stickyFirstColumn = false,
+  getRowBgColor,
 }: DataTableProps<T>) {
   const c = useColors();
 
@@ -186,9 +188,9 @@ export function DataTable<T>({
           : {};
 
         const defaultRowBg = rowIndex % 2 === 1 ? c.surfaceAlt + '66' : c.card;
-        const customRowBg = rowIndex % 2 === 1 
+        const customRowBg = getRowBgColor?.(row, rowIndex) || (rowIndex % 2 === 1 
           ? (rowBgColorOdd || defaultRowBg) 
-          : (rowBgColorEven || defaultRowBg);
+          : (rowBgColorEven || defaultRowBg));
 
         return (
           <RowWrap
@@ -319,7 +321,7 @@ export function DataTable<T>({
         const RowWrap = onRowPress ? TouchableOpacity : View;
         const rowProps = onRowPress ? { onPress: () => onRowPress(row, rowIndex), activeOpacity: 0.72 } : {};
         const defaultRowBg = rowIndex % 2 === 1 ? c.surfaceAlt + '66' : c.card;
-        const customRowBg = rowIndex % 2 === 1 ? (rowBgColorOdd || defaultRowBg) : (rowBgColorEven || defaultRowBg);
+        const customRowBg = getRowBgColor?.(row, rowIndex) || (rowIndex % 2 === 1 ? (rowBgColorOdd || defaultRowBg) : (rowBgColorEven || defaultRowBg));
         
         return (
           <RowWrap
@@ -455,7 +457,7 @@ export function DataTable<T>({
         const RowWrap = onRowPress ? TouchableOpacity : View;
         const rowProps = onRowPress ? { onPress: () => onRowPress(row, rowIndex), activeOpacity: 0.72 } : {};
         const defaultRowBg = rowIndex % 2 === 1 ? c.surfaceAlt + '66' : c.card;
-        const customRowBg = rowIndex % 2 === 1 ? (rowBgColorOdd || defaultRowBg) : (rowBgColorEven || defaultRowBg);
+        const customRowBg = getRowBgColor?.(row, rowIndex) || (rowIndex % 2 === 1 ? (rowBgColorOdd || defaultRowBg) : (rowBgColorEven || defaultRowBg));
 
         return (
           <RowWrap

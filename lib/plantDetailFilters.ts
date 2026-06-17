@@ -135,9 +135,7 @@ export function applyPeriodToTractorMetrics(
     customMonth
   );
 
-  return metrics
-    .filter(m => activeIds.has(m.tractor.tractorID))
-    .map(m => {
+  return metrics.map(m => {
       const tid = m.tractor.tractorID;
       const periodComplaints = plantComplaints.filter(
         c => c.tractorID === tid && isComplaintInPeriod(c, period, customMonth)

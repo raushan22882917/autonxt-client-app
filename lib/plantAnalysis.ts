@@ -107,8 +107,13 @@ export function buildPlantSummary(
   colorIndex: number
 ): PlantSummary {
   const plantTractors = tractors.filter(t => t.plantID === plant.plantID);
-  const plantComplaints = complaints.filter(c => c.plantID === plant.plantID);
-  const plantRuntime = runtimeRecords.filter(r => r.plantID === plant.plantID);
+  const plantTractorIDs = new Set(plantTractors.map(t => t.tractorID));
+  const plantComplaints = complaints.filter(
+    c => c.plantID === plant.plantID || (c.tractorID && plantTractorIDs.has(c.tractorID))
+  );
+  const plantRuntime = runtimeRecords.filter(
+    r => r.plantID === plant.plantID || (r.tractorID && plantTractorIDs.has(r.tractorID))
+  );
 
   const active = plantTractors.filter(t => t.status === 'ACTIVE').length;
   const idle = plantTractors.filter(t => t.status === 'IDLE').length;
@@ -173,8 +178,13 @@ export function getPlantFleet(
   runtimeRecords: RuntimeRecord[]
 ) {
   const plantTractors = tractors.filter(t => t.plantID === plantID);
-  const plantComplaints = complaints.filter(c => c.plantID === plantID);
-  const plantRuntime = runtimeRecords.filter(r => r.plantID === plantID);
+  const plantTractorIDs = new Set(plantTractors.map(t => t.tractorID));
+  const plantComplaints = complaints.filter(
+    c => c.plantID === plantID || (c.tractorID && plantTractorIDs.has(c.tractorID))
+  );
+  const plantRuntime = runtimeRecords.filter(
+    r => r.plantID === plantID || (r.tractorID && plantTractorIDs.has(r.tractorID))
+  );
   const tractorMetrics = plantTractors.map(t =>
     buildTractorPlantMetrics(t, complaints, runtimeRecords)
   );

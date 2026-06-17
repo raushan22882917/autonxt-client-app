@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Text } from 'react-native';
 import type { DataTableColumn } from '@/components/DataTable';
 import { StatusBadge } from '@/components/StatusBadge';
 import type { Complaint, RuntimeRecord } from '@/lib/appsync';
@@ -15,110 +15,19 @@ export type PlantRuntimeLogRow = RuntimeRecord & {
 export function plantTractorColumns(): DataTableColumn<TractorPlantMetrics>[] {
   return [
     {
-      key: 'tractor',
-      label: 'Tractor',
-      flex: 1.35,
-      minWidth: 99,
-      render: m => m.tractor.displayName || m.tractor.model || m.tractor.tractorID,
+      key: 'alias',
+      label: 'Alias',
+      flex: 1.2,
+      minWidth: 100,
+      render: m => m.tractor.alias || '—',
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: 'createdAt',
+      label: 'Created',
       flex: 1,
-      minWidth: 72,
-      render: m => (
-        <View style={{ alignSelf: 'flex-start' }}>
-          <StatusBadge status={m.tractor.status} small />
-        </View>
-      ),
-    },
-    {
-      key: 'uptime',
-      label: 'Uptime',
-      flex: 0.75,
-      minWidth: 52,
+      minWidth: 100,
       align: 'right',
-      render: m => formatPct(m.uptimePct),
-    },
-    {
-      key: 'downtime',
-      label: 'Down',
-      flex: 0.75,
-      minWidth: 48,
-      align: 'right',
-      render: m => formatPct(m.downtimePct),
-    },
-    {
-      key: 'repair',
-      label: 'Repair',
-      flex: 0.7,
-      minWidth: 44,
-      align: 'right',
-      render: m => (m.repairDays > 0 ? `${m.repairDays}d` : '—'),
-    },
-    {
-      key: 'hours',
-      label: 'Hours',
-      flex: 0.75,
-      minWidth: 48,
-      align: 'right',
-      render: m => (m.manualHours > 0 ? `${m.manualHours.toFixed(1)}h` : '—'),
-    },
-    {
-      key: 'tickets',
-      label: 'Open',
-      flex: 0.55,
-      minWidth: 40,
-      align: 'right',
-      render: m => (m.openTickets > 0 ? String(m.openTickets) : '—'),
-    },
-  ];
-}
-
-export function plantComplaintTableColumns(): DataTableColumn<Complaint>[] {
-  return [
-    {
-      key: 'date',
-      label: 'Raised',
-      flex: 1,
-      minWidth: 72,
-      render: row => formatDate(row.createdAt),
-    },
-    {
-      key: 'title',
-      label: 'Title',
-      flex: 1.4,
-      minWidth: 80,
-      render: row => row.title,
-    },
-    {
-      key: 'tractor',
-      label: 'Tractor',
-      flex: 1,
-      minWidth: 64,
-      render: row => row.tractorModel || row.tractorID || '—',
-    },
-    {
-      key: 'severity',
-      label: 'Severity',
-      flex: 0.95,
-      minWidth: 68,
-      render: row => (
-        <View style={{ alignSelf: 'flex-start' }}>
-          <StatusBadge status={row.severity} small />
-        </View>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      flex: 0.95,
-      minWidth: 72,
-      render: row => (
-        <View style={{ alignSelf: 'flex-start' }}>
-          <StatusBadge status={row.status} small />
-        </View>
-      ),
+      render: m => m.tractor.createdAt ? formatDate(m.tractor.createdAt) : '—',
     },
   ];
 }
@@ -126,44 +35,42 @@ export function plantComplaintTableColumns(): DataTableColumn<Complaint>[] {
 export function plantRuntimeLogColumns(): DataTableColumn<PlantRuntimeLogRow>[] {
   return [
     {
+      key: 'alias',
+      label: 'Alias',
+      flex: 1.2,
+      minWidth: 100,
+      render: r => r.tractorLabel || '—',
+    },
+    {
       key: 'date',
       label: 'Date',
       flex: 1,
-      minWidth: 72,
+      minWidth: 80,
       render: r => formatDate(r.date),
     },
     {
-      key: 'tractor',
-      label: 'Tractor',
-      flex: 1.2,
-      minWidth: 72,
-      render: r => r.tractorLabel,
-    },
-    {
-      key: 'hours',
-      label: 'Hours',
-      flex: 0.7,
-      minWidth: 48,
-      align: 'right',
-      render: r => (r.dayHours > 0 ? r.dayHours.toFixed(1) : '—'),
-    },
-    {
       key: 'start',
-      label: 'Start',
-      flex: 0.85,
-      minWidth: 52,
+      label: 'Start Cum.',
+      flex: 1,
+      minWidth: 80,
       align: 'right',
-      render: r =>
-        r.startCumulativeRuntime != null ? String(r.startCumulativeRuntime) : '—',
+      render: r => r.startCumulativeRuntime != null ? String(r.startCumulativeRuntime) : '—',
     },
     {
       key: 'end',
-      label: 'End',
-      flex: 0.85,
-      minWidth: 52,
+      label: 'End Cum.',
+      flex: 1,
+      minWidth: 80,
       align: 'right',
-      render: r =>
-        r.endCumulativeRuntime != null ? String(r.endCumulativeRuntime) : '—',
+      render: r => r.endCumulativeRuntime != null ? String(r.endCumulativeRuntime) : '—',
+    },
+    {
+      key: 'today',
+      label: 'Today Cum.',
+      flex: 1,
+      minWidth: 80,
+      align: 'right',
+      render: r => r.dayHours != null ? String(r.dayHours) : '—',
     },
   ];
 }
@@ -237,4 +144,30 @@ export function buildPlantRuntimeLogRows(
       tractorLabel: tractorLabel(r.tractorID, r.tractorModel),
       dayHours: manualRuntimeDayHours(r),
     }));
+}
+
+export function plantComplaintTableColumns(): DataTableColumn<Complaint>[] {
+  return [
+    {
+      key: 'tractor',
+      label: 'Tractor',
+      flex: 1,
+      minWidth: 100,
+      render: c => c.tractorModel || c.tractorID,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      flex: 0.8,
+      minWidth: 90,
+      render: c => <StatusBadge status={c.status} />,
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      flex: 0.7,
+      minWidth: 80,
+      render: c => formatDate(c.createdAt),
+    },
+  ];
 }
