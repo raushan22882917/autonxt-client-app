@@ -78,6 +78,7 @@ export default function PlantDetailScreen() {
   const [breakdownStatusOpen, setBreakdownStatusOpen] = useState(false);
   const [isTabLoading, setIsTabLoading] = useState(false);
   const [pendingUpdate, setPendingUpdate] = useState<{ action: () => void } | null>(null);
+  const [showAllRuntime, setShowAllRuntime] = useState(false);
 
   useEffect(() => {
     if (pendingUpdate) {
@@ -435,29 +436,58 @@ export default function PlantDetailScreen() {
             outerBorderColor={c.redBorder}
           />
         );
-      case 'runtime':
+      case 'runtime': {
+        const hasMore = filteredRuntimeLogs.length > 10;
+        const runtimeLogsToRender = showAllRuntime ? filteredRuntimeLogs : filteredRuntimeLogs.slice(0, 10);
         return (
-          <DataTable
-            title="Manual log"
-            subtitle={`${filteredRuntimeLogs.length} of ${runtimeLogRowsAll.length} entries`}
-            columns={runtimeLogCols}
-            data={filteredRuntimeLogs}
-            keyExtractor={r => r.recordID}
-            emptyMessage="No log entries match filters"
-            compact
-            showRowChevron
-            stickyFirstColumn
-            onRowPress={r => openTractor(r.tractorID)}
-            titleColor="#FFFFFF"
-            titleBgGradient={[c.gradientEnd, '#be1e2d']}
-            headerBgColor={c.redSoft}
-            headerTextColor={c.primary}
-            rowBgColorOdd={c.redSoft + '40'}
-            rowBgColorEven={c.card}
-            borderColor={c.redBorder}
-            outerBorderColor={c.redBorder}
-          />
+          <View style={{ gap: 12 }}>
+            <DataTable
+              title="Manual log"
+              subtitle={showAllRuntime 
+                ? `${filteredRuntimeLogs.length} of ${runtimeLogRowsAll.length} entries`
+                : `Showing top 10 of ${filteredRuntimeLogs.length} entries`
+              }
+              columns={runtimeLogCols}
+              data={runtimeLogsToRender}
+              keyExtractor={r => r.recordID}
+              emptyMessage="No log entries match filters"
+              compact
+              showRowChevron
+              stickyFirstColumn
+              onRowPress={r => openTractor(r.tractorID)}
+              titleColor="#FFFFFF"
+              titleBgGradient={[c.gradientEnd, '#be1e2d']}
+              headerBgColor={c.redSoft}
+              headerTextColor={c.primary}
+              rowBgColorOdd={c.redSoft + '40'}
+              rowBgColorEven={c.card}
+              borderColor={c.redBorder}
+              outerBorderColor={c.redBorder}
+            />
+            {hasMore && !showAllRuntime && (
+              <TouchableOpacity
+                onPress={() => {
+                  setIsTabLoading(true);
+                  setPendingUpdate({
+                    action: () => setShowAllRuntime(true),
+                  });
+                }}
+                activeOpacity={0.7}
+                style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: 12,
+                  marginTop: 4,
+                }}
+              >
+                <Text style={{ fontSize: 14, fontFamily: 'Inter_700Bold', color: c.primary }}>
+                  See All Logs ({filteredRuntimeLogs.length})
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         );
+      }
       default: return null;
     }
   };
@@ -847,7 +877,10 @@ export default function PlantDetailScreen() {
                       if (tab === t.key) return;
                       setIsTabLoading(true);
                       setPendingUpdate({
-                        action: () => setTab(t.key),
+                        action: () => {
+                          setTab(t.key);
+                          setShowAllRuntime(false);
+                        },
                       });
                     }}
                     activeOpacity={0.8}
@@ -904,7 +937,10 @@ export default function PlantDetailScreen() {
                       if (tab === t.key) return;
                       setIsTabLoading(true);
                       setPendingUpdate({
-                        action: () => setTab(t.key),
+                        action: () => {
+                          setTab(t.key);
+                          setShowAllRuntime(false);
+                        },
                       });
                     }}
                     activeOpacity={0.8}
@@ -1018,7 +1054,10 @@ export default function PlantDetailScreen() {
         onApply={(newFilters) => {
           setIsTabLoading(true);
           setPendingUpdate({
-            action: () => setFilters(newFilters),
+            action: () => {
+              setFilters(newFilters);
+              setShowAllRuntime(false);
+            },
           });
         }}
       />

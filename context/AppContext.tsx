@@ -288,12 +288,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         setLoadingMessage('Loading fleet data…');
         setIsLoadingMorePlants(true);
-        const slices = await fetchOrgFleetBasic(org.orgID, fetchedPlants);
+        const { slices, allComplaints } = await fetchOrgFleetBasic(org.orgID, fetchedPlants);
         if (cancelledRef.current) return;
 
         for (const slice of slices) {
           applySlice(slice);
         }
+        setComplaints(allComplaints);
         setIsLoading(false);
 
         const allTractorsToEnrich = slices

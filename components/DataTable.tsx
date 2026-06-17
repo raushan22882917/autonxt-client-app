@@ -80,9 +80,38 @@ export function DataTable<T>({
 
   const [rowHeights, setRowHeights] = React.useState<{ [key: string]: number }>({});
 
+  const prevDataRef = React.useRef<T[]>(data);
+  const prevColumnsRef = React.useRef<any[]>(columns);
+  const prevCompactRef = React.useRef<boolean>(compact);
+  const prevStickyRef = React.useRef<boolean>(stickyFirstColumn);
+
   React.useEffect(() => {
-    setRowHeights({});
-  }, [data, columns, compact, stickyFirstColumn]);
+    const dataChanged = data.length !== prevDataRef.current.length || 
+      data.some((row, i) => {
+        const prevRow = prevDataRef.current[i];
+        if (!prevRow) return true;
+        return keyExtractor(row, i) !== keyExtractor(prevRow, i) ||
+          (row as any).status !== (prevRow as any).status ||
+          (row as any).state !== (prevRow as any).state;
+      });
+
+    const columnsChanged = columns.length !== prevColumnsRef.current.length ||
+      columns.some((col, i) => {
+        const prevCol = prevColumnsRef.current[i];
+        return !prevCol || col.key !== prevCol.key;
+      });
+
+    const compactChanged = compact !== prevCompactRef.current;
+    const stickyChanged = stickyFirstColumn !== prevStickyRef.current;
+
+    if (dataChanged || columnsChanged || compactChanged || stickyChanged) {
+      setRowHeights({});
+      prevDataRef.current = data;
+      prevColumnsRef.current = columns;
+      prevCompactRef.current = compact;
+      prevStickyRef.current = stickyFirstColumn;
+    }
+  }, [data, columns, compact, stickyFirstColumn, keyExtractor]);
 
   const cellAlign = (align?: 'left' | 'center' | 'right'): TextStyle['textAlign'] => {
     if (align === 'center') return 'center';
@@ -113,6 +142,7 @@ export function DataTable<T>({
     return {
       width: colWidth,
       minWidth: col.minWidth ?? colWidth,
+      flexGrow: col.flex ?? 1,
     };
   };
 
@@ -260,7 +290,7 @@ export function DataTable<T>({
           const h = e.nativeEvent.layout.height;
           setRowHeights(prev => {
             const prevH = prev.header || 0;
-            if (h > prevH + 2) {
+            if (h > prevH) {
               return { ...prev, header: h };
             }
             return prev;
@@ -287,7 +317,7 @@ export function DataTable<T>({
           const h = e.nativeEvent.layout.height;
           setRowHeights(prev => {
             const prevH = prev.header || 0;
-            if (h > prevH + 2) {
+            if (h > prevH) {
               return { ...prev, header: h };
             }
             return prev;
@@ -310,7 +340,14 @@ export function DataTable<T>({
   ) : null;
 
   const leftTable = firstCol ? (
-    <View style={{ zIndex: 2, backgroundColor: backgroundColor || c.card }}>
+    <View
+      style={{
+        zIndex: 2,
+        backgroundColor: backgroundColor || c.card,
+        borderRightWidth: 1,
+        borderRightColor: borderColor || c.border,
+      }}
+    >
       {/* Header cell for first column */}
       {leftTableHeader}
 
@@ -331,7 +368,7 @@ export function DataTable<T>({
               setRowHeights(prev => {
                 const k = String(rowIndex);
                 const prevH = prev[k] || 0;
-                if (h > prevH + 2) {
+                if (h > prevH) {
                   return { ...prev, [k]: h };
                 }
                 return prev;
@@ -360,7 +397,7 @@ export function DataTable<T>({
   ) : null;
 
   const rightTableBody = (
-    <View style={{ minWidth: '100%' }}>
+    <View style={{ minWidth: '100%', alignSelf: 'flex-start' }}>
       {/* Header row for remaining columns */}
       {headerBgGradient ? (
         <LinearGradient
@@ -368,7 +405,7 @@ export function DataTable<T>({
             const h = e.nativeEvent.layout.height;
             setRowHeights(prev => {
               const prevH = prev.header || 0;
-              if (h > prevH + 2) {
+              if (h > prevH) {
                 return { ...prev, header: h };
               }
               return prev;
@@ -383,6 +420,7 @@ export function DataTable<T>({
             {
               borderBottomColor: borderColor || c.border,
               paddingLeft: 0,
+              paddingRight: 16,
               height: rowHeights.header || undefined,
             },
           ]}
@@ -412,7 +450,7 @@ export function DataTable<T>({
             const h = e.nativeEvent.layout.height;
             setRowHeights(prev => {
               const prevH = prev.header || 0;
-              if (h > prevH + 2) {
+              if (h > prevH) {
                 return { ...prev, header: h };
               }
               return prev;
@@ -425,6 +463,7 @@ export function DataTable<T>({
               backgroundColor: headerBgColor || c.surfaceAlt,
               borderBottomColor: borderColor || c.border,
               paddingLeft: 0,
+              paddingRight: 16,
               height: rowHeights.header || undefined,
             },
           ]}
@@ -467,7 +506,7 @@ export function DataTable<T>({
               setRowHeights(prev => {
                 const k = String(rowIndex);
                 const prevH = prev[k] || 0;
-                if (h > prevH + 2) {
+                if (h > prevH) {
                   return { ...prev, [k]: h };
                 }
                 return prev;
@@ -481,6 +520,7 @@ export function DataTable<T>({
                 borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
                 borderBottomColor: borderColor || c.hairline,
                 paddingLeft: 0,
+                paddingRight: 16,
                 height: rowHeights[String(rowIndex)] || undefined,
               },
             ]}
@@ -510,7 +550,11 @@ export function DataTable<T>({
   const stickyTable = (
     <View style={{ flexDirection: 'row' }}>
       {leftTable}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingRight: 16 }}
+      >
         {rightTableBody}
       </ScrollView>
     </View>
@@ -588,7 +632,11 @@ export function DataTable<T>({
       ) : stickyFirstColumn ? (
         stickyTable
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingRight: 16 }}
+        >
           {tableBody}
         </ScrollView>
       )}

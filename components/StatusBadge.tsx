@@ -38,14 +38,23 @@ const FALLBACK = { label: '—', bg: '#EEF1F6', text: '#526070', dot: '#7A8FA6' 
 interface Props {
   status: Status;
   small?: boolean;
+  noBg?: boolean;
 }
 
-export function StatusBadge({ status, small }: Props) {
+export function StatusBadge({ status, small, noBg }: Props) {
   const config = STATUS_CONFIG[status] ?? FALLBACK;
   return (
-    <View style={[styles.badge, { backgroundColor: config.bg }, small && styles.small]}>
+    <View style={[styles.badge, { backgroundColor: noBg ? 'transparent' : config.bg }, small && styles.small]}>
       <View style={[styles.dot, { backgroundColor: config.dot }, small && styles.dotSmall]} />
-      <Text style={[styles.text, { color: config.text }, small && styles.smallText]}>
+      <Text
+        style={[
+          styles.text,
+          { color: config.text },
+          small && styles.smallText,
+          noBg && { textTransform: 'none' },
+        ]}
+        numberOfLines={1}
+      >
         {config.label}
       </Text>
     </View>

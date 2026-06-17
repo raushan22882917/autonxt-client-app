@@ -175,7 +175,7 @@ export default function ComplaintsScreen() {
         case 'RAISED':
           return {
             ...prev,
-            statusTab: 'ALL',
+            statusTab: 'OPEN',
             severity: 'ALL',
             breakdownOnly: false,
           };
@@ -249,9 +249,9 @@ export default function ComplaintsScreen() {
   }, [filteredComplaints, search]);
 
   const totalTicketsCount = filteredComplaints.length;
-  const raisedCount = inPeriod.length;
-  const wipCount = inPeriod.filter(x => x.status === 'IN_PROGRESS').length;
-  const closedCount = inPeriod.filter(x => x.status === 'CLOSED' || x.status === 'RESOLVED').length;
+  const raisedCount = inPeriod.filter(x => x.status === 'OPEN').length;
+  const wipCount = inPeriod.filter(x => x.status === 'IN_PROGRESS' || x.status === 'RESOLVED').length;
+  const closedCount = inPeriod.filter(x => x.status === 'CLOSED').length;
 
   const resolvedInPeriod = inPeriod.filter(
     x => x.resolvedAt && (x.status === 'CLOSED' || x.status === 'RESOLVED')

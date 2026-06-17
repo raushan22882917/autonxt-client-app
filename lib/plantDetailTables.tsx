@@ -160,9 +160,9 @@ export function plantComplaintTableColumns(
     {
       key: 'status',
       label: 'Status',
-      flex: 0.8,
-      minWidth: 90,
-      render: c => <StatusBadge status={c.status} />,
+      flex: 1.2,
+      minWidth: 120,
+      render: c => <StatusBadge status={c.status} noBg />,
     },
     {
       key: 'date',

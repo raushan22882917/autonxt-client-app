@@ -123,8 +123,8 @@ export type ComplaintStatusTab =
 export const COMPLAINT_STATUS_TABS: { key: ComplaintStatusTab; label: string }[] = [
   { key: 'ALL', label: 'All' },
   { key: 'OPEN', label: 'Open / Pending' },
-  { key: 'IN_PROGRESS', label: 'Work in Progress' },
-  { key: 'CLOSED', label: 'Closed / Resolved' },
+  { key: 'IN_PROGRESS', label: 'Work in Progress / Resolved' },
+  { key: 'CLOSED', label: 'Closed' },
 ];
 
 export const SEVERITY_FILTERS = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const;
@@ -156,9 +156,9 @@ export function isActiveComplaint(c: Complaint): boolean {
 
 export function matchesStatusTab(c: Complaint, tab: ComplaintStatusTab): boolean {
   if (tab === 'ALL') return true;
-  if (tab === 'OPEN') return isActiveComplaint(c);
-  if (tab === 'IN_PROGRESS') return c.status === 'IN_PROGRESS';
-  if (tab === 'CLOSED') return c.status === 'CLOSED' || c.status === 'RESOLVED';
+  if (tab === 'OPEN') return c.status === 'OPEN';
+  if (tab === 'IN_PROGRESS') return c.status === 'IN_PROGRESS' || c.status === 'RESOLVED';
+  if (tab === 'CLOSED') return c.status === 'CLOSED';
   return resolveComplaintState(c) === tab;
 }
 
@@ -216,9 +216,9 @@ export function emptyMessageForTab(
     case 'OPEN':
       return `No open tickets${suffix}`;
     case 'IN_PROGRESS':
-      return `No work in progress tickets${suffix}`;
+      return `No work in progress or resolved tickets${suffix}`;
     case 'CLOSED':
-      return `No closed or resolved tickets${suffix}`;
+      return `No closed tickets${suffix}`;
     case 'PENDING':
       return `No pending tickets${suffix}`;
     case 'ACCEPTED':

@@ -869,16 +869,14 @@ export async function fetchReportFleetData(
   plantID?: string | null
 ): Promise<{ tractors: Tractor[]; complaints: Complaint[] }> {
   if (!plantID) {
-    const slices = await fetchOrgFleetBasic(orgID, plants);
+    const { slices, allComplaints } = await fetchOrgFleetBasic(orgID, plants);
     const tractorMap = new Map<string, Tractor>();
-    const complaintMap = new Map<string, Complaint>();
     for (const slice of slices) {
       for (const t of slice.tractors) tractorMap.set(t.tractorID, t);
-      for (const c of slice.complaints) complaintMap.set(c.complaintID, c);
     }
     return {
       tractors: Array.from(tractorMap.values()),
-      complaints: Array.from(complaintMap.values()),
+      complaints: allComplaints,
     };
   }
 
@@ -892,11 +890,18 @@ export async function fetchReportFleetData(
 export async function fetchOrgFleetBasic(
   orgID: string,
   plants: Plant[]
-): Promise<PlantFleetSlice[]> {
+): Promise<{ slices: PlantFleetSlice[]; allComplaints: Complaint[] }> {
   const [rawTractors, rawComplaints] = await Promise.all([
     fetchTractorsByOrg(orgID),
     fetchComplaintsByOrg(orgID),
   ]);
+
+  const plantById = new Map(plants.map(p => [p.plantID, p]));
+  const tractorByVin = new Map(rawTractors.map(t => [t.vin, t]));
+
+  const allComplaints = rawComplaints.map(c =>
+    mapRawComplaint(c, orgID, plantById, tractorByVin)
+  );
 
   const tractorsByPlant = new Map<string, RawTractor[]>();
   const complaintsByPlant = new Map<string, RawComplaint[]>();
@@ -924,7 +929,7 @@ export async function fetchOrgFleetBasic(
     }
   }
 
-  return plants.map(plant => {
+  const slices = plants.map(plant => {
     const slice = buildFleetSlice(
       orgID,
       plants,
@@ -938,6 +943,8 @@ export async function fetchOrgFleetBasic(
       ...slice,
     };
   });
+
+  return { slices, allComplaints };
 }
 
 /** Fast path: tractors + complaints for one plant (no telemetry/runtime fan-out). */
