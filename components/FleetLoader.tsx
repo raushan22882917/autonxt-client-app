@@ -185,7 +185,6 @@ export function FleetLoadingBar({
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
@@ -197,6 +196,11 @@ const styles = StyleSheet.create({
     maxWidth: undefined,
     width: '100%',
     paddingVertical: 28,
+  },
+  cardModal: {
+    borderWidth: 0,
+    elevation: 0,
+    shadowOpacity: 0,
   },
   card: {
     width: '100%',
