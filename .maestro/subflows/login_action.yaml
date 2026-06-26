@@ -1,8 +1,0 @@
-# login_action.yaml
-appId: com.softwareautonxt.mobile
----
-# Open the test-login deep link with credentials as URL params.
-# The test-login screen calls signIn() directly — zero keyboard, zero typing.
-# Requires a rebuild of the app after the test-login route was added.
-
-- openLink: mobile://test-login?email=${EMAIL}&password=${PASSWORD}
