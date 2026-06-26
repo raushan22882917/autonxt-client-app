@@ -1,0 +1,28 @@
+# complaints.yaml
+appId: com.softwareautonxt.mobile
+env:
+  EMAIL: "testuser@example.com"
+  PASSWORD: "Password123"
+---
+- runFlow: subflows/login_if_needed.yaml
+- tapOn: "Complaints"
+- assertVisible: "Search tickets…"
+# Search test
+- tapOn: "Search tickets…"
+- inputText: "Hydraulic"
+- assertVisible: "Hydraulic"
+- tapOn: "x"
+# Filter sheet test
+- tapOn: "sliders"
+- assertVisible: "Filter Tickets"
+- tapOn: "Open"
+- tapOn: "CRITICAL"
+- tapOn: "Apply filters"
+- assertNotVisible: "Filter Tickets"
+# Go to ticket details
+- tapOn: "chevron-right"
+- assertVisible: "Ticket Details"
+- assertVisible: "Description"
+- assertVisible: "Details"
+- back
+- assertVisible: "Search tickets…"

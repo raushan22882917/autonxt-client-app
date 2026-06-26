@@ -1,0 +1,915 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>APP_NAME_PLACEHOLDER | Expo Preview</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg width='180' height='180' viewBox='0 0 180 180' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='180' height='180' rx='36' fill='%237E152F'/%3E%3C/svg%3E" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #7E152F;
+      --primary-glow: rgba(126, 21, 47, 0.15);
+      --accent: #E2A93E;
+      --secondary: #3B82F6;
+      --navy: #0F172A;
+      --slate: #475569;
+      --bg: #FFF8F9;
+      --card-bg: #FFFFFF;
+      --border-color: #E5E7EB;
+      --shadow-color: rgba(126, 21, 47, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background: radial-gradient(circle at top, #FFF2F3 0%, #FFFFFF 60%, #FFFFFF 100%);
+      color: var(--navy);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .wrapper {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+
+    /* Loading State style */
+    .loading {
+      display: none;
+      margin: 60px auto;
+      text-align: center;
+    }
+
+    .spinner {
+      border: 3px solid rgba(126, 21, 47, 0.1);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--slate);
+    }
+
+    /* Hero Title & Info Section */
+    .hero {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin: 0 0 16px 0;
+      letter-spacing: -1px;
+      color: var(--navy);
+    }
+
+    .badge-highlight {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      padding: 2px 14px;
+      border-radius: 14px;
+      display: inline-block;
+      box-shadow: 0 4px 14px var(--primary-glow);
+      transform: rotate(-1deg);
+    }
+
+    .badge-highlight-alt {
+      background-color: var(--navy);
+      color: #FFFFFF;
+      padding: 2px 14px;
+      border-radius: 14px;
+      display: inline-block;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+      transform: rotate(1deg);
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--slate);
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    /* Navbar header style matching reference */
+    .navbar {
+      width: 100%;
+      background: #000000;
+      border-radius: 100px;
+      padding: 8px 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+      z-index: 100;
+    }
+
+    .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .nav-brand {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: #FFFFFF;
+      padding-left: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 100px;
+      padding: 4px 6px;
+      gap: 4px;
+    }
+
+    .nav-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 100px;
+      transition: all 0.2s;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: #FFFFFF;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .nav-btn {
+      background: #FFFFFF;
+      color: #000000;
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 700;
+      padding: 10px 24px;
+      border-radius: 100px;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: #F8FAFC;
+      transform: translateY(-1px);
+    }
+
+    /* Simulated phone mockup and floating cards */
+    .graphic-showcase {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .glow-bg {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--primary-glow) 0%, rgba(255, 255, 255, 0) 70%);
+      z-index: 1;
+    }
+
+    .bottom-arc-glow {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 550px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at bottom, rgba(126, 21, 47, 0.4) 0%, rgba(126, 21, 47, 0) 70%);
+      filter: blur(16px);
+      z-index: 2;
+    }
+
+    .mockup-container {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 580px;
+    }
+
+    /* Central Mockup Tractor */
+    .centerpiece-container {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 300px;
+      height: 300px;
+    }
+
+    .tractor-centerpiece {
+      width: 340px;
+      height: auto;
+      max-height: 280px;
+      object-fit: contain;
+      filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.15));
+      animation: float-center 6s ease-in-out infinite;
+    }
+
+    @keyframes float-center {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    /* Hero bottom actions matching screenshot */
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 30px 0 20px 0;
+    }
+
+    .action-primary {
+      background: var(--primary);
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 14.5px;
+      padding: 12px 30px;
+      border-radius: 100px;
+      text-decoration: none;
+      box-shadow: 0 8px 20px var(--primary-glow);
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .action-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(126, 21, 47, 0.25);
+    }
+
+    .action-secondary {
+      background: #FFFFFF;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      font-weight: 700;
+      font-size: 14.5px;
+      padding: 10px 28px;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .action-secondary:hover {
+      background: #FFF5F6;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      .navbar {
+        border-radius: 24px;
+        padding: 12px 16px;
+      }
+
+      .nav-menu {
+        display: none;
+      }
+
+      .tractor-centerpiece {
+        width: 260px;
+      }
+    }
+
+    /* Floating Info Cards */
+    .floating-card {
+      position: absolute;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 12px 30px var(--shadow-color);
+      width: 150px;
+      z-index: 5;
+    }
+
+    .float-left {
+      left: 0;
+      top: 25%;
+      transform: rotate(-3deg);
+      animation: float-left 6s ease-in-out infinite;
+    }
+
+    .float-right {
+      right: 0;
+      bottom: 25%;
+      transform: rotate(3deg);
+      animation: float-right 6s ease-in-out 1s infinite;
+    }
+
+    @keyframes float-left {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(-3deg);
+      }
+
+      50% {
+        transform: translateY(-8px) rotate(-3deg);
+      }
+    }
+
+    @keyframes float-right {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(3deg);
+      }
+
+      50% {
+        transform: translateY(-8px) rotate(3deg);
+      }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--secondary);
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+      }
+
+      70% {
+        box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+      }
+    }
+
+    .card-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--slate);
+      letter-spacing: 0.5px;
+    }
+
+    .card-metric {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+
+    .card-metric .unit {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--slate);
+    }
+
+    .card-sub {
+      font-size: 10px;
+      color: var(--slate);
+      margin-top: 4px;
+    }
+
+    /* Industry Partner Pills */
+    .partner-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .partner-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--navy);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .partner-icon {
+      width: 14px;
+      height: 14px;
+      color: var(--accent);
+    }
+
+    /* Previewing steps block */
+    .preview-section {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .preview-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 30px;
+      text-align: left;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .qr-card {
+      align-items: center;
+      text-align: center;
+    }
+
+    .card-num {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      color: rgba(126, 21, 47, 0.06);
+      line-height: 1;
+    }
+
+    .preview-card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      color: var(--navy);
+    }
+
+    .preview-card-desc {
+      font-size: 13.5px;
+      color: var(--slate);
+      margin: 0 0 20px 0;
+      max-width: 480px;
+    }
+
+    .qr-card .preview-card-desc {
+      margin: 0 auto 24px auto;
+    }
+
+    /* App download buttons */
+    .store-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .store-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border: 1.5px solid var(--border-color);
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--navy);
+      background: #FFFFFF;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .store-button:hover {
+      background: #FDF6F7;
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .store-icon {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* QR wrapper and Styling */
+    .qr-wrap {
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 0 8px 24px rgba(126, 21, 47, 0.03);
+      margin-bottom: 24px;
+      display: inline-block;
+    }
+
+    .qr-container {
+      width: 200px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-container canvas {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    /* Main Action Link Button */
+    .open-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 28px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 14px;
+      text-decoration: none;
+      color: #FFFFFF;
+      background: var(--primary);
+      box-shadow: 0 8px 24px var(--primary-glow);
+      transition: all 0.15s ease-in-out;
+      border: none;
+      cursor: pointer;
+    }
+
+    .open-btn:hover {
+      opacity: 0.95;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(126, 21, 47, 0.22);
+    }
+
+    .btn-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Desktop layout */
+    @media (min-width: 768px) {
+      body {
+        padding: 60px 40px;
+      }
+
+      .wrapper {
+        max-width: 840px;
+        gap: 60px;
+      }
+
+      h1 {
+        font-size: 48px;
+      }
+
+      .floating-card {
+        width: 160px;
+      }
+
+      .float-left {
+        left: -40px;
+      }
+
+      .float-right {
+        right: -40px;
+      }
+
+      .preview-section {
+        flex-direction: row;
+        gap: 24px;
+        align-items: stretch;
+      }
+
+      .preview-card {
+        flex: 1;
+        padding: 36px;
+      }
+
+      .preview-card-desc {
+        flex-grow: 1;
+      }
+    }
+
+    /* Dark mode theme adaptive settings */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #090305;
+        --navy: #F8FAFC;
+        --slate: #94A3B8;
+        --card-bg: #110B0D;
+        --border-color: #2D1A1F;
+        --shadow-color: rgba(0, 0, 0, 0.25);
+        --primary-glow: rgba(226, 169, 62, 0.1);
+      }
+
+      body {
+        background: radial-gradient(circle at top, #2D1A1F 0%, #100609 60%, #030001 100%);
+      }
+
+      .badge-highlight {
+        box-shadow: 0 4px 14px rgba(126, 21, 47, 0.4);
+      }
+
+      .badge-highlight-alt {
+        background-color: var(--accent);
+        color: #100609;
+        box-shadow: 0 4px 14px rgba(226, 169, 62, 0.3);
+      }
+
+      .phone-mockup {
+        border-color: #1F191B;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+      }
+
+      .phone-notch {
+        background: #1F191B;
+      }
+
+      .store-button {
+        background: #180F11;
+      }
+
+      .store-button:hover {
+        background: #2D1A1F;
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      .partner-pill {
+        background: #180F11;
+      }
+
+      .qr-wrap {
+        background: #180F11;
+      }
+
+      .open-btn {
+        background: var(--primary);
+        color: #FFFFFF;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrapper">
+    <!-- Loading State -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Launching APP_NAME_PLACEHOLDER in Expo Go...</div>
+    </div>
+
+    <!-- Header Bar -->
+    <header class="navbar">
+      <div class="nav-container">
+        <div class="nav-brand">AutoNXT</div>
+        <div class="nav-menu">
+          <a href="#home" class="nav-link active">Home</a>
+          <a href="#features" class="nav-link">Features</a>
+          <a href="#how-it-works" class="nav-link">How it works</a>
+          <a href="#faq" class="nav-link">FAQ</a>
+        </div>
+        <a href="exps://EXPS_URL_PLACEHOLDER" class="nav-btn">Download</a>
+      </div>
+    </header>
+
+    <!-- Main Landing Page Content -->
+    <div class="content" id="content">
+      <!-- Hero Section -->
+      <div class="hero">
+        <h1>Power <span class="badge-highlight">Beyond</span> Limits.<br>Command <span class="badge-highlight-alt">Total
+            Control</span></h1>
+        <p class="subtitle">Next-gen telemetry, battery diagnostics, and real-time operations logging for the AutoNXT
+          Electric Tractor fleet portal.</p>
+      </div>
+
+      <!-- Graphic Showcase -->
+      <div class="graphic-showcase">
+        <div class="glow-bg"></div>
+        <div class="bottom-arc-glow"></div>
+        <div class="mockup-container">
+          <!-- Left Info Card -->
+          <div class="floating-card float-left">
+            <div class="card-header">
+              <span class="pulse-dot"></span>
+              <span class="card-title">Live Telemetry</span>
+            </div>
+            <div class="card-metric">382<span class="unit"> V</span></div>
+            <div class="card-sub">Current Output: 45A</div>
+          </div>
+
+          <!-- Central Mockup Tractor -->
+          <div class="centerpiece-container">
+            <img src="/assets/tractors/X20H2B.png" class="tractor-centerpiece" alt="AutoNXT Tractor" />
+          </div>
+
+          <!-- Right Info Card -->
+          <div class="floating-card float-right">
+            <div class="card-header">
+              <span class="card-title">Fleet Uptime</span>
+            </div>
+            <div class="card-metric">99.8%</div>
+            <div class="card-sub">Active Duty Logged</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Actions matching screenshot -->
+      <div class="hero-actions">
+        <a href="exps://EXPS_URL_PLACEHOLDER" class="action-primary">Open in Expo Go</a>
+        <a href="#qr-code" class="action-secondary">Scan QR Code</a>
+      </div>
+
+      <!-- Tech Badges -->
+      <div class="partner-row">
+        <div class="partner-pill">
+          <svg class="partner-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M11 21h-1v-2.2c-2.3-.3-4.2-1.9-4.8-4.1l1.9-.5c.4 1.5 1.7 2.6 3.2 2.8V13H9c-1.7 0-3-1.3-3-3s1.3-3 3-3h1.3V4.8C8 4.5 6.1 2.9 5.5.7l1.9-.5C7.8 1.7 9.1 2.8 10.6 3V11H12c1.7 0 3 1.3 3 3s-1.3 3-3 3h-1v4h-1z" />
+          </svg>
+          <span>Lithium-Ion Power</span>
+        </div>
+        <div class="partner-pill">
+          <svg class="partner-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+          </svg>
+          <span>IOT Telemetry</span>
+        </div>
+      </div>
+
+      <div style="height: 48px;"></div>
+
+      <!-- Previewing Steps Section -->
+      <div class="preview-section">
+        <!-- Step 1: Install Expo Go -->
+        <div class="preview-card">
+          <div class="card-num">01</div>
+          <h3 class="preview-card-title">Download Expo Go</h3>
+          <p class="preview-card-desc">Expo Go is a free, secure developer environment. Install it on your mobile device
+            to test and run the app preview live.</p>
+          <div class="store-buttons" id="store-buttons">
+            <a id="app-store-btn" href="https://apps.apple.com/app/id982107779" class="store-button" target="_blank">
+              <svg class="store-icon" viewBox="0 0 24 24" fill="currentColor" style="margin-top: -1px;">
+                <path
+                  d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+              </svg>
+              App Store
+            </a>
+            <a id="play-store-btn" href="https://play.google.com/store/apps/details?id=host.exp.exponent"
+              class="store-button" target="_blank">
+              <svg class="store-icon" viewBox="0 0 24 24" fill="currentColor" style="margin-top: -1px;">
+                <path
+                  d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
+              </svg>
+              Google Play
+            </a>
+          </div>
+        </div>
+
+        <!-- Step 2: Scan QR Code -->
+        <div class="preview-card qr-card">
+          <div class="card-num">02</div>
+          <h3 class="preview-card-title">Scan & Preview</h3>
+          <p class="preview-card-desc">Scan the dynamic QR code with your mobile camera or Expo Go to load the portal
+            preview instantly.</p>
+
+          <div class="qr-wrap">
+            <div id="qr-code" class="qr-container"></div>
+          </div>
+
+          <a href="exps://EXPS_URL_PLACEHOLDER" class="open-btn">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor" style="margin-top: -1px;">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
+            </svg>
+            Open in Expo Go
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
+  <script>
+    (function () {
+      const ua = navigator.userAgent;
+      const loadingEl = document.getElementById("loading");
+      const contentEl = document.getElementById("content");
+
+      const isAndroid = /Android/i.test(ua);
+      const isIOS =
+        /iPhone|iPad|iPod/i.test(ua) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+      const deepLink = "exps://EXPS_URL_PLACEHOLDER";
+
+      // Adjust store buttons based on platform
+      const appStoreBtn = document.getElementById("app-store-btn");
+      const playStoreBtn = document.getElementById("play-store-btn");
+      const storeButtonsContainer = document.getElementById("store-buttons");
+
+      if (isIOS) {
+        playStoreBtn.className = "store-link";
+        storeButtonsContainer.appendChild(playStoreBtn);
+      } else if (isAndroid) {
+        appStoreBtn.className = "store-link";
+        storeButtonsContainer.insertBefore(playStoreBtn, appStoreBtn);
+      }
+
+      // Initialize styled QR code matching AutoNXT color tokens
+      const qrCode = new QRCodeStyling({
+        width: 200,
+        height: 200,
+        data: deepLink,
+        dotsOptions: {
+          color: "#7E152F", // AutoNXT Burgundy
+          type: "rounded",
+        },
+        backgroundOptions: {
+          color: "#ffffff",
+        },
+        cornersSquareOptions: {
+          color: "#7E152F", // AutoNXT Burgundy
+          type: "extra-rounded",
+        },
+        cornersDotOptions: {
+          color: "#E2A93E", // AutoNXT Gold accent
+          type: "dot",
+        },
+        qrOptions: {
+          errorCorrectionLevel: "H",
+        },
+      });
+
+      qrCode.append(document.getElementById("qr-code"));
+
+      if (isAndroid || isIOS) {
+        loadingEl.style.display = "block";
+        contentEl.style.display = "none";
+        window.location.href = deepLink;
+        setTimeout(function () {
+          loadingEl.style.display = "none";
+          contentEl.style.display = "block";
+        }, 500);
+      }
+    })();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,2 @@
+- [AppSync & Cognito auth quirks](appsync-auth.md) — userPool-only auth, $APPSYNC_ENDPOINT secret has typo (use app.config.js), auth gate blocks screenshots without creds.
+- [AppSync schema source & analytics contract](appsync-schema.md) — canonical schema is attached_assets/{API,queries,mutations}_*.ts (can't introspect); getAnalytics timeSegment='GLOBAL' & duration-unit are unconfirmed guesses.
