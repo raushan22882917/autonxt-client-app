@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
@@ -48,8 +48,8 @@ import {
 
 type TabKey = 'tractors' | 'breakdown' | 'tickets' | 'runtime';
 
-const TABS: { key: TabKey; label: string; icon: keyof typeof Feather.glyphMap }[] = [
-  { key: 'tractors', label: 'Tractors', icon: 'truck' },
+const TABS: { key: TabKey; label: string; icon: string; iconProvider?: 'MaterialCommunityIcons' }[] = [
+  { key: 'tractors', label: 'Tractors', icon: 'tractor', iconProvider: 'MaterialCommunityIcons' },
   { key: 'breakdown', label: 'Breakdown', icon: 'alert-triangle' },
   { key: 'tickets', label: 'Tickets', icon: 'inbox' },
   { key: 'runtime', label: 'Runtime', icon: 'clock' },
@@ -885,7 +885,11 @@ export default function PlantDetailScreen() {
                     }}
                     activeOpacity={0.8}
                   >
-                    <Feather name={t.icon} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
+                    {t.iconProvider === 'MaterialCommunityIcons' ? (
+                      <MaterialCommunityIcons name={t.icon as any} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
+                    ) : (
+                      <Feather name={t.icon as any} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
+                    )}
                     <Text 
                       style={[styles.tabChipLabel, { color: active ? c.primaryForeground : c.foreground, fontSize: 11 }]}
                       numberOfLines={1}
@@ -945,7 +949,11 @@ export default function PlantDetailScreen() {
                     }}
                     activeOpacity={0.8}
                   >
-                    <Feather name={t.icon} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
+                    {t.iconProvider === 'MaterialCommunityIcons' ? (
+                      <MaterialCommunityIcons name={t.icon as any} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
+                    ) : (
+                      <Feather name={t.icon as any} size={12} color={active ? c.primaryForeground : c.mutedForeground} />
+                    )}
                     <Text 
                       style={[styles.tabChipLabel, { color: active ? c.primaryForeground : c.foreground, fontSize: 11 }]}
                       numberOfLines={1}

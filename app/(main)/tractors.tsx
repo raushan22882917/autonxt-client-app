@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
@@ -225,7 +225,7 @@ export default function TractorsScreen() {
         ListEmptyComponent={
           <View style={[styles.empty, { backgroundColor: c.card, borderColor: c.border }]}>
             <View style={[styles.emptyIconWrap, { backgroundColor: c.surfaceAlt }]}>
-              <Feather name="truck" size={32} color={c.mutedForeground} />
+              <MaterialCommunityIcons name="tractor" size={36} color={c.mutedForeground} />
             </View>
             <Text style={[styles.emptyTitle, { color: c.foreground }]}>
               {tractorSearch ? 'No Results' : 'No Tractors'}
