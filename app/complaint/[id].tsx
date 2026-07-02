@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle, RadialGradient, Stop, Defs } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
@@ -357,6 +357,8 @@ export default function ComplaintDetailScreen() {
                 <View style={[styles.metaIcon, { backgroundColor: c.primary + '12' }]}>
                   {m.icon === 'map-pin' ? (
                     <Image source={require('@/assets/images/LogoLocation.png')} style={{ width: 20, height: 20 }} resizeMode="contain" />
+                  ) : m.icon === 'truck' ? (
+                    <MaterialCommunityIcons name="tractor" size={16} color={c.primary} />
                   ) : (
                     <Feather name={m.icon} size={15} color={c.primary} />
                   )}

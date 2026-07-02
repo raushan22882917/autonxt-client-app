@@ -6,7 +6,7 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { FleetHeader } from '@/components/FleetHeader';
 import { FleetLoader, FleetLoadingBar } from '@/components/FleetLoader';
@@ -23,7 +23,7 @@ function NativeTabsLayout() {
         <Label>Fleet</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="tractors">
-        <Icon sf={{ default: 'car', selected: 'car.fill' }} />
+        <Icon sf={{ default: 'tractor', selected: 'tractor.fill' }} />
         <Label>Tractors</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="complaints">
@@ -107,9 +107,9 @@ function ClassicTabsLayout() {
             tabBarLabel: 'Tractors',
             tabBarIcon: ({ color }) =>
               isIOS ? (
-                <SymbolView name="car" tintColor={color} size={22} />
+                <SymbolView name="tractor" tintColor={color} size={22} />
               ) : (
-                <Feather name="truck" size={20} color={color} />
+                <MaterialCommunityIcons name="tractor" size={22} color={color} />
               ),
           }}
         />

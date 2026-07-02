@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
@@ -268,7 +268,7 @@ export default function DashboardScreen() {
             <View style={[styles.mainStatsCard, { flex: 1 }]}>
               <View style={styles.sectionHeader}>
                 <View style={[styles.sectionIconWrap, { backgroundColor: c.primary + '12' }]}>
-                  <Feather name="truck" size={16} color={c.primary} />
+                  <MaterialCommunityIcons name="tractor" size={18} color={c.primary} />
                 </View>
                 <View style={styles.sectionHeaderText}>
                   <Text style={styles.sectionTitle}>Total Fleet</Text>

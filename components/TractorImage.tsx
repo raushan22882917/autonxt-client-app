@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, ImageStyle, StyleProp, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   defaultTractorImage,
   getTractorAccentPalette,
@@ -59,7 +59,7 @@ export function TractorImage({
           />
         ) : (
           <View style={styles.fallback}>
-            <Feather name="truck" size={34} color={accent.icon} />
+            <MaterialCommunityIcons name="tractor" size={38} color={accent.icon} />
           </View>
         )}
       </LinearGradient>

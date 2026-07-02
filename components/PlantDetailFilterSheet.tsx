@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { SEVERITY_FILTERS, type SeverityFilter, COMPLAINT_PERIOD_OPTIONS, type ComplaintPeriod } from '@/lib/complaintFilters';
 import { TractorDetailMonthFilter } from '@/components/TractorDetailMonthFilter';
@@ -183,7 +183,7 @@ export function PlantDetailFilterSheet({
               onPress={() => setActiveTab('tractor')}
               activeOpacity={0.8}
             >
-              <Feather name="truck" size={14} color={activeTab === 'tractor' ? c.primaryForeground : c.mutedForeground} />
+              <MaterialCommunityIcons name="tractor" size={15} color={activeTab === 'tractor' ? c.primaryForeground : c.mutedForeground} />
               <Text style={[styles.tabBtnText, { color: activeTab === 'tractor' ? c.primaryForeground : c.foreground }]}>
                 Tractor Filters
               </Text>

@@ -11,7 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/context/AppContext';
@@ -52,7 +52,7 @@ function CountPill({ label, color }: { label: string; color: string }) {
 // ── Row Components ────────────────────────────────────────────────────────────
 
 type InfoRowProps = {
-  icon: keyof typeof Feather.glyphMap;
+  icon: keyof typeof Feather.glyphMap | 'tractor';
   iconColor: string;
   iconBg: string;
   title: string;
@@ -110,7 +110,11 @@ function InfoRow({
 
       {/* Left icon */}
       <View style={[styles.infoRowIcon, { backgroundColor: finalIconBg, zIndex: 1 }]}>
-        <Feather name={icon} size={16} color={finalIconColor} />
+        {icon === 'tractor' ? (
+          <MaterialCommunityIcons name="tractor" size={18} color={finalIconColor} />
+        ) : (
+          <Feather name={icon as any} size={16} color={finalIconColor} />
+        )}
       </View>
 
       {/* Text block */}
@@ -315,7 +319,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/(main)/runtime?from=profile')}
           />
           <InfoRow
-            icon="truck"
+            icon="tractor"
             iconColor="#E2A93E"
             iconBg="#FEF3C7"
             title="Registered Tractors"
