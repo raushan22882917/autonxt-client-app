@@ -31,7 +31,7 @@ module.exports = {
     },
     android: {
       backgroundColor: '#0A1628',
-      package: 'com.softwareautonxt.mobile',
+      package: 'com.autonxt.partnerApp',
     },
     web: {
       favicon: './assets/images/icon.png',
